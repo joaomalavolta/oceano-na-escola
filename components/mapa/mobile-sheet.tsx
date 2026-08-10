@@ -1,0 +1,199 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Layers,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import type { CamadasState, FiltrosState } from "./painel-camadas";
+
+// ─────────────────────────────────────────────
+// Sheet deslizante de camadas e filtros (mobile)
+// Acionado pelo FAB no canto inferior direito
+// ─────────────────────────────────────────────
+
+interface MobileSheetProps {
+  camadas: CamadasState;
+  onToggleCamada: (camada: keyof CamadasState) => void;
+  filtros: FiltrosState;
+  onChangeFiltro: (campo: keyof FiltrosState, valor: string) => void;
+  municipios: string[];
+  escolas: { slug: string; nome: string }[];
+  protocolos: string[];
+}
+
+export function MobileSheet({
+  camadas,
+  onToggleCamada,
+  filtros,
+  onChangeFiltro,
+  municipios,
+  escolas,
+  protocolos,
+}: MobileSheetProps) {
+  const [aberto, setAberto] = useState(false);
+
+  return (
+    <>
+      {/* FAB — visível apenas em mobile */}
+      <button
+        onClick={() => setAberto(true)}
+        className="
+          fixed bottom-24 right-4 z-50 md:hidden
+          flex items-center justify-center
+          w-12 h-12 rounded-full
+          bg-primary text-primary-foreground
+          shadow-lg active:scale-95 transition-transform
+        "
+        aria-label="Abrir camadas e filtros"
+      >
+        <Layers size={20} />
+      </button>
+
+      {/* Backdrop */}
+      {aberto && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/40 md:hidden"
+          onClick={() => setAberto(false)}
+        />
+      )}
+
+      {/* Sheet */}
+      <div
+        className={`
+          fixed inset-x-0 bottom-0 z-[70] md:hidden
+          transform transition-transform duration-300 ease-out
+          ${aberto ? "translate-y-0" : "translate-y-full"}
+        `}
+      >
+        <div className="bg-glass-bg backdrop-blur-xl border-t border-glass-border rounded-t-lg max-h-[70vh] overflow-y-auto">
+          {/* Handle bar */}
+          <div className="flex justify-center pt-2 pb-1">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 pb-2">
+            <span className="text-base font-semibold">Camadas e Filtros</span>
+            <button
+              onClick={() => setAberto(false)}
+              className="p-1 rounded-sm hover:bg-muted transition-colors"
+            >
+              <X size={18} className="text-muted-foreground" />
+            </button>
+          </div>
+
+          <div className="px-4 pb-6 space-y-4">
+            {/* Camadas */}
+            <section>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                Camadas
+              </h3>
+              <div className="space-y-2">
+                {(
+                  [
+                    ["residuos", "Resíduos"],
+                    ["microplasticos", "Microplásticos"],
+                    ["escolas", "Escolas"],
+                    ["expedicoes", "Expedições"],
+                  ] as [keyof CamadasState, string][]
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => onToggleCamada(key)}
+                    className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <span
+                      className={`
+                        w-8 h-5 rounded-full relative transition-colors
+                        ${camadas[key] ? "bg-primary" : "bg-muted"}
+                      `}
+                    >
+                      <span
+                        className={`
+                          absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform
+                          ${camadas[key] ? "left-3.5" : "left-0.5"}
+                        `}
+                      />
+                    </span>
+                    <span className="text-sm">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Filtros */}
+            <section>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                Filtros
+              </h3>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="text-xs text-muted-foreground">Município</label>
+                  <select
+                    value={filtros.municipio}
+                    onChange={(e) => onChangeFiltro("municipio", e.target.value)}
+                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                  >
+                    <option value="">Todos</option>
+                    {municipios.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Escola</label>
+                  <select
+                    value={filtros.escola}
+                    onChange={(e) => onChangeFiltro("escola", e.target.value)}
+                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                  >
+                    <option value="">Todas</option>
+                    {escolas.map((e) => (
+                      <option key={e.slug} value={e.slug}>{e.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Protocolo</label>
+                  <select
+                    value={filtros.protocolo}
+                    onChange={(e) => onChangeFiltro("protocolo", e.target.value)}
+                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                  >
+                    <option value="">Todos</option>
+                    {protocolos.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">De</label>
+                    <input
+                      type="month"
+                      value={filtros.mesInicio}
+                      onChange={(e) => onChangeFiltro("mesInicio", e.target.value)}
+                      className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Até</label>
+                    <input
+                      type="month"
+                      value={filtros.mesFim}
+                      onChange={(e) => onChangeFiltro("mesFim", e.target.value)}
+                      className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

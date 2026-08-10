@@ -1,0 +1,157 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* ────────────────────────────────────────────────
+   Oceano na Escola — Design tokens (OKLCH)
+   Fonte da verdade: DESIGN.md
+   NÃO existe @media (prefers-color-scheme: dark).
+   Modo escuro ativado apenas pela classe .dark.
+   ──────────────────────────────────────────────── */
+
+:root {
+  /* Superfícies */
+  --background: oklch(0.975 0.008 106);
+  --foreground: oklch(0.22 0.03 220);
+  --card: oklch(0.995 0.004 106);
+  --card-foreground: oklch(0.22 0.03 220);
+
+  /* Primário — verde-azulado de água funda */
+  --primary: oklch(0.42 0.07 200);
+  --primary-foreground: oklch(0.98 0.005 200);
+
+  /* Secundário */
+  --secondary: oklch(0.94 0.01 200);
+  --secondary-foreground: oklch(0.22 0.03 220);
+
+  /* Acento — coral de boia (escasso: totais, densidade, foco) */
+  --accent: oklch(0.68 0.16 45);
+  --accent-foreground: oklch(0.15 0.03 45);
+
+  /* Muted */
+  --muted: oklch(0.94 0.01 200);
+  --muted-foreground: oklch(0.48 0.02 215);
+
+  /* Bordas e inputs */
+  --border: oklch(0.86 0.015 210);
+  --input: oklch(0.86 0.015 210);
+  --ring: oklch(0.42 0.07 200);
+
+  /* Destrutivo */
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.98 0.005 27);
+
+  /* Popover e sidebar */
+  --popover: oklch(0.995 0.004 106);
+  --popover-foreground: oklch(0.22 0.03 220);
+
+  /* Raio */
+  --radius: 0.375rem;
+
+  /* Mapa — painéis flutuantes */
+  --glass-bg: oklch(0.995 0.004 106 / 0.82);
+  --glass-border: oklch(0.86 0.015 210 / 0.5);
+}
+
+.dark {
+  --background: oklch(0.18 0.03 220);
+  --foreground: oklch(0.92 0.01 210);
+  --card: oklch(0.22 0.025 220);
+  --card-foreground: oklch(0.92 0.01 210);
+
+  --primary: oklch(0.72 0.09 195);
+  --primary-foreground: oklch(0.15 0.03 200);
+
+  --secondary: oklch(0.26 0.02 220);
+  --secondary-foreground: oklch(0.92 0.01 210);
+
+  --accent: oklch(0.68 0.16 45);
+  --accent-foreground: oklch(0.15 0.03 45);
+
+  --muted: oklch(0.26 0.02 220);
+  --muted-foreground: oklch(0.65 0.02 215);
+
+  --border: oklch(0.32 0.02 220);
+  --input: oklch(0.32 0.02 220);
+  --ring: oklch(0.72 0.09 195);
+
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.98 0.005 27);
+
+  --popover: oklch(0.22 0.025 220);
+  --popover-foreground: oklch(0.92 0.01 210);
+
+  --glass-bg: oklch(0.18 0.03 220 / 0.82);
+  --glass-border: oklch(0.32 0.02 220 / 0.5);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+
+  /* Escala de densidade — 5 níveis sequenciais */
+  --color-density-1: oklch(0.90 0.06 195);
+  --color-density-2: oklch(0.75 0.10 190);
+  --color-density-3: oklch(0.60 0.12 185);
+  --color-density-4: oklch(0.48 0.12 180);
+  --color-density-5: oklch(0.36 0.10 175);
+
+  --radius-sm: var(--radius);
+  --radius-md: calc(var(--radius) + 0.125rem);
+  --radius-lg: calc(var(--radius) + 0.25rem);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+}
+
+/* ── MapLibre overrides ─────────────────────── */
+.maplibregl-popup-content {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 0;
+  box-shadow: 0 4px 24px oklch(0 0 0 / 0.12);
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--glass-bg);
+}
+
+.maplibregl-popup-close-button {
+  color: var(--muted-foreground);
+  font-size: 18px;
+  padding: 4px 8px;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  background: oklch(1 0 0 / 0.6) !important;
+  backdrop-filter: blur(4px);
+}
