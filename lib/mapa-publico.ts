@@ -42,9 +42,9 @@ function celula100m(centerLat: number, centerLng: number): string {
 export const mockEscolas: PubEscola[] = [
   {
     id: 1,
-    slug: "em-prof-maria-alice",
-    nome: "E.M. Profª Maria Alice Borges Ghion",
-    apresentacao: "Escola municipal localizada próxima à Praia do Sonho. Participa do programa desde 2024.",
+    slug: "em-mapa-verde",
+    nome: "E.M. Mapa Verde",
+    apresentacao: "Escola fictícia de demonstração. Monitora um trecho de praia aberta.",
     municipio: "Itanhaém",
     uf: "SP",
     lat: -24.1875,
@@ -52,9 +52,9 @@ export const mockEscolas: PubEscola[] = [
   },
   {
     id: 2,
-    slug: "em-joao-batista",
-    nome: "E.M. João Batista Rodrigues",
-    apresentacao: "Escola de ensino fundamental no bairro Suarão, com acesso à praia homônima.",
+    slug: "em-mare-cheia",
+    nome: "E.M. Maré Cheia",
+    apresentacao: "Escola fictícia de demonstração. Monitora um trecho de praia com saídas quinzenais.",
     municipio: "Itanhaém",
     uf: "SP",
     lat: -24.1735,
@@ -62,9 +62,9 @@ export const mockEscolas: PubEscola[] = [
   },
   {
     id: 3,
-    slug: "ee-luiz-sergio",
-    nome: "E.E. Prof. Luiz Sérgio Claudino dos Santos",
-    apresentacao: "Escola estadual no centro de Itanhaém, monitora a praia central e o Rio Itanhaém.",
+    slug: "ee-costa-viva",
+    nome: "E.E. Costa Viva",
+    apresentacao: "Escola fictícia de demonstração. Monitora praia central e foz de rio.",
     municipio: "Itanhaém",
     uf: "SP",
     lat: -24.1830,
@@ -72,9 +72,9 @@ export const mockEscolas: PubEscola[] = [
   },
   {
     id: 4,
-    slug: "em-cibratel",
-    nome: "E.M. Cibratel",
-    apresentacao: "Escola municipal no Cibratel II, monitora a Praia do Cibratel.",
+    slug: "em-duna-alta",
+    nome: "E.M. Duna Alta",
+    apresentacao: "Escola fictícia de demonstração. Monitora resíduos e microplásticos.",
     municipio: "Itanhaém",
     uf: "SP",
     lat: -24.2005,
@@ -88,7 +88,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   // Praia do Sonho — 4 células
   {
     celula_geojson: celula100m(-24.1890, -46.8010),
-    escola_slug: "em-prof-maria-alice",
+    escola_slug: "em-mapa-verde",
     protocolo: "RES",
     mes: "2026-05-01",
     total_itens: 142,
@@ -97,7 +97,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1895, -46.7998),
-    escola_slug: "em-prof-maria-alice",
+    escola_slug: "em-mapa-verde",
     protocolo: "RES",
     mes: "2026-05-01",
     total_itens: 87,
@@ -106,7 +106,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1888, -46.8022),
-    escola_slug: "em-prof-maria-alice",
+    escola_slug: "em-mapa-verde",
     protocolo: "RES",
     mes: "2026-06-01",
     total_itens: 203,
@@ -115,7 +115,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1892, -46.8034),
-    escola_slug: "em-prof-maria-alice",
+    escola_slug: "em-mapa-verde",
     protocolo: "MIC",
     mes: "2026-06-01",
     total_itens: 312,
@@ -125,7 +125,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   // Praia do Suarão — 3 células
   {
     celula_geojson: celula100m(-24.1750, -46.7640),
-    escola_slug: "em-joao-batista",
+    escola_slug: "em-mare-cheia",
     protocolo: "RES",
     mes: "2026-04-01",
     total_itens: 56,
@@ -134,7 +134,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1755, -46.7628),
-    escola_slug: "em-joao-batista",
+    escola_slug: "em-mare-cheia",
     protocolo: "RES",
     mes: "2026-04-01",
     total_itens: 98,
@@ -143,7 +143,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1748, -46.7652),
-    escola_slug: "em-joao-batista",
+    escola_slug: "em-mare-cheia",
     protocolo: "RES",
     mes: "2026-05-01",
     total_itens: 175,
@@ -153,7 +153,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   // Praia do Centro — 3 células
   {
     celula_geojson: celula100m(-24.1835, -46.7880),
-    escola_slug: "ee-luiz-sergio",
+    escola_slug: "ee-costa-viva",
     protocolo: "RES",
     mes: "2026-05-01",
     total_itens: 221,
@@ -162,7 +162,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1840, -46.7868),
-    escola_slug: "ee-luiz-sergio",
+    escola_slug: "ee-costa-viva",
     protocolo: "RES",
     mes: "2026-05-01",
     total_itens: 134,
@@ -171,7 +171,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.1838, -46.7892),
-    escola_slug: "ee-luiz-sergio",
+    escola_slug: "ee-costa-viva",
     protocolo: "MIC",
     mes: "2026-06-01",
     total_itens: 189,
@@ -181,7 +181,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   // Praia do Cibratel — 2 células
   {
     celula_geojson: celula100m(-24.2010, -46.8215),
-    escola_slug: "em-cibratel",
+    escola_slug: "em-duna-alta",
     protocolo: "RES",
     mes: "2026-06-01",
     total_itens: 68,
@@ -190,7 +190,7 @@ export const mockGrade: PubObservacaoGrade[] = [
   },
   {
     celula_geojson: celula100m(-24.2015, -46.8228),
-    escola_slug: "em-cibratel",
+    escola_slug: "em-duna-alta",
     protocolo: "RES",
     mes: "2026-06-01",
     total_itens: 45,
@@ -203,28 +203,28 @@ export const mockGrade: PubObservacaoGrade[] = [
 
 export const mockIndicadoresEscola: PubIndicadorEscola[] = [
   {
-    escola_slug: "em-prof-maria-alice",
+    escola_slug: "em-mapa-verde",
     expedicoes: 4,
     extensao_total_m: 800,
     itens_catalogados: 744,
     registros_pontuais: 12,
   },
   {
-    escola_slug: "em-joao-batista",
+    escola_slug: "em-mare-cheia",
     expedicoes: 3,
     extensao_total_m: 600,
     itens_catalogados: 329,
     registros_pontuais: 5,
   },
   {
-    escola_slug: "ee-luiz-sergio",
+    escola_slug: "ee-costa-viva",
     expedicoes: 3,
     extensao_total_m: 450,
     itens_catalogados: 544,
     registros_pontuais: 8,
   },
   {
-    escola_slug: "em-cibratel",
+    escola_slug: "em-duna-alta",
     expedicoes: 2,
     extensao_total_m: 400,
     itens_catalogados: 113,

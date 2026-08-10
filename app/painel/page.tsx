@@ -163,7 +163,7 @@ export default function PainelEscolaPage() {
               <h1 className="text-xl font-bold tracking-tight">Painel Analítico da Escola</h1>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {escola?.nome || "E.M. Profª Maria Alice Borges Ghion"} · {escola?.municipio}
+              {escola?.nome || "E.M. Mapa Verde"} · {escola?.municipio}
             </p>
           </div>
 

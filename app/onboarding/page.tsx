@@ -156,7 +156,7 @@ export default function OnboardingPage() {
                   required
                   value={nomeEscola}
                   onChange={(e) => setNomeEscola(e.target.value)}
-                  placeholder="Ex: E.M. Profª Maria Alice Borges Ghion"
+                  placeholder="Ex: E.M. Mapa Verde"
                   className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
