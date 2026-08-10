@@ -8,7 +8,8 @@ interface EstadoContainerProps {
   mensagemVazia?: string;
   mensagemErro?: string;
   onTentarNovamente?: () => void;
-  children: React.ReactNode;
+  /** Opcional: os estados carregando, vazio e erro renderizam sozinhos, sem filho. */
+  children?: React.ReactNode;
 }
 
 /**

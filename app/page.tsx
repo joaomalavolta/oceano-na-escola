@@ -1,10 +1,13 @@
+"use client";
+
 import dynamic from "next/dynamic";
 
 /**
  * Home pública — Mapa SIG participativo em tela cheia.
  *
  * MapLibre exige o DOM, então o componente principal é carregado
- * dinamicamente sem SSR.
+ * dinamicamente sem SSR. A partir do Next 15, `ssr: false` só é aceito
+ * dentro de um Client Component — e aqui a página inteira é o mapa.
  */
 const MapaPublico = dynamic(
   () =>

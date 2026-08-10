@@ -282,7 +282,7 @@ export default function TranscreverPage({ params }: { params: Promise<{ id: stri
           <div className="bg-card border border-border rounded-md shadow-2xs overflow-hidden">
             <div className="p-3 bg-muted/60 border-b border-border flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Protocolo RES — Contagem de Resíduos (> 2,5 cm)
+                Protocolo RES — Contagem de Resíduos (&gt; 2,5 cm)
               </span>
               <span className="text-[11px] text-muted-foreground hidden md:inline">
                 Navegação: <strong>Tab / Enter / Setas</strong> alternam entre células

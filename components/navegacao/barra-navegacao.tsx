@@ -18,6 +18,16 @@ import {
   X,
   Waves
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+/** Só o link em destaque carrega `destaque`; sem o tipo, a lista do
+ *  visitante e a do autenticado inferem shapes diferentes. */
+type NavLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  destaque?: boolean;
+};
 
 export function BarraNavegacao() {
   const pathname = usePathname();
@@ -36,14 +46,14 @@ export function BarraNavegacao() {
     window.location.href = "/";
   };
 
-  const navLinksVisitante = [
+  const navLinksVisitante: NavLink[] = [
     { href: "/", label: "Mapa", icon: Map },
     { href: "/escola/em-mapa-verde", label: "Escolas", icon: School },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
     { href: "/painel", label: "Painel", icon: BarChart3 },
   ];
 
-  const navLinksAutenticado = [
+  const navLinksAutenticado: NavLink[] = [
     { href: "/painel", label: "Painel", icon: BarChart3 },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
     { href: "/expedicoes/nova", label: "+ Transcrever", icon: PlusCircle, destaque: true },

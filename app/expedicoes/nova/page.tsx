@@ -133,7 +133,7 @@ export default function NovaExpedicaoPage() {
                   onChange={(e) => setProtocoloCodigo(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
-                  <option value="RES">RES — Resíduos Costeiros (Macro > 2.5 cm)</option>
+                  <option value="RES">RES — Resíduos Costeiros (Macro &gt; 2.5 cm)</option>
                   <option value="MIC">MIC — Microplásticos (1 mm – 5 mm)</option>
                 </select>
               </div>

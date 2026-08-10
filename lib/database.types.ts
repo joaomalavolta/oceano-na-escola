@@ -62,16 +62,18 @@ export interface IndicadoresGerais {
 }
 
 /**
- * Namespace para uso futuro com Supabase CLI.
+ * Forma reduzida do tipo que o Supabase CLI gera.
+ * Escrita como interface, e não namespace, porque `public` é palavra
+ * reservada em modo estrito — e todo módulo ES é modo estrito.
  * O gerador criará Database["public"]["Views"] com essas mesmas shapes.
  */
-export namespace Database {
-  export namespace public {
-    export interface Views {
+export interface Database {
+  public: {
+    Views: {
       pub_escola: { Row: PubEscola };
       pub_observacao_grade: { Row: PubObservacaoGrade };
       pub_indicador_escola: { Row: PubIndicadorEscola };
       pub_expedicao: { Row: PubExpedicao };
-    }
-  }
+    };
+  };
 }
