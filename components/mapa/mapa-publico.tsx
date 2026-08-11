@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import MapGL, {
   Source,
   Layer,
@@ -16,11 +16,16 @@ import { Loader2, AlertTriangle, SearchX, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 import {
+  carregarDadosPublicos,
+  municipiosDe,
+  protocolosDe,
+  type DadosPublicos,
+} from "@/lib/dados-publicos";
+import {
   mockEscolas,
   mockGrade,
+  mockIndicadoresEscola,
   mockIndicadoresGerais,
-  municipiosDisponiveis,
-  protocolosDisponiveis,
 } from "@/lib/mapa-publico";
 import type { PubObservacaoGrade } from "@/lib/database.types";
 import { BarraSuperior } from "./barra-superior";
@@ -91,6 +96,27 @@ export function MapaPublico() {
   const [erroTiles, setErroTiles] = useState(false);
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null);
 
+  // Dados públicos. Partem do mock e são substituídos pelo banco assim
+  // que a consulta volta, para o mapa nunca renderizar vazio.
+  const [dados, setDados] = useState<DadosPublicos>({
+    escolas: mockEscolas,
+    grade: mockGrade,
+    indicadoresEscola: mockIndicadoresEscola,
+    indicadoresGerais: mockIndicadoresGerais,
+    origem: "mock",
+    erro: null,
+  });
+
+  useEffect(() => {
+    let ativo = true;
+    carregarDadosPublicos().then((d) => {
+      if (ativo) setDados(d);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   // Camadas
   const [camadas, setCamadas] = useState<CamadasState>({
     residuos: true,
@@ -123,9 +149,9 @@ export function MapaPublico() {
   // ── Dados filtrados ─────────────────────────────────────────────
 
   const gradeFiltrada = useMemo(() => {
-    return mockGrade.filter((g) => {
+    return dados.grade.filter((g) => {
       if (filtros.municipio) {
-        const escola = mockEscolas.find((e) => e.slug === g.escola_slug);
+        const escola = dados.escolas.find((e) => e.slug === g.escola_slug);
         if (escola?.municipio !== filtros.municipio) return false;
       }
       if (filtros.escola && g.escola_slug !== filtros.escola) return false;
@@ -139,15 +165,15 @@ export function MapaPublico() {
 
       return true;
     });
-  }, [filtros, camadas.residuos, camadas.microplasticos]);
+  }, [dados.grade, dados.escolas, filtros, camadas.residuos, camadas.microplasticos]);
 
   const escolasFiltradas = useMemo(() => {
-    return mockEscolas.filter((e) => {
+    return dados.escolas.filter((e) => {
       if (filtros.municipio && e.municipio !== filtros.municipio) return false;
       if (filtros.escola && e.slug !== filtros.escola) return false;
       return true;
     });
-  }, [filtros.municipio, filtros.escola]);
+  }, [dados.escolas, filtros.municipio, filtros.escola]);
 
   // ── GeoJSON para as células ────────────────────────────────────
 
@@ -195,7 +221,7 @@ export function MapaPublico() {
       const celula = gradeFiltrada[props.idx];
       if (!celula) return;
 
-      const escola = mockEscolas.find((es) => es.slug === celula.escola_slug);
+      const escola = dados.escolas.find((es) => es.slug === celula.escola_slug);
 
       // Centróide do polígono
       const geom = JSON.parse(celula.celula_geojson);
@@ -231,9 +257,12 @@ export function MapaPublico() {
 
   // ── Listas para filtros ────────────────────────────────────────
 
-  const listaMunicipios = municipiosDisponiveis();
-  const listaProtocolos = protocolosDisponiveis();
-  const listaEscolas = mockEscolas.map((e) => ({ slug: e.slug, nome: e.nome }));
+  const listaMunicipios = useMemo(() => municipiosDe(dados.escolas), [dados.escolas]);
+  const listaProtocolos = useMemo(() => protocolosDe(dados.grade), [dados.grade]);
+  const listaEscolas = useMemo(
+    () => dados.escolas.map((e) => ({ slug: e.slug, nome: e.nome })),
+    [dados.escolas]
+  );
 
   // Verifica se filtro ativo não tem resultados
   const filtroAtivo =
@@ -352,7 +381,7 @@ export function MapaPublico() {
       </div>
 
       {/* Indicadores no rodapé */}
-      <FaixaIndicadores dados={mockIndicadoresGerais} />
+      <FaixaIndicadores dados={dados.indicadoresGerais} />
 
       {/* Mobile: sheet + nav */}
       <MobileSheet

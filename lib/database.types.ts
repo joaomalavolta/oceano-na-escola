@@ -24,6 +24,9 @@ export interface PubObservacaoGrade {
   protocolo: string;
   /** Primeiro dia do mês da expedição */
   mes: string;
+  /** Quantas unidades amostrais sustentam a célula. A view só publica
+   *  célula a partir de três — abaixo disso ela seria uma coordenada. */
+  unidades_amostrais: number;
   total_itens: number;
   area_amostrada_m2: number;
   /** itens/m² — null quando a área é zero */
