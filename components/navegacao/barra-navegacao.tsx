@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSessao } from "@/lib/sessao";
@@ -8,13 +8,10 @@ import {
   Map, 
   School, 
   Compass, 
-  FileEdit, 
-  CheckSquare, 
   BarChart3, 
   LogIn, 
   LogOut, 
   PlusCircle, 
-  User, 
   Menu, 
   X,
   Waves
@@ -33,14 +30,17 @@ type NavLink = {
 export function BarraNavegacao() {
   const pathname = usePathname();
   const { session, sair } = useSessao();
-  const [menuAberto, setMenuAberto] = useState<boolean>(false);
+
+  // O menu guarda em qual página foi aberto. Ao navegar, o caminho muda
+  // e ele fecha sozinho — sem effect, que só criaria um render a mais.
+  const [menu, setMenu] = useState<{ aberto: boolean; em: string }>({
+    aberto: false,
+    em: pathname,
+  });
+  const menuAberto = menu.aberto && menu.em === pathname;
+  const setMenuAberto = (aberto: boolean) => setMenu({ aberto, em: pathname });
 
   const autenticado = session !== null;
-
-  // Fecha o menu ao trocar de página, senão ele fica aberto por cima.
-  useEffect(() => {
-    setMenuAberto(false);
-  }, [pathname]);
 
   const handleLogout = async () => {
     await sair();

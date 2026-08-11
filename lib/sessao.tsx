@@ -91,7 +91,8 @@ async function garantirPerfil(user: User): Promise<Perfil | null> {
 export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  // Sem configuração não há o que carregar: já nasce resolvido.
+  const [carregando, setCarregando] = useState(supabaseConfigurado);
 
   const sincronizarPerfil = useCallback(async (s: Session | null) => {
     if (!s?.user) {
@@ -102,10 +103,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!supabaseConfigurado) {
-      setCarregando(false);
-      return;
-    }
+    if (!supabaseConfigurado) return;
 
     let ativo = true;
 
