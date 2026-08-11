@@ -1,308 +1,433 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
-import { Compass, Calendar, Clock, MapPin, Users, CloudRain, Wind, Waves, ArrowRight } from "lucide-react";
-import { getLocalStorageData, setLocalStorageData, MOCK_EXPEDICOES, ExpedicaoDetalhada } from "@/lib/dados-mock";
+import {
+  Compass,
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  CloudRain,
+  Wind,
+  Waves,
+  AlertTriangle,
+  Route,
+} from "lucide-react";
 
-export default function NovaExpedicaoPage() {
+import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
+import { RotaProtegida } from "@/components/auth/rota-protegida";
+import { EstadoContainer } from "@/components/ui/estado-container";
+import {
+  listarEscolasDoProfessor,
+  listarTurmas,
+  listarTerritorios,
+  criarExpedicao,
+  type EscolaDoProfessor,
+  type TurmaDisponivel,
+  type TerritorioDisponivel,
+} from "@/lib/cadastro-expedicao";
+
+const MARES = ["", "baixamar", "vazante", "enchente", "preamar"];
+const CHUVA = ["", "nao", "sim", "nao_sei"];
+
+const rotulo = "block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1";
+const campo =
+  "w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring";
+
+function NovaExpedicaoConteudo() {
   const router = useRouter();
 
-  const [titulo, setTitulo] = useState("Expedição de Monitoramento Costeiro");
-  const [turmaNome, setTurmaNome] = useState("7º Ano A");
+  const [escolas, setEscolas] = useState<EscolaDoProfessor[] | null>(null);
+  const [turmas, setTurmas] = useState<TurmaDisponivel[]>([]);
+  const [territorios, setTerritorios] = useState<TerritorioDisponivel[]>([]);
+
+  const [escolaId, setEscolaId] = useState<number | null>(null);
+  const [turmaIds, setTurmaIds] = useState<number[]>([]);
+  const [territorioId, setTerritorioId] = useState<number | "">("");
+  const [titulo, setTitulo] = useState("");
   const [dataCampo, setDataCampo] = useState(new Date().toISOString().split("T")[0]);
   const [horaInicio, setHoraInicio] = useState("08:30");
   const [horaFim, setHoraFim] = useState("11:00");
-  const [praia, setPraia] = useState("Praia do Sonho");
-  const [nMapeadores, setNMapeadores] = useState(25);
+  const [extensao, setExtensao] = useState<number | "">("");
+  const [nMapeadores, setNMapeadores] = useState<number | "">("");
   const [nEquipes, setNEquipes] = useState(2);
-  const [mare, setMare] = useState("Baixa (0.3m)");
-  const [chuva24h, setChuva24h] = useState("Não");
-  const [vento, setVento] = useState("Fraco (SE)");
-  const [protocoloCodigo, setProtocoloCodigo] = useState("RES");
+  const [mare, setMare] = useState("");
+  const [chuva24h, setChuva24h] = useState("");
+  const [vento, setVento] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+
   const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    let ativo = true;
+    listarEscolasDoProfessor().then((lista) => {
+      if (!ativo) return;
+      setEscolas(lista);
+      if (lista.length > 0) setEscolaId(lista[0].id);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const escola = escolas?.find((e) => e.id === escolaId) ?? null;
+
+  useEffect(() => {
+    if (!escola) return;
+    let ativo = true;
+    listarTurmas(escola.id).then((t) => ativo && setTurmas(t));
+    listarTerritorios(escola.municipio_id).then((t) => ativo && setTerritorios(t));
+    return () => {
+      ativo = false;
+    };
+  }, [escola]);
+
+  if (!escolas) {
+    return (
+      <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+        <EstadoContainer estado="carregando" />
+      </main>
+    );
+  }
+
+  if (escolas.length === 0) {
+    return (
+      <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+        <EstadoContainer
+          estado="vazio"
+          mensagemVazia="A sua conta ainda não está vinculada a nenhuma escola. Cadastre a escola antes de abrir uma saída de campo."
+        />
+      </main>
+    );
+  }
+
+  const alternarTurma = (id: number) =>
+    setTurmaIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErro("");
+
+    if (!escolaId) return setErro("Escolha a escola.");
+    if (turmaIds.length === 0) return setErro("Selecione pelo menos uma turma.");
+
     setSalvando(true);
+    const { id, erro: falha } = await criarExpedicao({
+      escola_id: escolaId,
+      turma_ids: turmaIds,
+      territorio_id: territorioId === "" ? null : Number(territorioId),
+      titulo: titulo.trim(),
+      data_campo: dataCampo,
+      hora_inicio: horaInicio,
+      hora_fim: horaFim,
+      extensao_m: extensao === "" ? null : Number(extensao),
+      n_mapeadores: nMapeadores === "" ? null : Number(nMapeadores),
+      n_equipes: nEquipes,
+      mare,
+      chuva_24h: chuva24h,
+      vento: vento.trim(),
+      observacoes: observacoes.trim(),
+    });
+    setSalvando(false);
 
-    setTimeout(() => {
-      const expedicoes = getLocalStorageData<ExpedicaoDetalhada[]>("expedicoes", MOCK_EXPEDICOES);
-      const novoId = Date.now();
-      const proximoNumero = expedicoes.length + 1;
-
-      // Gera equipes
-      const equipes = Array.from({ length: nEquipes }, (_, i) => ({
-        id: i + 1,
-        nome: `Equipe ${String.fromCharCode(65 + i)}`,
-        comprimento_m: 50,
-        largura_m: 10,
-        area_m2: 500,
-      }));
-
-      const novaExpedicao: ExpedicaoDetalhada = {
-        id: novoId,
-        numero: proximoNumero,
-        titulo: titulo || `Expedição #${proximoNumero} — ${praia}`,
-        escola_id: 1,
-        escola_slug: "em-mapa-verde",
-        escola_nome: "E.M. Mapa Verde",
-        turma_id: 1,
-        turma_nome: turmaNome,
-        protocolo_codigo: protocoloCodigo,
-        data_campo: dataCampo,
-        hora_inicio: horaInicio,
-        hora_fim: horaFim,
-        praia,
-        n_mapeadores: nMapeadores,
-        mare,
-        chuva_24h: chuva24h,
-        vento,
-        status: "rascunho",
-        equipes,
-        contagens: {},
-        criado_em: new Date().toISOString().split("T")[0],
-      };
-
-      setLocalStorageData("expedicoes", [novaExpedicao, ...expedicoes]);
-      setSalvando(false);
-      router.push(`/expedicoes/${novoId}/transcrever`);
-    }, 600);
+    if (falha || !id) return setErro(falha ?? "Não foi possível abrir a expedição.");
+    router.push(`/expedicoes/${id}/transcrever`);
   };
 
   return (
+    <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+          <Compass className="w-5 h-5 text-primary" />
+          Abrir nova saída de campo
+        </h1>
+        <p className="text-xs text-muted-foreground mt-1">
+          A ficha impressa é o registro primário. Aqui entra o cabeçalho da expedição;
+          a contagem vem depois, na transcrição.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Identificação */}
+        <section className="bg-card border border-border rounded-md p-5 space-y-4 shadow-2xs">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
+            1. Identificação
+          </h2>
+
+          {escolas.length > 1 && (
+            <div>
+              <label className={rotulo}>Escola</label>
+              <select
+                value={escolaId ?? ""}
+                onChange={(e) => {
+                  setEscolaId(Number(e.target.value));
+                  setTurmaIds([]);
+                  setTerritorioId("");
+                }}
+                className={campo}
+              >
+                {escolas.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className={rotulo}>Título da expedição</label>
+            <input
+              type="text"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Mapeamento da faixa norte"
+              className={campo}
+            />
+          </div>
+
+          <div>
+            <label className={rotulo}>
+              Turmas em campo{" "}
+              <span className="normal-case font-normal text-[10px]">
+                (uma expedição pode reunir mais de uma)
+              </span>
+            </label>
+            {turmas.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Esta escola ainda não tem turmas cadastradas.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {turmas.map((t) => {
+                  const marcada = turmaIds.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => alternarTurma(t.id)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-sm border transition-colors ${
+                        marcada
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-input text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {t.nome} · {t.ano_letivo}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Data e local */}
+        <section className="bg-card border border-border rounded-md p-5 space-y-4 shadow-2xs">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
+            2. Data e local
+          </h2>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={rotulo}>
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Data de campo
+              </label>
+              <input
+                type="date"
+                required
+                value={dataCampo}
+                onChange={(e) => setDataCampo(e.target.value)}
+                className={campo}
+              />
+            </div>
+            <div>
+              <label className={rotulo}>
+                <Clock className="w-3 h-3 inline mr-1" />
+                Início
+              </label>
+              <input
+                type="time"
+                value={horaInicio}
+                onChange={(e) => setHoraInicio(e.target.value)}
+                className={campo}
+              />
+            </div>
+            <div>
+              <label className={rotulo}>
+                <Clock className="w-3 h-3 inline mr-1" />
+                Término
+              </label>
+              <input
+                type="time"
+                value={horaFim}
+                onChange={(e) => setHoraFim(e.target.value)}
+                className={campo}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={rotulo}>
+                <MapPin className="w-3 h-3 inline mr-1" />
+                Território
+              </label>
+              <select
+                value={territorioId}
+                onChange={(e) => setTerritorioId(e.target.value === "" ? "" : Number(e.target.value))}
+                className={campo}
+              >
+                <option value="">Não informado</option>
+                {territorios.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nome} ({t.tipo})
+                  </option>
+                ))}
+              </select>
+              {territorios.length === 0 && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Nenhum território cadastrado neste município ainda.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className={rotulo}>
+                <Route className="w-3 h-3 inline mr-1" />
+                Extensão percorrida (m)
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={extensao}
+                onChange={(e) => setExtensao(e.target.value === "" ? "" : Number(e.target.value))}
+                placeholder="200"
+                className={`${campo} tabular-nums`}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Equipes e condições */}
+        <section className="bg-card border border-border rounded-md p-5 space-y-4 shadow-2xs">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
+            3. Mapeadores, equipes e condições
+          </h2>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={rotulo}>
+                <Users className="w-3 h-3 inline mr-1" />
+                Nº de mapeadores
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={nMapeadores}
+                onChange={(e) => setNMapeadores(e.target.value === "" ? "" : Number(e.target.value))}
+                placeholder="25"
+                className={`${campo} tabular-nums`}
+              />
+            </div>
+            <div>
+              <label className={rotulo}>Nº de equipes em campo</label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={nEquipes}
+                onChange={(e) => setNEquipes(Math.max(1, Number(e.target.value) || 1))}
+                className={`${campo} tabular-nums`}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Cada equipe vira uma coluna na ficha de transcrição.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className={rotulo}>
+                <Waves className="w-3 h-3 inline mr-1" />
+                Maré
+              </label>
+              <select value={mare} onChange={(e) => setMare(e.target.value)} className={campo}>
+                {MARES.map((m) => (
+                  <option key={m} value={m}>
+                    {m === "" ? "Não informado" : m}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={rotulo}>
+                <CloudRain className="w-3 h-3 inline mr-1" />
+                Chuva nas últimas 24h
+              </label>
+              <select value={chuva24h} onChange={(e) => setChuva24h(e.target.value)} className={campo}>
+                {CHUVA.map((c) => (
+                  <option key={c} value={c}>
+                    {c === "" ? "Não informado" : c === "nao_sei" ? "não sei" : c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={rotulo}>
+                <Wind className="w-3 h-3 inline mr-1" />
+                Vento
+              </label>
+              <input
+                type="text"
+                value={vento}
+                onChange={(e) => setVento(e.target.value)}
+                placeholder="Fraco, SE"
+                className={campo}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={rotulo}>Observações da saída</label>
+            <textarea
+              rows={2}
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="O que a tabela não captura."
+              className={campo}
+            />
+          </div>
+        </section>
+
+        {erro && (
+          <div className="p-3 rounded-sm text-xs bg-destructive/10 border border-destructive/30 text-destructive flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{erro}</span>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={salvando}
+          className="w-full py-3 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground rounded-sm disabled:opacity-50 hover:opacity-90 transition-opacity"
+        >
+          {salvando ? "Abrindo…" : "Abrir expedição e transcrever a ficha"}
+        </button>
+      </form>
+    </main>
+  );
+}
+
+export default function NovaExpedicaoPage() {
+  return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <BarraNavegacao />
-
-      <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
-        <div className="mb-6">
-          <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <Compass className="w-5 h-5 text-primary" />
-            <span>Abrir Nova Saída de Campo</span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Preencha as informações básicas do território e das equipes antes de transcrever a ficha física.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-md p-6 shadow-sm space-y-6">
-          {/* Identificação Principal */}
-          <div className="space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-              1. Identificação da Atividade
-            </h2>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                Título ou Nome da Expedição
-              </label>
-              <input
-                type="text"
-                required
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                placeholder="Ex: Expedição Outono — Praia do Sonho"
-                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                  Turma Responsável
-                </label>
-                <select
-                  value={turmaNome}
-                  onChange={(e) => setTurmaNome(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="7º Ano A">7º Ano A</option>
-                  <option value="8º Ano B">8º Ano B</option>
-                  <option value="9º Ano A">9º Ano A</option>
-                  <option value="1º Ano EM">1º Ano EM</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                  Protocolo Científico
-                </label>
-                <select
-                  value={protocoloCodigo}
-                  onChange={(e) => setProtocoloCodigo(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="RES">RES — Resíduos Costeiros (Macro &gt; 2.5 cm)</option>
-                  <option value="MIC">MIC — Microplásticos (1 mm – 5 mm)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Data e Local */}
-          <div className="space-y-4 pt-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-              2. Data e Localização
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Data de Campo</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={dataCampo}
-                  onChange={(e) => setDataCampo(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Horário Início</span>
-                </label>
-                <input
-                  type="time"
-                  value={horaInicio}
-                  onChange={(e) => setHoraInicio(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Horário Término</span>
-                </label>
-                <input
-                  type="time"
-                  value={horaFim}
-                  onChange={(e) => setHoraFim(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Praia ou Trecho de Monitoramento</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={praia}
-                onChange={(e) => setPraia(e.target.value)}
-                placeholder="Ex: Praia do Sonho, Suarão, Cibratel"
-                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-          </div>
-
-          {/* Condições Ambientais e Equipes */}
-          <div className="space-y-4 pt-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
-              3. Mapeadores, Equipes e Condições
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Nº de Alunos Mapeadores</span>
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={nMapeadores}
-                  onChange={(e) => setNMapeadores(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                  Nº de Equipes em Campo
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={6}
-                  value={nEquipes}
-                  onChange={(e) => setNEquipes(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <Waves className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Maré</span>
-                </label>
-                <select
-                  value={mare}
-                  onChange={(e) => setMare(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="Baixa (0.3m)">Baixa (0.3m)</option>
-                  <option value="Média (0.7m)">Média (0.7m)</option>
-                  <option value="Alta (1.2m)">Alta (1.2m)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <CloudRain className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Chuva nas últimas 24h</span>
-                </label>
-                <select
-                  value={chuva24h}
-                  onChange={(e) => setChuva24h(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="Não">Não</option>
-                  <option value="Sim (Fraca)">Sim (Fraca)</option>
-                  <option value="Sim (Forte/Tempestade)">Sim (Forte)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                  <Wind className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Vento</span>
-                </label>
-                <select
-                  value={vento}
-                  onChange={(e) => setVento(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="Fraco (SE)">Fraco (SE)</option>
-                  <option value="Moderado (S)">Moderado (S)</option>
-                  <option value="Forte (E)">Forte (E)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-border">
-            <button
-              type="submit"
-              disabled={salvando}
-              className="px-6 py-2.5 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground hover:opacity-90 rounded-sm transition-opacity flex items-center gap-2"
-            >
-              <span>{salvando ? "Criando Expedição…" : "Avançar para Transcrição de Ficha"}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
-      </main>
+      <RotaProtegida>
+        <NovaExpedicaoConteudo />
+      </RotaProtegida>
     </div>
   );
 }
