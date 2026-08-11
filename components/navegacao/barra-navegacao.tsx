@@ -49,7 +49,7 @@ export function BarraNavegacao() {
 
   const navLinksVisitante: NavLink[] = [
     { href: "/", label: "Mapa", icon: Map },
-    { href: "/escola/em-mapa-verde", label: "Escolas", icon: School },
+    { href: "/escolas", label: "Escolas", icon: School },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
     { href: "/painel", label: "Painel", icon: BarChart3 },
   ];
@@ -58,7 +58,7 @@ export function BarraNavegacao() {
     { href: "/painel", label: "Painel", icon: BarChart3 },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
     { href: "/expedicoes/nova", label: "+ Transcrever", icon: PlusCircle, destaque: true },
-    { href: "/escola/em-mapa-verde", label: "Minha Escola", icon: School },
+    { href: "/escolas", label: "Escolas", icon: School },
   ];
 
   const links = autenticado ? navLinksAutenticado : navLinksVisitante;

@@ -25,8 +25,12 @@ export interface ExpedicaoResumo {
   extensao_m: number | null;
   status: string;
   escola_id: number;
+  escola_nome: string | null;
   turma: string | null;
   territorio: string | null;
+  n_mapeadores: number | null;
+  /** Protocolos das unidades amostrais desta expedição. */
+  protocolos: string[];
   total_itens: number;
 }
 
@@ -94,8 +98,11 @@ export async function carregarPainel(): Promise<PainelEscola> {
       supabase.from("escola").select("id, nome, slug, municipio:municipio_id (nome, uf)"),
       supabase
         .from("expedicao")
+        // A string do select precisa ser literal: o supabase-js a analisa
+        // no nível de tipo, e concatenação em runtime ele não lê — o
+        // resultado degrada para GenericStringError.
         .select(
-          "id, numero, titulo, data_campo, extensao_m, status, escola_id, turma:turma_id (nome), territorio:territorio_id (nome)"
+          "id, numero, titulo, data_campo, extensao_m, status, escola_id, n_mapeadores, escola:escola_id (nome), turma:turma_id (nome), territorio:territorio_id (nome)"
         )
         .order("data_campo", { ascending: false }),
       // Área vem daqui, uma linha por unidade. Somá-la junto da contagem
@@ -188,6 +195,14 @@ export async function carregarPainel(): Promise<PainelEscola> {
       else porItem.set(item.codigo, { ...item, quantidade: qtd });
     }
 
+    // Protocolos por expedição, a partir das unidades amostrais dela.
+    const protocolosDaExpedicao = new Map<number, Set<string>>();
+    for (const u of unidades) {
+      const conj = protocolosDaExpedicao.get(u.expedicao_id) ?? new Set<string>();
+      if (u.protocolo !== "—") conj.add(u.protocolo);
+      protocolosDaExpedicao.set(u.expedicao_id, conj);
+    }
+
     const expedicoes: ExpedicaoResumo[] = (expedicoesRes.data ?? []).map((x) => ({
       id: num(x.id),
       numero: num(x.numero),
@@ -196,8 +211,11 @@ export async function carregarPainel(): Promise<PainelEscola> {
       extensao_m: x.extensao_m === null ? null : num(x.extensao_m),
       status: String(x.status),
       escola_id: num(x.escola_id),
+      escola_nome: primeiro(x.escola as { nome: string } | { nome: string }[])?.nome ?? null,
       turma: primeiro(x.turma as { nome: string } | { nome: string }[])?.nome ?? null,
       territorio: primeiro(x.territorio as { nome: string } | { nome: string }[])?.nome ?? null,
+      n_mapeadores: x.n_mapeadores === null ? null : num(x.n_mapeadores),
+      protocolos: [...(protocolosDaExpedicao.get(num(x.id)) ?? [])].sort(),
       total_itens: porExpedicao.get(num(x.id)) ?? 0,
     }));
 
