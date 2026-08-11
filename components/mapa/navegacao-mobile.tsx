@@ -1,18 +1,21 @@
 "use client";
 
-import { Map, GraduationCap, Ship, Info } from "lucide-react";
+import { Map, GraduationCap, Ship, LogIn } from "lucide-react";
 import Link from "next/link";
 
 /**
  * Barra de navegação inferior fixa — visível apenas em mobile.
  * Desktop usa a barra superior.
+ *
+ * Espelha a barra superior: só rotas que existem. '/sobre' saiu junto,
+ * até a página institucional ser escrita.
  */
 export function NavegacaoMobile() {
   const itens = [
     { href: "/", icon: Map, label: "Mapa" },
     { href: "/escolas", icon: GraduationCap, label: "Escolas" },
     { href: "/expedicoes", icon: Ship, label: "Expedições" },
-    { href: "/sobre", icon: Info, label: "Sobre" },
+    { href: "/entrar", icon: LogIn, label: "Entrar" },
   ] as const;
 
   return (

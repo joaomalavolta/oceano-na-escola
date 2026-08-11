@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import { Waves, LogIn } from 'lucide-react'
 
+// Só rotas que existem. '/mapa' apontava para lugar nenhum: o mapa é a
+// home. '/sobre' sai até a página institucional ser escrita — link que
+// devolve 404 é pior que link ausente.
 const navLinks = [
-  { href: '/mapa', label: 'Mapa' },
+  { href: '/', label: 'Mapa' },
   { href: '/escolas', label: 'Escolas' },
   { href: '/expedicoes', label: 'Expedições' },
-  { href: '/sobre', label: 'Sobre' },
 ] as const
 
 export function BarraSuperior() {
