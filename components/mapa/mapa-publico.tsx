@@ -26,6 +26,8 @@ import {
   mockGrade,
   mockIndicadoresEscola,
   mockIndicadoresGerais,
+  hexDensidade,
+  PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
 import type { PubObservacaoGrade } from "@/lib/database.types";
 import { BarraSuperior } from "./barra-superior";
@@ -64,18 +66,6 @@ const MAP_STYLE: StyleSpecification = {
     },
   ],
 };
-
-// ── Cores de densidade para MapLibre fill-color interpolation ────────
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used inside useMemo below
-function densidadeParaHex(d: number): string {
-  // Mapeamento dos 5 níveis para hex (para uso no GeoJSON properties)
-  if (d < 0.1) return "#b4d7d5";
-  if (d < 0.2) return "#7bbcb4";
-  if (d < 0.3) return "#4a9e8f";
-  if (d < 0.5) return "#2d7d72";
-  return "#1a5c55";
-}
 
 // ── Tipos internos ──────────────────────────────────────────────────
 
@@ -189,7 +179,7 @@ export function MapaPublico() {
           properties: {
             idx: i,
             densidade: g.densidade_itens_m2 ?? 0,
-            cor: densidadeParaHex(g.densidade_itens_m2 ?? 0),
+            cor: hexDensidade(g.densidade_itens_m2, g.protocolo),
             totalItens: g.total_itens,
             areaAmostrada: g.area_amostrada_m2,
             mes: g.mes,
@@ -238,7 +228,7 @@ export function MapaPublico() {
         escolaNome: escola?.nome ?? "Escola não identificada",
       });
     },
-    [gradeFiltrada]
+    [gradeFiltrada, dados.escolas]
   );
 
   // ── Cursor interativo na camada ───────────────────────────────
@@ -256,6 +246,15 @@ export function MapaPublico() {
   }, []);
 
   // ── Listas para filtros ────────────────────────────────────────
+
+  // Protocolo que a legenda deve descrever. O filtro manda; sem ele,
+  // vale a camada ligada. Com as duas ligadas não há escala honesta que
+  // sirva para ambas, e a de resíduos é o padrão.
+  const protocoloExibido = useMemo(() => {
+    if (filtros.protocolo) return filtros.protocolo;
+    if (camadas.microplasticos && !camadas.residuos) return "MIC";
+    return PROTOCOLO_PADRAO;
+  }, [filtros.protocolo, camadas.microplasticos, camadas.residuos]);
 
   const listaMunicipios = useMemo(() => municipiosDe(dados.escolas), [dados.escolas]);
   const listaProtocolos = useMemo(() => protocolosDe(dados.grade), [dados.grade]);
@@ -377,7 +376,7 @@ export function MapaPublico() {
 
       {/* Desktop: legenda */}
       <div className="hidden md:block">
-        <LegendaDensidade />
+        <LegendaDensidade protocolo={protocoloExibido} />
       </div>
 
       {/* Indicadores no rodapé */}

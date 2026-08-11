@@ -259,23 +259,79 @@ export const mockIndicadoresGerais: IndicadoresGerais = {
   ),
 };
 
-// ── Níveis de densidade para a legenda (protocolo RES) ──────────────
+// ── Escalas de densidade ────────────────────────────────────────────
+//
+// Cada protocolo tem a sua. Resíduos conta item por trecho de 100 m²;
+// microplástico conta partícula por quadrat de 0,25 m². As densidades
+// resultantes diferem em três ordens de grandeza — no piloto, 0,09 a
+// 0,44 itens/m² no resíduo contra 152 e 248 no microplástico. Uma
+// escala só achatava todo o microplástico na faixa máxima, e a legenda
+// anunciava "> 0,5" para uma célula de 248.
+//
+// A rampa de cor é a mesma nos dois: ela significa "pouco a muito
+// dentro deste protocolo", nunca uma comparação entre protocolos.
 
-export const NIVEIS_DENSIDADE = [
-  { min: 0, max: 0.1, label: "< 0,1", cor: "var(--color-density-1)" },
-  { min: 0.1, max: 0.2, label: "0,1 – 0,2", cor: "var(--color-density-2)" },
-  { min: 0.2, max: 0.3, label: "0,2 – 0,3", cor: "var(--color-density-3)" },
-  { min: 0.3, max: 0.5, label: "0,3 – 0,5", cor: "var(--color-density-4)" },
-  { min: 0.5, max: Infinity, label: "> 0,5", cor: "var(--color-density-5)" },
+export interface FaixaDensidade {
+  /** Limite superior, exclusivo. Infinity na última faixa. */
+  max: number;
+  label: string;
+  /** Variável CSS, para a legenda. */
+  cor: string;
+  /** Hex literal, porque MapLibre não resolve variável CSS. */
+  hex: string;
+}
+
+const RAMPA = [
+  { cor: "var(--color-density-1)", hex: "#b4d7d5" },
+  { cor: "var(--color-density-2)", hex: "#7bbcb4" },
+  { cor: "var(--color-density-3)", hex: "#4a9e8f" },
+  { cor: "var(--color-density-4)", hex: "#2d7d72" },
+  { cor: "var(--color-density-5)", hex: "#1a5c55" },
 ] as const;
 
-/** Retorna a cor CSS para uma dada densidade em itens/m² */
-export function corDensidade(d: number | null): string {
-  if (d === null || d === 0) return "var(--color-density-1)";
-  for (const nivel of NIVEIS_DENSIDADE) {
-    if (d < nivel.max) return nivel.cor;
-  }
-  return NIVEIS_DENSIDADE[NIVEIS_DENSIDADE.length - 1].cor;
+function faixas(limites: [number, string][]): FaixaDensidade[] {
+  return limites.map(([max, label], i) => ({ max, label, ...RAMPA[i] }));
+}
+
+export const ESCALAS_DENSIDADE: Record<string, FaixaDensidade[]> = {
+  // Resíduos costeiros — trecho de 50 m por 2 m
+  RES: faixas([
+    [0.1, "< 0,1"],
+    [0.2, "0,1 – 0,2"],
+    [0.3, "0,2 – 0,3"],
+    [0.5, "0,3 – 0,5"],
+    [Infinity, "> 0,5"],
+  ]),
+  // Microplásticos — quadrat de 0,25 m²
+  MIC: faixas([
+    [50, "< 50"],
+    [100, "50 – 100"],
+    [200, "100 – 200"],
+    [400, "200 – 400"],
+    [Infinity, "> 400"],
+  ]),
+};
+
+export const PROTOCOLO_PADRAO = "RES";
+
+export function escalaDe(protocolo: string): FaixaDensidade[] {
+  return ESCALAS_DENSIDADE[protocolo] ?? ESCALAS_DENSIDADE[PROTOCOLO_PADRAO];
+}
+
+function faixaDe(d: number | null, protocolo: string): FaixaDensidade {
+  const escala = escalaDe(protocolo);
+  if (d === null || d <= 0) return escala[0];
+  return escala.find((f) => d < f.max) ?? escala[escala.length - 1];
+}
+
+/** Cor CSS da densidade, dentro da escala do protocolo. */
+export function corDensidade(d: number | null, protocolo = PROTOCOLO_PADRAO): string {
+  return faixaDe(d, protocolo).cor;
+}
+
+/** Hex da densidade, para pintar a célula no MapLibre. */
+export function hexDensidade(d: number | null, protocolo = PROTOCOLO_PADRAO): string {
+  return faixaDe(d, protocolo).hex;
 }
 
 /** Nomes amigáveis dos meses em pt-BR */
