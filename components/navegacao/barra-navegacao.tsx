@@ -60,7 +60,7 @@ export function BarraNavegacao() {
     { href: "/painel", label: "Painel", icon: BarChart3 },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
     { href: "/escolas", label: "Escolas", icon: School },
-    { href: "/expedicoes/nova", label: "Nova expedição", icon: PlusCircle, destaque: true },
+    { href: "/campo", label: "Registrar em campo", icon: PlusCircle, destaque: true },
   ];
 
   const links = autenticado ? navLinksAutenticado : navLinksVisitante;

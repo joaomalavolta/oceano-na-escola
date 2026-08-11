@@ -22,7 +22,7 @@ export function NavegacaoMobile() {
     { href: "/escolas", icon: GraduationCap, label: "Escolas" },
     ...(autenticado
       ? ([
-          { href: "/expedicoes/nova", icon: PlusCircle, label: "Registrar", destaque: true },
+          { href: "/campo", icon: PlusCircle, label: "Registrar", destaque: true },
           { href: "/expedicoes", icon: Ship, label: "Expedições" },
           { href: "/painel", icon: BarChart3, label: "Painel" },
         ] as const)

@@ -15,7 +15,7 @@ import type {
   PubObservacaoPontual,
   PubFotoGeorreferenciada,
 } from "@/lib/database.types";
-import { urlDaFoto } from "@/lib/dados-escola-publica";
+import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 
 const MAP_STYLE: StyleSpecification = {
   version: 8,
@@ -126,9 +126,8 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
         >
           <div className="space-y-1.5 p-0.5">
             {fotoAberta && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={urlDaFoto(fotoAberta.storage_path)}
+              <FotoEvidencia
+                storagePath={fotoAberta.storage_path}
                 alt={fotoAberta.legenda ?? aberta.descricao}
                 className="w-full h-28 object-cover rounded-sm"
               />

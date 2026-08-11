@@ -20,11 +20,8 @@ import {
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
-import {
-  carregarEscolaPublica,
-  urlDaFoto,
-  type EscolaPublica,
-} from "@/lib/dados-escola-publica";
+import { carregarEscolaPublica, type EscolaPublica } from "@/lib/dados-escola-publica";
+import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 
 // MapLibre exige o DOM.
 const MapaEscola = dynamic(
@@ -293,9 +290,8 @@ export default function EscolaPublicaPage({
                     key={`geo-${f.id}`}
                     className="bg-card border border-border rounded-md overflow-hidden shadow-2xs"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={urlDaFoto(f.storage_path)}
+                    <FotoEvidencia
+                      storagePath={f.storage_path}
                       alt={f.legenda ?? f.ocorrencia}
                       className="w-full h-48 object-cover"
                     />
@@ -318,9 +314,8 @@ export default function EscolaPublicaPage({
                     key={`gal-${g.id}`}
                     className="bg-card border border-border rounded-md overflow-hidden shadow-2xs"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={urlDaFoto(g.storage_path)}
+                    <FotoEvidencia
+                      storagePath={g.storage_path}
                       alt={g.legenda ?? "Foto de campo"}
                       className="w-full h-48 object-cover"
                     />

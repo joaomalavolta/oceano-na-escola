@@ -170,15 +170,18 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
 }
 
 /**
- * URL pública de um arquivo no Storage.
+ * URL assinada de um arquivo no Storage.
  *
- * O bucket ainda não existe. Quando for criado, deve nascer PRIVADO — a
- * `pub_foto_georreferenciada` entrega `storage_path` a quem não tem
- * login, e com bucket público nem a curadoria do professor nem o
- * `termos_ok` da escola protegem a foto. Com bucket privado, esta função
- * passa a pedir uma URL assinada.
+ * O bucket é privado: a `pub_foto_georreferenciada` entrega
+ * `storage_path` a quem não tem login, e com bucket público nem a
+ * curadoria do professor nem o `termos_ok` da escola protegeriam a
+ * foto. A assinatura passa pelas políticas do storage — o anônimo só
+ * consegue assinar foto curada, de escola publicada e com termo.
  */
-export function urlDaFoto(storagePath: string): string {
-  const { data } = supabase.storage.from("evidencias").getPublicUrl(storagePath);
-  return data.publicUrl;
+export async function urlAssinadaDaFoto(storagePath: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from("evidencias")
+    .createSignedUrl(storagePath, 3600);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
 }
