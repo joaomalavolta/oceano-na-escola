@@ -38,7 +38,11 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body className="h-full overflow-hidden">
+      {/* O overflow é de quem precisa dele. O mapa trava a rolagem no
+          próprio container, em tela cheia; travá-la aqui prendia todas as
+          outras páginas — formulário, painel, listas — cortadas na altura
+          da janela, sem alcance até o botão de salvar. */}
+      <body className="min-h-full">
         <ProvedorSessao>{children}</ProvedorSessao>
       </body>
     </html>
