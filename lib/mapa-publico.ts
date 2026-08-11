@@ -281,57 +281,118 @@ export interface FaixaDensidade {
   hex: string;
 }
 
-const RAMPA = [
-  { cor: "var(--color-density-1)", hex: "#b4d7d5" },
-  { cor: "var(--color-density-2)", hex: "#7bbcb4" },
-  { cor: "var(--color-density-3)", hex: "#4a9e8f" },
-  { cor: "var(--color-density-4)", hex: "#2d7d72" },
-  { cor: "var(--color-density-5)", hex: "#1a5c55" },
-] as const;
+/** Quanto cada degrau da rampa clareia em direção ao branco. */
+const CLAREAMENTO = [0.66, 0.45, 0.26, 0.1, 0] as const;
 
-function faixas(limites: [number, string][]): FaixaDensidade[] {
-  return limites.map(([max, label], i) => ({ max, label, ...RAMPA[i] }));
+/**
+ * Gera cinco tons a partir da cor do protocolo, misturando com branco.
+ *
+ * A rampa vinha fixa no código, o que amarrava a paleta aos dois
+ * protocolos que existiam. Agora ela nasce de `protocolo.cor`: um
+ * protocolo novo entra com a sua própria escala sem deploy.
+ */
+export function rampaDe(hex: string): string[] {
+  const limpo = hex.replace("#", "");
+  const base =
+    limpo.length === 3
+      ? limpo.split("").map((c) => parseInt(c + c, 16))
+      : [0, 2, 4].map((i) => parseInt(limpo.slice(i, i + 2), 16));
+
+  if (base.some((c) => Number.isNaN(c))) return CLAREAMENTO.map(() => hex);
+
+  return CLAREAMENTO.map((t) => {
+    const [r, g, b] = base.map((c) => Math.round(c + (255 - c) * t));
+    return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+  });
 }
 
-export const ESCALAS_DENSIDADE: Record<string, FaixaDensidade[]> = {
+const COR_PADRAO = "#2d7d72";
+
+function faixas(limites: [number, string][], cor = COR_PADRAO): FaixaDensidade[] {
+  const rampa = rampaDe(cor);
+  return limites.map(([max, label], i) => ({
+    max,
+    label,
+    cor: rampa[i],
+    hex: rampa[i],
+  }));
+}
+
+/**
+ * Faixas para um protocolo sem escala curada: cinco degraus iguais entre
+ * zero e o maior valor observado. Não é escolha metodológica — é o que
+ * permite um protocolo novo aparecer no mapa antes de alguém definir os
+ * limiares certos para ele.
+ */
+export function faixasAutomaticas(valores: number[], cor: string): FaixaDensidade[] {
+  const max = Math.max(0, ...valores.filter((v) => Number.isFinite(v)));
+  if (max <= 0) return faixas([[Infinity, "sem dado"]], cor);
+
+  const passo = max / 5;
+  const fmt = (n: number) =>
+    n >= 100 ? n.toFixed(0) : n.toFixed(n < 1 ? 3 : 1).replace(".", ",");
+
+  return faixas(
+    [1, 2, 3, 4, 5].map((i) => {
+      const ate = passo * i;
+      const de = passo * (i - 1);
+      return [
+        i === 5 ? Infinity : ate,
+        i === 1 ? `< ${fmt(ate)}` : i === 5 ? `> ${fmt(de)}` : `${fmt(de)} – ${fmt(ate)}`,
+      ] as [number, string];
+    }),
+    cor
+  );
+}
+
+/**
+ * Escalas curadas. Estes limiares são decisão metodológica, não estética:
+ * vieram do que se observa em praia. Protocolo sem entrada aqui recebe
+ * faixas derivadas dos próprios dados.
+ */
+export const ESCALAS_DENSIDADE: Record<string, [number, string][]> = {
   // Resíduos costeiros — trecho de 50 m por 2 m
-  RES: faixas([
+  RES: [
     [0.1, "< 0,1"],
     [0.2, "0,1 – 0,2"],
     [0.3, "0,2 – 0,3"],
     [0.5, "0,3 – 0,5"],
     [Infinity, "> 0,5"],
-  ]),
+  ],
   // Microplásticos — quadrat de 0,25 m²
-  MIC: faixas([
+  MIC: [
     [50, "< 50"],
     [100, "50 – 100"],
     [200, "100 – 200"],
     [400, "200 – 400"],
     [Infinity, "> 400"],
-  ]),
+  ],
 };
 
 export const PROTOCOLO_PADRAO = "RES";
 
-export function escalaDe(protocolo: string): FaixaDensidade[] {
-  return ESCALAS_DENSIDADE[protocolo] ?? ESCALAS_DENSIDADE[PROTOCOLO_PADRAO];
+/**
+ * Escala de um protocolo: a curada, se existir; senão derivada dos
+ * valores observados. `cor` vem de `protocolo.cor`, no banco.
+ */
+export function escalaDe(
+  protocolo: string,
+  cor: string | null = null,
+  valores: number[] = []
+): FaixaDensidade[] {
+  const curada = ESCALAS_DENSIDADE[protocolo];
+  if (curada) return faixas(curada, cor ?? COR_PADRAO);
+  return faixasAutomaticas(valores, cor ?? COR_PADRAO);
 }
 
-function faixaDe(d: number | null, protocolo: string): FaixaDensidade {
-  const escala = escalaDe(protocolo);
+function faixaDe(d: number | null, escala: FaixaDensidade[]): FaixaDensidade {
   if (d === null || d <= 0) return escala[0];
   return escala.find((f) => d < f.max) ?? escala[escala.length - 1];
 }
 
-/** Cor CSS da densidade, dentro da escala do protocolo. */
-export function corDensidade(d: number | null, protocolo = PROTOCOLO_PADRAO): string {
-  return faixaDe(d, protocolo).cor;
-}
-
-/** Hex da densidade, para pintar a célula no MapLibre. */
-export function hexDensidade(d: number | null, protocolo = PROTOCOLO_PADRAO): string {
-  return faixaDe(d, protocolo).hex;
+/** Hex da densidade dentro da escala recebida, para pintar no MapLibre. */
+export function hexDensidade(d: number | null, escala: FaixaDensidade[]): string {
+  return faixaDe(d, escala).hex;
 }
 
 /** Nomes amigáveis dos meses em pt-BR */

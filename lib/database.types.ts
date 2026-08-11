@@ -33,6 +33,44 @@ export interface PubObservacaoGrade {
   densidade_itens_m2: number | null;
 }
 
+/** Um protocolo com versão ativa. O mapa monta as camadas a partir daqui. */
+export interface PubProtocolo {
+  id: number;
+  codigo: string;
+  nome: string;
+  descricao: string | null;
+  icone: string | null;
+  /** Hex. Gera o pin e a rampa de densidade, sem passar pelo código. */
+  cor: string | null;
+  unidade_medida: string | null;
+  /** densidade | ocorrencia | area_afetada | medida | nenhuma */
+  forma_agregacao: string;
+}
+
+/** Ocorrência ambiental como pin, em coordenada exata. */
+export interface PubObservacaoPontual {
+  id: number;
+  escola_slug: string;
+  escola_nome: string;
+  protocolo: string;
+  protocolo_nome: string;
+  protocolo_icone: string | null;
+  protocolo_cor: string | null;
+  item_codigo: string | null;
+  item_nome: string | null;
+  item_grupo: string | null;
+  item_icone: string | null;
+  item_unidade: string | null;
+  /** Magnitude na unidade do item: 3 pontos, 30 m². */
+  valor: number | null;
+  descricao: string;
+  origem_provavel: string | null;
+  expedicao_numero: number;
+  data_campo: string;
+  /** GeoJSON de um Point. */
+  ponto_geojson: string;
+}
+
 export interface PubIndicadorEscola {
   escola_slug: string;
   expedicoes: number;

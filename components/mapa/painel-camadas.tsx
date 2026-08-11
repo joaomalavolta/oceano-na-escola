@@ -8,11 +8,24 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 // Oculto em mobile — mobile usa <MobileSheet>
 // ─────────────────────────────────────────────
 
+/**
+ * As camadas de protocolo são um dicionário por código, não campos
+ * nomeados. Com `residuos` e `microplasticos` fixos aqui, um protocolo
+ * novo existia no banco e não tinha como aparecer no mapa.
+ */
 export interface CamadasState {
-  residuos: boolean;
-  microplasticos: boolean;
+  protocolos: Record<string, boolean>;
   escolas: boolean;
-  expedicoes: boolean;
+  ocorrencias: boolean;
+}
+
+/** O que o painel precisa saber de um protocolo para desenhá-lo. */
+export interface ProtocoloCamada {
+  codigo: string;
+  nome: string;
+  cor: string | null;
+  /** Protocolos de densidade viram grade; os demais, só pins. */
+  forma_agregacao: string;
 }
 
 export interface FiltrosState {
@@ -25,23 +38,18 @@ export interface FiltrosState {
 
 interface PainelCamadasProps {
   camadas: CamadasState;
-  onToggleCamada: (camada: keyof CamadasState) => void;
+  onToggleProtocolo: (codigo: string) => void;
+  onToggleCamada: (camada: "escolas" | "ocorrencias") => void;
   filtros: FiltrosState;
   onChangeFiltro: (campo: keyof FiltrosState, valor: string) => void;
   municipios: string[];
   escolas: { slug: string; nome: string }[];
-  protocolos: string[];
+  protocolos: ProtocoloCamada[];
 }
-
-const CAMADAS: [keyof CamadasState, string][] = [
-  ["residuos", "Resíduos"],
-  ["microplasticos", "Microplásticos"],
-  ["escolas", "Escolas"],
-  ["expedicoes", "Expedições"],
-];
 
 export function PainelCamadas({
   camadas,
+  onToggleProtocolo,
   onToggleCamada,
   filtros,
   onChangeFiltro,
@@ -85,29 +93,65 @@ export function PainelCamadas({
               Camadas
             </h3>
             <div className="space-y-2">
-              {CAMADAS.map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => onToggleCamada(key)}
-                  className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
-                >
-                  {/* Custom toggle switch */}
-                  <span
-                    className={`
-                      w-8 h-5 rounded-full relative transition-colors
-                      ${camadas[key] ? "bg-primary" : "bg-muted"}
-                    `}
+              {protocolos.map((p) => {
+                const ligada = camadas.protocolos[p.codigo] ?? false;
+                return (
+                  <button
+                    key={p.codigo}
+                    onClick={() => onToggleProtocolo(p.codigo)}
+                    className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
                   >
                     <span
-                      className={`
-                        absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform
-                        ${camadas[key] ? "left-3.5" : "left-0.5"}
-                      `}
-                    />
-                  </span>
-                  <span className="text-sm">{label}</span>
-                </button>
-              ))}
+                      className="w-8 h-5 rounded-full relative transition-colors"
+                      style={{
+                        backgroundColor: ligada
+                          ? p.cor ?? "var(--color-primary)"
+                          : "var(--color-muted)",
+                      }}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                          ligada ? "left-3.5" : "left-0.5"
+                        }`}
+                      />
+                    </span>
+                    <span className="text-sm flex-1">{p.nome}</span>
+                    {p.forma_agregacao !== "densidade" && (
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        pin
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              <div className="pt-1 mt-1 border-t border-glass-border space-y-2">
+                {(
+                  [
+                    ["escolas", "Escolas"],
+                    ["ocorrencias", "Ocorrências"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => onToggleCamada(key)}
+                    className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                  >
+                    <span
+                      className={`w-8 h-5 rounded-full relative transition-colors ${
+                        camadas[key] ? "bg-primary" : "bg-muted"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                          camadas[key] ? "left-3.5" : "left-0.5"
+                        }`}
+                      />
+                    </span>
+                    <span className="text-sm">{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -157,7 +201,9 @@ export function PainelCamadas({
                 >
                   <option value="">Todos</option>
                   {protocolos.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                    <option key={p.codigo} value={p.codigo}>
+                      {p.codigo} — {p.nome}
+                    </option>
                   ))}
                 </select>
               </div>

@@ -15,6 +15,8 @@ import type {
   PubEscola,
   PubObservacaoGrade,
   PubIndicadorEscola,
+  PubProtocolo,
+  PubObservacaoPontual,
   IndicadoresGerais,
 } from "./database.types";
 import {
@@ -31,10 +33,29 @@ export interface DadosPublicos {
   grade: PubObservacaoGrade[];
   indicadoresEscola: PubIndicadorEscola[];
   indicadoresGerais: IndicadoresGerais;
+  /** Protocolos com versão ativa. É daqui que saem as camadas do mapa. */
+  protocolos: PubProtocolo[];
+  /** Ocorrências ambientais, desenhadas como pin. */
+  pontuais: PubObservacaoPontual[];
   origem: OrigemDados;
   /** Preenchido quando houve tentativa de ler o banco e ela falhou. */
   erro: string | null;
 }
+
+/**
+ * Protocolos de reserva, para quando o mapa roda sobre o mock.
+ * Espelham o que está cadastrado como RES e MIC.
+ */
+export const PROTOCOLOS_INICIAIS: PubProtocolo[] = [
+  {
+    id: 1, codigo: "RES", nome: "Resíduos costeiros e marinhos", descricao: null,
+    icone: "residuos", cor: "#2d7d72", unidade_medida: "itens/m²", forma_agregacao: "densidade",
+  },
+  {
+    id: 2, codigo: "MIC", nome: "Microplásticos", descricao: null,
+    icone: "microplasticos", cor: "#7c5cbf", unidade_medida: "itens/m²", forma_agregacao: "densidade",
+  },
+];
 
 /**
  * PostgREST serializa `numeric` como string, para não perder precisão.
@@ -72,6 +93,8 @@ const DADOS_MOCK: DadosPublicos = {
   grade: mockGrade,
   indicadoresEscola: mockIndicadoresEscola,
   indicadoresGerais: mockIndicadoresGerais,
+  protocolos: PROTOCOLOS_INICIAIS,
+  pontuais: [],
   origem: "mock",
   erro: null,
 };
@@ -80,13 +103,17 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
   if (!supabaseConfigurado) return DADOS_MOCK;
 
   try {
-    const [escolasRes, gradeRes, indicadoresRes] = await Promise.all([
+    const [escolasRes, gradeRes, indicadoresRes, protocolosRes, pontuaisRes] = await Promise.all([
       supabase.from("pub_escola").select("*").order("nome"),
       supabase.from("pub_observacao_grade").select("*"),
       supabase.from("pub_indicador_escola").select("*"),
+      supabase.from("pub_protocolo").select("*").order("codigo"),
+      supabase.from("pub_observacao_pontual").select("*"),
     ]);
 
-    const falha = escolasRes.error ?? gradeRes.error ?? indicadoresRes.error;
+    const falha =
+      escolasRes.error ?? gradeRes.error ?? indicadoresRes.error ??
+      protocolosRes.error ?? pontuaisRes.error;
     if (falha) return { ...DADOS_MOCK, erro: falha.message };
 
     const escolas: PubEscola[] = (escolasRes.data ?? []).map((e) => ({
@@ -119,6 +146,38 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       registros_pontuais: num(i.registros_pontuais),
     }));
 
+    const protocolos: PubProtocolo[] = (protocolosRes.data ?? []).map((p) => ({
+      id: num(p.id),
+      codigo: String(p.codigo),
+      nome: String(p.nome),
+      descricao: p.descricao ?? null,
+      icone: p.icone ?? null,
+      cor: p.cor ?? null,
+      unidade_medida: p.unidade_medida ?? null,
+      forma_agregacao: String(p.forma_agregacao),
+    }));
+
+    const pontuais: PubObservacaoPontual[] = (pontuaisRes.data ?? []).map((o) => ({
+      id: num(o.id),
+      escola_slug: String(o.escola_slug),
+      escola_nome: String(o.escola_nome),
+      protocolo: String(o.protocolo),
+      protocolo_nome: String(o.protocolo_nome),
+      protocolo_icone: o.protocolo_icone ?? null,
+      protocolo_cor: o.protocolo_cor ?? null,
+      item_codigo: o.item_codigo ?? null,
+      item_nome: o.item_nome ?? null,
+      item_grupo: o.item_grupo ?? null,
+      item_icone: o.item_icone ?? null,
+      item_unidade: o.item_unidade ?? null,
+      valor: numOuNulo(o.valor),
+      descricao: String(o.descricao),
+      origem_provavel: o.origem_provavel ?? null,
+      expedicao_numero: num(o.expedicao_numero),
+      data_campo: String(o.data_campo),
+      ponto_geojson: String(o.ponto_geojson),
+    }));
+
     // Banco alcançável mas ainda sem piloto publicado: o mock é a
     // demonstração, e uma tela vazia não diria isso a ninguém.
     if (escolas.length === 0) return DADOS_MOCK;
@@ -128,6 +187,8 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       grade,
       indicadoresEscola,
       indicadoresGerais: agregarGerais(escolas, grade, indicadoresEscola),
+      protocolos: protocolos.length > 0 ? protocolos : PROTOCOLOS_INICIAIS,
+      pontuais,
       origem: "supabase",
       erro: null,
     };

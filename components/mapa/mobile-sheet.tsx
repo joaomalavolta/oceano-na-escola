@@ -1,13 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Layers,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import type { CamadasState, FiltrosState } from "./painel-camadas";
+import { Layers, X } from "lucide-react";
+import type { CamadasState, FiltrosState, ProtocoloCamada } from "./painel-camadas";
 
 // ─────────────────────────────────────────────
 // Sheet deslizante de camadas e filtros (mobile)
@@ -16,16 +11,18 @@ import type { CamadasState, FiltrosState } from "./painel-camadas";
 
 interface MobileSheetProps {
   camadas: CamadasState;
-  onToggleCamada: (camada: keyof CamadasState) => void;
+  onToggleProtocolo: (codigo: string) => void;
+  onToggleCamada: (camada: "escolas" | "ocorrencias") => void;
   filtros: FiltrosState;
   onChangeFiltro: (campo: keyof FiltrosState, valor: string) => void;
   municipios: string[];
   escolas: { slug: string; nome: string }[];
-  protocolos: string[];
+  protocolos: ProtocoloCamada[];
 }
 
 export function MobileSheet({
   camadas,
+  onToggleProtocolo,
   onToggleCamada,
   filtros,
   onChangeFiltro,
@@ -92,13 +89,37 @@ export function MobileSheet({
                 Camadas
               </h3>
               <div className="space-y-2">
+                {protocolos.map((p) => {
+                  const ligada = camadas.protocolos[p.codigo] ?? false;
+                  return (
+                    <button
+                      key={p.codigo}
+                      onClick={() => onToggleProtocolo(p.codigo)}
+                      className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                    >
+                      <span
+                        className="w-8 h-5 rounded-full relative transition-colors"
+                        style={{
+                          backgroundColor: ligada
+                            ? p.cor ?? "var(--color-primary)"
+                            : "var(--color-muted)",
+                        }}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                            ligada ? "left-3.5" : "left-0.5"
+                          }`}
+                        />
+                      </span>
+                      <span className="text-sm">{p.nome}</span>
+                    </button>
+                  );
+                })}
                 {(
                   [
-                    ["residuos", "Resíduos"],
-                    ["microplasticos", "Microplásticos"],
                     ["escolas", "Escolas"],
-                    ["expedicoes", "Expedições"],
-                  ] as [keyof CamadasState, string][]
+                    ["ocorrencias", "Ocorrências"],
+                  ] as ["escolas" | "ocorrencias", string][]
                 ).map(([key, label]) => (
                   <button
                     key={key}
@@ -165,7 +186,9 @@ export function MobileSheet({
                   >
                     <option value="">Todos</option>
                     {protocolos.map((p) => (
-                      <option key={p} value={p}>{p}</option>
+                      <option key={p.codigo} value={p.codigo}>
+                        {p.codigo} — {p.nome}
+                      </option>
                     ))}
                   </select>
                 </div>

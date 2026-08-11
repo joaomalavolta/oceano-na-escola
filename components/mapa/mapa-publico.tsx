@@ -18,7 +18,7 @@ import Link from "next/link";
 import {
   carregarDadosPublicos,
   municipiosDe,
-  protocolosDe,
+  PROTOCOLOS_INICIAIS,
   type DadosPublicos,
 } from "@/lib/dados-publicos";
 import {
@@ -27,9 +27,10 @@ import {
   mockIndicadoresEscola,
   mockIndicadoresGerais,
   hexDensidade,
+  escalaDe,
   PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
-import type { PubObservacaoGrade } from "@/lib/database.types";
+import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
 import { BarraSuperior } from "./barra-superior";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
@@ -93,6 +94,8 @@ export function MapaPublico() {
     grade: mockGrade,
     indicadoresEscola: mockIndicadoresEscola,
     indicadoresGerais: mockIndicadoresGerais,
+    protocolos: PROTOCOLOS_INICIAIS,
+    pontuais: [],
     origem: "mock",
     erro: null,
   });
@@ -107,13 +110,21 @@ export function MapaPublico() {
     };
   }, []);
 
-  // Camadas
-  const [camadas, setCamadas] = useState<CamadasState>({
-    residuos: true,
-    microplasticos: false,
-    escolas: true,
-    expedicoes: false,
-  });
+  // Camadas. Guardamos só o que o visitante desligou, e derivamos o
+  // resto: protocolo novo no banco nasce ligado, sem effect semeando
+  // estado a cada carga de dados.
+  const [protocolosDesligados, setProtocolosDesligados] = useState<string[]>([]);
+  const [outrasCamadas, setOutrasCamadas] = useState({ escolas: true, ocorrencias: true });
+
+  const camadas = useMemo<CamadasState>(
+    () => ({
+      protocolos: Object.fromEntries(
+        dados.protocolos.map((p) => [p.codigo, !protocolosDesligados.includes(p.codigo)])
+      ),
+      ...outrasCamadas,
+    }),
+    [dados.protocolos, protocolosDesligados, outrasCamadas]
+  );
 
   // Filtros
   const [filtros, setFiltros] = useState<FiltrosState>({
@@ -124,8 +135,14 @@ export function MapaPublico() {
     mesFim: "",
   });
 
-  const toggleCamada = useCallback((key: keyof CamadasState) => {
-    setCamadas((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleCamada = useCallback((key: "escolas" | "ocorrencias") => {
+    setOutrasCamadas((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const toggleProtocolo = useCallback((codigo: string) => {
+    setProtocolosDesligados((prev) =>
+      prev.includes(codigo) ? prev.filter((c) => c !== codigo) : [...prev, codigo]
+    );
   }, []);
 
   const changeFiltro = useCallback(
@@ -149,13 +166,27 @@ export function MapaPublico() {
       if (filtros.mesInicio && g.mes < filtros.mesInicio) return false;
       if (filtros.mesFim && g.mes > filtros.mesFim + "-31") return false;
 
-      // Filtra por camada de protocolo
-      if (g.protocolo === "RES" && !camadas.residuos) return false;
-      if (g.protocolo === "MIC" && !camadas.microplasticos) return false;
-
-      return true;
+      // A camada manda. Protocolo desconhecido fica oculto em vez de
+      // escapar dos testes e aparecer sempre, como acontecia com os
+      // dois booleanos fixos.
+      return camadas.protocolos[g.protocolo] === true;
     });
-  }, [dados.grade, dados.escolas, filtros, camadas.residuos, camadas.microplasticos]);
+  }, [dados.grade, dados.escolas, filtros, camadas.protocolos]);
+
+  const pontuaisFiltrados = useMemo(() => {
+    if (!camadas.ocorrencias) return [] as PubObservacaoPontual[];
+    return dados.pontuais.filter((o) => {
+      if (filtros.municipio) {
+        const escola = dados.escolas.find((e) => e.slug === o.escola_slug);
+        if (escola?.municipio !== filtros.municipio) return false;
+      }
+      if (filtros.escola && o.escola_slug !== filtros.escola) return false;
+      if (filtros.protocolo && o.protocolo !== filtros.protocolo) return false;
+      if (filtros.mesInicio && o.data_campo < filtros.mesInicio + "-01") return false;
+      if (filtros.mesFim && o.data_campo > filtros.mesFim + "-31") return false;
+      return camadas.protocolos[o.protocolo] === true;
+    });
+  }, [dados.pontuais, dados.escolas, filtros, camadas.protocolos, camadas.ocorrencias]);
 
   const escolasFiltradas = useMemo(() => {
     return dados.escolas.filter((e) => {
@@ -164,6 +195,21 @@ export function MapaPublico() {
       return true;
     });
   }, [dados.escolas, filtros.municipio, filtros.escola]);
+
+  // Escala por protocolo: a curada quando existe, senão derivada dos
+  // valores observados. A cor vem de `protocolo.cor`, no banco.
+  const escalas = useMemo(() => {
+    const mapa = new Map<string, ReturnType<typeof escalaDe>>();
+    for (const p of dados.protocolos) {
+      const valores = dados.grade
+        .filter((g) => g.protocolo === p.codigo)
+        .map((g) => g.densidade_itens_m2 ?? 0);
+      mapa.set(p.codigo, escalaDe(p.codigo, p.cor, valores));
+    }
+    return mapa;
+  }, [dados.protocolos, dados.grade]);
+
+  const escalaPadrao = useMemo(() => escalaDe(PROTOCOLO_PADRAO), []);
 
   // ── GeoJSON para as células ────────────────────────────────────
 
@@ -179,7 +225,10 @@ export function MapaPublico() {
           properties: {
             idx: i,
             densidade: g.densidade_itens_m2 ?? 0,
-            cor: hexDensidade(g.densidade_itens_m2, g.protocolo),
+            cor: hexDensidade(
+              g.densidade_itens_m2,
+              escalas.get(g.protocolo) ?? escalaPadrao
+            ),
             totalItens: g.total_itens,
             areaAmostrada: g.area_amostrada_m2,
             mes: g.mes,
@@ -188,7 +237,7 @@ export function MapaPublico() {
         };
       }),
     };
-  }, [gradeFiltrada]);
+  }, [gradeFiltrada, escalas, escalaPadrao]);
 
   // ── Handlers ──────────────────────────────────────────────────
 
@@ -250,14 +299,28 @@ export function MapaPublico() {
   // Protocolo que a legenda deve descrever. O filtro manda; sem ele,
   // vale a camada ligada. Com as duas ligadas não há escala honesta que
   // sirva para ambas, e a de resíduos é o padrão.
+  // A legenda descreve um protocolo por vez. Com o filtro, ele manda;
+  // sem filtro, vale a única camada de densidade ligada. Com mais de uma,
+  // não há escala honesta que sirva às duas — cai no padrão.
   const protocoloExibido = useMemo(() => {
     if (filtros.protocolo) return filtros.protocolo;
-    if (camadas.microplasticos && !camadas.residuos) return "MIC";
-    return PROTOCOLO_PADRAO;
-  }, [filtros.protocolo, camadas.microplasticos, camadas.residuos]);
+    const densidadesLigadas = dados.protocolos.filter(
+      (p) => p.forma_agregacao === "densidade" && camadas.protocolos[p.codigo]
+    );
+    return densidadesLigadas.length === 1 ? densidadesLigadas[0].codigo : PROTOCOLO_PADRAO;
+  }, [filtros.protocolo, dados.protocolos, camadas.protocolos]);
 
   const listaMunicipios = useMemo(() => municipiosDe(dados.escolas), [dados.escolas]);
-  const listaProtocolos = useMemo(() => protocolosDe(dados.grade), [dados.grade]);
+  const listaProtocolos = useMemo(
+    () =>
+      dados.protocolos.map((p) => ({
+        codigo: p.codigo,
+        nome: p.nome,
+        cor: p.cor,
+        forma_agregacao: p.forma_agregacao,
+      })),
+    [dados.protocolos]
+  );
   const listaEscolas = useMemo(
     () => dados.escolas.map((e) => ({ slug: e.slug, nome: e.nome })),
     [dados.escolas]
@@ -310,6 +373,37 @@ export function MapaPublico() {
             }}
           />
         </Source>
+
+        {/* Camada: Ocorrências ambientais, em coordenada exata.
+            Cor e magnitude vêm do protocolo e do item, no banco. */}
+        {pontuaisFiltrados.map((o) => {
+          const ponto = JSON.parse(o.ponto_geojson) as { coordinates: [number, number] };
+          const [lng, lat] = ponto.coordinates;
+          const cor = o.protocolo_cor ?? "#a63d40";
+          const magnitude =
+            o.valor !== null && o.item_unidade
+              ? `${o.valor.toLocaleString("pt-BR")} ${o.item_unidade}`
+              : null;
+
+          return (
+            <Marker key={`oc-${o.id}`} latitude={lat} longitude={lng} anchor="center">
+              <div
+                className="group relative flex items-center justify-center"
+                title={`${o.item_nome ?? o.descricao}${magnitude ? ` — ${magnitude}` : ""} · ${o.escola_nome}`}
+              >
+                <span
+                  className="block w-3.5 h-3.5 rounded-full border-2 border-white shadow-md transition-transform group-hover:scale-125"
+                  style={{ backgroundColor: cor }}
+                />
+                <div className="pointer-events-none absolute bottom-5 hidden group-hover:block whitespace-nowrap px-2 py-1 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground shadow-lg z-10">
+                  <strong>{o.item_nome ?? o.descricao}</strong>
+                  {magnitude && <span className="ml-1 tabular-nums">{magnitude}</span>}
+                  <span className="block text-muted-foreground">{o.protocolo_nome}</span>
+                </div>
+              </div>
+            </Marker>
+          );
+        })}
 
         {/* Camada: Escolas */}
         {camadas.escolas &&
@@ -365,6 +459,7 @@ export function MapaPublico() {
       <div className="hidden md:block">
         <PainelCamadas
           camadas={camadas}
+          onToggleProtocolo={toggleProtocolo}
           onToggleCamada={toggleCamada}
           filtros={filtros}
           onChangeFiltro={changeFiltro}
@@ -376,7 +471,12 @@ export function MapaPublico() {
 
       {/* Desktop: legenda */}
       <div className="hidden md:block">
-        <LegendaDensidade protocolo={protocoloExibido} />
+        <LegendaDensidade
+          protocolo={protocoloExibido}
+          nome={dados.protocolos.find((p) => p.codigo === protocoloExibido)?.nome}
+          unidade={dados.protocolos.find((p) => p.codigo === protocoloExibido)?.unidade_medida}
+          escala={escalas.get(protocoloExibido) ?? escalaPadrao}
+        />
       </div>
 
       {/* Indicadores no rodapé */}
@@ -385,6 +485,7 @@ export function MapaPublico() {
       {/* Mobile: sheet + nav */}
       <MobileSheet
         camadas={camadas}
+        onToggleProtocolo={toggleProtocolo}
         onToggleCamada={toggleCamada}
         filtros={filtros}
         onChangeFiltro={changeFiltro}
