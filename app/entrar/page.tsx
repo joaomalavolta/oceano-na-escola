@@ -1,39 +1,53 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { Waves, LogIn, UserPlus, KeyRound, AlertCircle, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useSessao } from "@/lib/sessao";
+
+/** Traduz as mensagens do Supabase Auth, que chegam em inglês. */
+function traduzErro(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("invalid login credentials")) return "E-mail ou senha incorretos.";
+  if (m.includes("email not confirmed")) return "Confirme o e-mail antes de entrar. Verifique a sua caixa de entrada.";
+  if (m.includes("user already registered")) return "Este e-mail já tem cadastro. Faça login.";
+  if (m.includes("password should be at least")) return "A senha precisa de pelo menos 6 caracteres.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Muitas tentativas seguidas. Aguarde um minuto.";
+  return msg;
+}
 
 export default function EntrarPage() {
   const router = useRouter();
+  const { disponivel } = useSessao();
   const [modo, setModo] = useState<"login" | "registro" | "recuperar">("login");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
-  const [cargo, setCargo] = useState("professor");
   const [mensagem, setMensagem] = useState<{ tipo: "sucesso" | "erro"; texto: string } | null>(null);
   const [carregando, setCarregando] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensagem(null);
 
-    if (modo === "registro" && cargo === "estudante") {
+    if (!disponivel) {
       setMensagem({
         tipo: "erro",
-        texto: "Contas para estudantes não são permitidas. Por favor, solicite ao professor responsável da sua escola para cadastrar as expedições.",
+        texto: "Autenticação indisponível: este ambiente está sem as variáveis do Supabase.",
       });
       return;
     }
 
     setCarregando(true);
 
-    setTimeout(() => {
-      setCarregando(false);
-
+    try {
       if (modo === "recuperar") {
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/entrar`,
+        });
+        // Resposta igual com e sem cadastro, para não revelar quem tem conta.
         setMensagem({
           tipo: "sucesso",
           texto: "Se o e-mail estiver cadastrado, enviamos um link de recuperação para a sua caixa de entrada.",
@@ -41,20 +55,43 @@ export default function EntrarPage() {
         return;
       }
 
-      // Simula login / registro bem sucedido
-      const usuario = {
-        email,
-        nome: nome || "Prof. Helena Santos",
-        cargo,
-      };
-      localStorage.setItem("oceano_auth", JSON.stringify(usuario));
-
       if (modo === "registro") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password: senha,
+          options: { data: { nome } },
+        });
+        if (error) {
+          setMensagem({ tipo: "erro", texto: traduzErro(error.message) });
+          return;
+        }
+        // Sem sessão imediata significa que o projeto exige confirmação por e-mail.
+        if (!data.session) {
+          setMensagem({
+            tipo: "sucesso",
+            texto: "Conta criada. Confirme o e-mail pelo link que enviamos e depois faça login.",
+          });
+          setModo("login");
+          return;
+        }
         router.push("/onboarding");
-      } else {
-        router.push("/painel");
+        return;
       }
-    }, 600);
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+      if (error) {
+        setMensagem({ tipo: "erro", texto: traduzErro(error.message) });
+        return;
+      }
+      router.push("/painel");
+    } catch (err) {
+      setMensagem({
+        tipo: "erro",
+        texto: err instanceof Error ? traduzErro(err.message) : "Falha inesperada ao autenticar.",
+      });
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
@@ -114,21 +151,16 @@ export default function EntrarPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                    Perfil de Atuação
-                  </label>
-                  <select
-                    value={cargo}
-                    onChange={(e) => setCargo(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                  >
-                    <option value="professor">Professor / Educador</option>
-                    <option value="coordenador">Coordenador Pedagógico</option>
-                    <option value="pesquisador">Pesquisador / Ecosurf</option>
-                    <option value="estudante">Estudante</option>
-                  </select>
-                </div>
+                <p className="text-[11px] text-muted-foreground bg-muted/50 border border-border rounded-sm p-2.5 leading-relaxed">
+                  A conta nasce como <strong className="text-foreground">professor</strong>.
+                  Coordenação e pesquisa são concedidas pelo Instituto Ecosurf depois do
+                  cadastro — o papel não é escolhido por quem se inscreve.
+                  <br />
+                  <span className="block mt-1.5">
+                    Não existe conta de estudante. Quem transcreve a ficha é sempre o
+                    professor responsável.
+                  </span>
+                </p>
               </>
             )}
 

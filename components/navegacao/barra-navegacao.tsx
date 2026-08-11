@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSessao } from "@/lib/sessao";
 import { 
   Map, 
   School, 
@@ -31,18 +32,18 @@ type NavLink = {
 
 export function BarraNavegacao() {
   const pathname = usePathname();
-  const [autenticado, setAutenticado] = useState<boolean>(false);
+  const { session, sair } = useSessao();
   const [menuAberto, setMenuAberto] = useState<boolean>(false);
 
+  const autenticado = session !== null;
+
+  // Fecha o menu ao trocar de página, senão ele fica aberto por cima.
   useEffect(() => {
-    // Checa simulador de sessão no localStorage
-    const authSession = localStorage.getItem("oceano_auth");
-    setAutenticado(!!authSession);
+    setMenuAberto(false);
   }, [pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("oceano_auth");
-    setAutenticado(false);
+  const handleLogout = async () => {
+    await sair();
     window.location.href = "/";
   };
 
