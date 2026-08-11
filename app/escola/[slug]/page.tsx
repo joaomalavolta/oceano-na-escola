@@ -3,194 +3,191 @@
 import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import {
+  MapPin,
+  Compass,
+  ImageIcon,
+  Info,
+  Lock,
+  Calendar,
+  Users,
+  Route,
+  Package,
+  Map as MapIcon,
+  AlertTriangle,
+} from "lucide-react";
+
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
-import { 
-  School, 
-  MapPin, 
-  Compass, 
-  ImageIcon, 
-  Info, 
-  Lock, 
-  Calendar, 
-  Users, 
-  Map as MapIcon,
-  CheckCircle2
-} from "lucide-react";
-import { 
-  getLocalStorageData, 
-  MOCK_ESCOLAS, 
-  MOCK_EXPEDICOES, 
-  MOCK_GALERIA, 
-  EscolaDetalhada, 
-  ExpedicaoDetalhada, 
-  FotoGaleria 
-} from "@/lib/dados-mock";
+import {
+  carregarEscolaPublica,
+  urlDaFoto,
+  type EscolaPublica,
+} from "@/lib/dados-escola-publica";
 
-const MapaPublico = dynamic(
-  () => import("@/components/mapa/mapa-publico").then((mod) => mod.MapaPublico),
+// MapLibre exige o DOM.
+const MapaEscola = dynamic(
+  () => import("@/components/mapa/mapa-escola").then((m) => m.MapaEscola),
   { ssr: false }
 );
 
-export default function EscolaPublicaPage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = use(params);
-  const { slug } = resolvedParams;
+type Aba = "sobre" | "mapa" | "expedicoes" | "registros" | "galeria";
 
-  const [escola, setEscola] = useState<EscolaDetalhada | null>(null);
-  const [expedicoes, setExpedicoes] = useState<ExpedicaoDetalhada[]>([]);
-  const [galeria, setGaleria] = useState<FotoGaleria[]>([]);
-  const [abaAtiva, setAbaAtiva] = useState<"sobre" | "mapa" | "expedicoes" | "galeria">("sobre");
-  const [carregando, setCarregando] = useState(true);
+function formatarData(iso: string): string {
+  return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR");
+}
+
+export default function EscolaPublicaPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = use(params);
+  const [dados, setDados] = useState<EscolaPublica | null>(null);
+  const [abaAtiva, setAbaAtiva] = useState<Aba>("sobre");
 
   useEffect(() => {
-    const escolas = getLocalStorageData<EscolaDetalhada[]>("escolas", MOCK_ESCOLAS);
-    const encontrada = escolas.find((e) => e.slug === slug);
-
-    if (encontrada) {
-      setEscola(encontrada);
-
-      const todasExpedicoes = getLocalStorageData<ExpedicaoDetalhada[]>("expedicoes", MOCK_EXPEDICOES);
-      const validadasEscola = todasExpedicoes.filter(
-        (exp) => exp.escola_slug === slug && exp.status === "validado"
-      );
-      setExpedicoes(validadasEscola);
-
-      const fotos = getLocalStorageData<FotoGaleria[]>("galeria", MOCK_GALERIA);
-      const fotosEscola = fotos.filter((f) => f.escola_slug === slug && f.curada);
-      setGaleria(fotosEscola);
-    }
-
-    setCarregando(false);
+    let ativo = true;
+    carregarEscolaPublica(slug).then((d) => ativo && setDados(d));
+    return () => {
+      ativo = false;
+    };
   }, [slug]);
 
-  if (carregando) {
+  if (!dados) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <BarraNavegacao />
         <main className="flex-1 flex items-center justify-center">
-          <EstadoContainer estado="carregando">{null}</EstadoContainer>
+          <EstadoContainer estado="carregando" />
         </main>
       </div>
     );
   }
 
-  if (!escola) {
+  if (!dados.disponivel || dados.erro || !dados.escola) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <BarraNavegacao />
         <main className="flex-1 max-w-4xl mx-auto w-full p-8">
           <EstadoContainer
             estado="erro"
-            mensagemErro="Escola não encontrada na rede Oceano na Escola."
+            mensagemErro={
+              !dados.disponivel
+                ? "Este ambiente está sem as variáveis do Supabase."
+                : dados.erro ?? "Escola não encontrada na rede Oceano na Escola."
+            }
           />
         </main>
       </div>
     );
   }
 
+  const { escola, indicador, expedicoes, ocorrencias, fotos, galeria } = dados;
+  const km = ((indicador?.extensao_total_m ?? 0) / 1000).toFixed(1).replace(".", ",");
+
+  const abas: { id: Aba; label: string; icon: typeof Info }[] = [
+    { id: "sobre", label: "Sobre a escola", icon: Info },
+    { id: "mapa", label: "Mapa do território", icon: MapIcon },
+    { id: "expedicoes", label: `Expedições (${expedicoes.length})`, icon: Compass },
+    { id: "registros", label: `Ocorrências (${ocorrencias.length})`, icon: AlertTriangle },
+    { id: "galeria", label: `Galeria (${galeria.length + fotos.length})`, icon: ImageIcon },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <BarraNavegacao />
 
-      {/* Banner de Apresentação da Escola */}
+      {/* Cabeçalho */}
       <div className="bg-card border-b border-border py-8 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 rounded-sm">
-                Rede de Ciências do Mar
-              </span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" /> {escola.municipio} – {escola.uf}
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {escola.nome}
-            </h1>
-            <p className="text-xs text-muted-foreground max-w-2xl">
-              {escola.apresentacao}
-            </p>
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5" /> {escola.municipio} – {escola.uf}
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight">{escola.nome}</h1>
+            {escola.apresentacao && (
+              <p className="text-xs text-muted-foreground max-w-2xl">{escola.apresentacao}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-4 bg-secondary/80 border border-border p-4 rounded-md">
             <div>
-              <span className="text-[10px] uppercase text-muted-foreground block font-semibold">Expedições</span>
-              <span className="text-lg font-bold tabular-nums text-foreground">{expedicoes.length}</span>
+              <span className="text-[10px] uppercase text-muted-foreground block font-semibold">
+                Expedições
+              </span>
+              <span className="text-lg font-bold tabular-nums">
+                {indicador?.expedicoes ?? 0}
+              </span>
             </div>
             <div className="w-px h-8 bg-border" />
             <div>
-              <span className="text-[10px] uppercase text-muted-foreground block font-semibold">Status Termos</span>
-              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                {escola.termos_ok ? "Verificados" : "Pendentes"}
+              <span className="text-[10px] uppercase text-muted-foreground block font-semibold flex items-center gap-1">
+                <Route className="w-3 h-3" /> km
+              </span>
+              <span className="text-lg font-bold tabular-nums">{km}</span>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div>
+              <span className="text-[10px] uppercase text-muted-foreground block font-semibold flex items-center gap-1">
+                <Package className="w-3 h-3" /> Itens
+              </span>
+              <span className="text-lg font-bold tabular-nums">
+                {(indicador?.itens_catalogados ?? 0).toLocaleString("pt-BR")}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Navegação por Abas */}
+      {/* Abas */}
       <div className="bg-card border-b border-border sticky top-14 z-20">
         <div className="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto">
-          {[
-            { id: "sobre", label: "Sobre a Escola", icon: Info },
-            { id: "mapa", label: "Mapa do Território", icon: MapIcon },
-            { id: "expedicoes", label: `Expedições (${expedicoes.length})`, icon: Compass },
-            { id: "galeria", label: "Galeria de Fotos", icon: ImageIcon },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const ativa = abaAtiva === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setAbaAtiva(tab.id as typeof abaAtiva)}
-                className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
-                  ativa
-                    ? "border-primary text-primary bg-primary/5"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+          {abas.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setAbaAtiva(id)}
+              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+                abaAtiva === id
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Conteúdo das Abas */}
       <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-8">
-        {/* Aba 1: Sobre */}
         {abaAtiva === "sobre" && (
-          <div className="space-y-6">
-            <div className="bg-card border border-border rounded-md p-6 space-y-4 shadow-2xs">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
-                Apresentação & Projeto Pedagógico
-              </h2>
-              <p className="text-xs text-foreground leading-relaxed">
-                {escola.apresentacao}
-              </p>
-              {escola.endereco && (
-                <div className="text-xs text-muted-foreground pt-2">
-                  <strong>Endereço:</strong> {escola.endereco}
-                </div>
-              )}
-            </div>
+          <div className="bg-card border border-border rounded-md p-6 space-y-4 shadow-2xs">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
+              Apresentação
+            </h2>
+            <p className="text-xs leading-relaxed">
+              {escola.apresentacao ?? "Sem apresentação cadastrada."}
+            </p>
           </div>
         )}
 
-        {/* Aba 2: Mapa Recortado */}
         {abaAtiva === "mapa" && (
-          <div className="h-[550px] border border-border rounded-md overflow-hidden relative shadow-sm">
-            <MapaPublico />
+          <div className="space-y-2">
+            <div className="h-[550px] border border-border rounded-md overflow-hidden relative shadow-sm">
+              <MapaEscola escola={escola} ocorrencias={ocorrencias} fotos={fotos} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Cada pino é uma ocorrência registrada em campo, na cor do seu protocolo.
+              Clique para ver a foto, a magnitude e a expedição de origem.
+            </p>
           </div>
         )}
 
-        {/* Aba 3: Expedições */}
         {abaAtiva === "expedicoes" && (
           <EstadoContainer
             estado={expedicoes.length === 0 ? "vazio" : "pronto"}
-            mensagemVazia="Esta escola ainda não possui expedições validadas e publicadas."
+            mensagemVazia="Esta escola ainda não publicou expedições."
           >
             <div className="space-y-3">
               {expedicoes.map((exp) => (
@@ -199,61 +196,150 @@ export default function EscolaPublicaPage({ params }: { params: Promise<{ slug: 
                   className="bg-card border border-border rounded-md p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs"
                 >
                   <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-foreground">{exp.titulo}</h3>
+                    <h3 className="text-sm font-bold">
+                      <span className="font-mono text-muted-foreground mr-1.5">
+                        #{exp.numero}
+                      </span>
+                      {exp.titulo ?? "Sem título"}
+                    </h3>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {exp.data_campo}</span>
-                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {exp.praia}</span>
-                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {exp.turma_nome}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" /> {formatarData(exp.data_campo)}
+                      </span>
+                      {exp.territorio && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5" /> {exp.territorio}
+                        </span>
+                      )}
+                      {exp.n_mapeadores !== null && (
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" /> {exp.n_mapeadores} mapeadores
+                        </span>
+                      )}
+                      {exp.extensao_m !== null && (
+                        <span className="flex items-center gap-1">
+                          <Route className="w-3.5 h-3.5" /> {exp.extensao_m} m
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <Link
-                    href={`/expedicoes/${exp.id}/revisar`}
-                    className="px-3 py-1.5 text-xs font-semibold bg-secondary text-foreground hover:bg-secondary/80 border border-border rounded-sm text-center"
-                  >
-                    Ver Resumo
-                  </Link>
                 </div>
               ))}
             </div>
           </EstadoContainer>
         )}
 
-        {/* Aba 4: Galeria de Fotos */}
+        {abaAtiva === "registros" && (
+          <EstadoContainer
+            estado={ocorrencias.length === 0 ? "vazio" : "pronto"}
+            mensagemVazia="Nenhuma ocorrência publicada por esta escola ainda."
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              {ocorrencias.map((o) => (
+                <div
+                  key={o.id}
+                  className="bg-card border border-border rounded-md p-4 shadow-2xs flex gap-3"
+                >
+                  <span
+                    className="mt-1 w-3 h-3 rounded-full shrink-0 border-2 border-white shadow"
+                    style={{ backgroundColor: o.protocolo_cor ?? "#a63d40" }}
+                  />
+                  <div className="space-y-1 min-w-0">
+                    <h3 className="text-sm font-semibold">
+                      {o.item_nome ?? o.descricao}
+                    </h3>
+                    {o.valor !== null && o.item_unidade && (
+                      <p className="text-sm font-bold tabular-nums text-accent">
+                        {o.valor.toLocaleString("pt-BR")} {o.item_unidade}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">{o.protocolo_nome}</p>
+                    {o.origem_provavel && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Origem provável: {o.origem_provavel}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      Expedição #{o.expedicao_numero} · {formatarData(o.data_campo)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </EstadoContainer>
+        )}
+
         {abaAtiva === "galeria" && (
-          <div>
-            {!escola.termos_ok ? (
+          <>
+            {galeria.length + fotos.length === 0 ? (
               <div className="p-8 border border-dashed border-border rounded-md text-center bg-card/60 space-y-2">
                 <Lock className="w-8 h-8 text-muted-foreground mx-auto" />
-                <p className="text-sm font-semibold text-foreground">
-                  Galeria indisponível temporariamente
-                </p>
+                <p className="text-sm font-semibold">Nenhuma foto publicada</p>
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Por motivos de privacidade e conformidade, a galeria de imagens públicas só é ativada após a verificação dos termos de autorização na secretaria da escola.
+                  A galeria só exibe imagem com curadoria do professor e termo de uso de
+                  imagem confirmado pela escola. Faltando qualquer uma das duas, a foto
+                  não aparece.
                 </p>
               </div>
-            ) : galeria.length === 0 ? (
-              <EstadoContainer estado="vazio" mensagemVazia="Nenhuma foto curada publicada na galeria ainda." children={null} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {galeria.map((foto) => (
-                  <div key={foto.id} className="bg-card border border-border rounded-md overflow-hidden shadow-2xs">
-                    {/* eslint-disable-next-html-element */}
+                {fotos.map((f) => (
+                  <figure
+                    key={`geo-${f.id}`}
+                    className="bg-card border border-border rounded-md overflow-hidden shadow-2xs"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={foto.url}
-                      alt={foto.titulo}
+                      src={urlDaFoto(f.storage_path)}
+                      alt={f.legenda ?? f.ocorrencia}
                       className="w-full h-48 object-cover"
                     />
-                    <div className="p-3">
-                      <p className="text-xs font-bold text-foreground">{foto.titulo}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Foto por: {foto.autor}</p>
-                    </div>
-                  </div>
+                    <figcaption className="p-3 space-y-0.5">
+                      <p className="text-xs font-bold">{f.item_nome ?? f.ocorrencia}</p>
+                      {f.valor !== null && f.item_unidade && (
+                        <p className="text-[11px] tabular-nums text-accent font-semibold">
+                          {f.valor.toLocaleString("pt-BR")} {f.item_unidade}
+                        </p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground">
+                        Expedição #{f.expedicao_numero} · {formatarData(f.data_campo)}
+                      </p>
+                    </figcaption>
+                  </figure>
+                ))}
+
+                {galeria.map((g) => (
+                  <figure
+                    key={`gal-${g.id}`}
+                    className="bg-card border border-border rounded-md overflow-hidden shadow-2xs"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={urlDaFoto(g.storage_path)}
+                      alt={g.legenda ?? "Foto de campo"}
+                      className="w-full h-48 object-cover"
+                    />
+                    <figcaption className="p-3">
+                      <p className="text-xs font-bold">{g.legenda ?? "Foto de campo"}</p>
+                      {g.expedicao_numero !== null && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Expedição #{g.expedicao_numero}
+                        </p>
+                      )}
+                    </figcaption>
+                  </figure>
                 ))}
               </div>
             )}
-          </div>
+          </>
         )}
       </main>
+
+      <footer className="border-t border-border py-4 text-center">
+        <Link href="/escolas" className="text-xs text-primary hover:underline">
+          Ver todas as escolas da rede
+        </Link>
+      </footer>
     </div>
   );
 }

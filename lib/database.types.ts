@@ -93,6 +93,38 @@ export interface PubExpedicao {
   percurso_geojson: string | null;
 }
 
+/** Foto de ocorrência, com posição. */
+export interface PubFotoGeorreferenciada {
+  id: number;
+  storage_path: string;
+  legenda: string | null;
+  publicada_em: string | null;
+  escola_slug: string;
+  escola_nome: string;
+  protocolo: string;
+  protocolo_icone: string | null;
+  protocolo_cor: string | null;
+  item_nome: string | null;
+  item_icone: string | null;
+  item_unidade: string | null;
+  valor: number | null;
+  ocorrencia: string;
+  origem_provavel: string | null;
+  expedicao_numero: number;
+  data_campo: string;
+  ponto_geojson: string;
+}
+
+/** Foto de expedição curada, sem posição. */
+export interface PubGaleria {
+  id: number;
+  storage_path: string;
+  legenda: string | null;
+  publicada_em: string | null;
+  escola_slug: string;
+  expedicao_numero: number | null;
+}
+
 /** Indicadores agregados para a faixa do rodapé do mapa */
 export interface IndicadoresGerais {
   escolas: number;
