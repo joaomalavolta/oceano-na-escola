@@ -171,14 +171,23 @@ Na prática:
 - Fichas digitalizadas, fotos não curadas e qualquer dado em revisão.
 - Área administrativa da escola e da turma.
 
-**Regras de proteção**
+**Regras de proteção** *(revisto em 11/08/2026)*
 
-- Para o visitante sem login, a localização das observações aparece agregada em grade de 100 m ou
-  como o trecho percorrido, nunca como o ponto exato do registro.
-- A galeria pública fica fora da indexação de buscadores (`noindex`), mesmo sendo acessível pelo
-  site. Mapa, página da escola e páginas institucionais são indexáveis.
-- Pesquisador que precise da coordenada exata solicita acesso ao Ecosurf, conforme a regra de uso
-  de dados do bloco 7.
+A regra deixou de ser uma só. Ela passou a distinguir o que a coordenada revela.
+
+- **Esforço amostral — agregado em grade de 100 m.** Onde a turma percorreu o trecho ou instalou o
+  quadrat aparece somado por célula, e a célula só é publicada a partir de três unidades amostrais.
+  Essa coordenada diz onde as crianças estiveram, e continua protegida.
+- **Ocorrência ambiental — coordenada exata.** Ponto de lançamento de esgoto, entulho na margem,
+  supressão de restinga e a foto que documenta cada um aparecem no lugar em que estão. Essa
+  coordenada descreve o território, não a turma, e agregá-la esvaziaria a função do mapa: um
+  problema ambiental que não se pode apontar não se pode cobrar.
+- A galeria pública e as fotos de ocorrência ficam fora da indexação de buscadores (`noindex`),
+  mesmo sendo acessíveis pelo site. Mapa, página da escola e páginas institucionais são indexáveis.
+- Foto de ocorrência exige as três condições juntas: curadoria do professor, escola publicada e
+  termo de uso de imagem confirmado.
+- Pesquisador que precise da coordenada exata do esforço amostral solicita acesso ao Ecosurf,
+  conforme a regra de uso de dados do bloco 7.
 
 ---
 
