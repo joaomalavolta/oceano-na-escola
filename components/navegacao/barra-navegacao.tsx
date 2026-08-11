@@ -47,21 +47,32 @@ export function BarraNavegacao() {
     window.location.href = "/";
   };
 
+  // O visitante só vê o que abre sem login: mapa e rede de escolas.
+  // Expedições e painel apareciam para ele e terminavam na tela de
+  // entrada — link que promete e não cumpre é pior que link ausente.
   const navLinksVisitante: NavLink[] = [
     { href: "/", label: "Mapa", icon: Map },
     { href: "/escolas", label: "Escolas", icon: School },
-    { href: "/expedicoes", label: "Expedições", icon: Compass },
-    { href: "/painel", label: "Painel", icon: BarChart3 },
   ];
 
   const navLinksAutenticado: NavLink[] = [
+    { href: "/", label: "Mapa", icon: Map },
     { href: "/painel", label: "Painel", icon: BarChart3 },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
-    { href: "/expedicoes/nova", label: "+ Transcrever", icon: PlusCircle, destaque: true },
     { href: "/escolas", label: "Escolas", icon: School },
+    { href: "/expedicoes/nova", label: "Nova expedição", icon: PlusCircle, destaque: true },
   ];
 
   const links = autenticado ? navLinksAutenticado : navLinksVisitante;
+
+  /** Ativo por prefixo: /expedicoes/5/revisar acende "Expedições".
+   *  A raiz só por igualdade, senão acenderia sempre. O destaque nunca
+   *  acende — é ação, não lugar. */
+  const estaAtivo = (item: NavLink) => {
+    if (item.destaque) return false;
+    if (item.href === "/") return pathname === "/";
+    return pathname === item.href || pathname.startsWith(item.href + "/");
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full bg-card/90 backdrop-blur-md border-b border-border shadow-xs">
@@ -78,7 +89,7 @@ export function BarraNavegacao() {
         <nav className="hidden md:flex items-center gap-1">
           {links.map((item) => {
             const Icon = item.icon;
-            const ativo = pathname === item.href;
+            const ativo = estaAtivo(item);
             if (item.destaque) {
               return (
                 <Link
@@ -95,6 +106,7 @@ export function BarraNavegacao() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={ativo ? "page" : undefined}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
                   ativo
                     ? "bg-secondary text-foreground font-semibold"
@@ -144,7 +156,7 @@ export function BarraNavegacao() {
         <div className="md:hidden bg-card border-b border-border px-4 py-3 space-y-2">
           {links.map((item) => {
             const Icon = item.icon;
-            const ativo = pathname === item.href;
+            const ativo = estaAtivo(item);
             return (
               <Link
                 key={item.href}

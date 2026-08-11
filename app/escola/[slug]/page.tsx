@@ -19,6 +19,7 @@ import {
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
+import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import {
   carregarEscolaPublica,
   urlDaFoto,
@@ -44,7 +45,9 @@ export default function EscolaPublicaPage({
 }) {
   const { slug } = use(params);
   const [dados, setDados] = useState<EscolaPublica | null>(null);
-  const [abaAtiva, setAbaAtiva] = useState<Aba>("sobre");
+  // O mapa abre primeiro: é o centro da experiência — "o que está
+  // acontecendo neste território?" — e o Sobre continua a um clique.
+  const [abaAtiva, setAbaAtiva] = useState<Aba>("mapa");
 
   useEffect(() => {
     let ativo = true;
@@ -87,11 +90,11 @@ export default function EscolaPublicaPage({
   const km = ((indicador?.extensao_total_m ?? 0) / 1000).toFixed(1).replace(".", ",");
 
   const abas: { id: Aba; label: string; icon: typeof Info }[] = [
-    { id: "sobre", label: "Sobre a escola", icon: Info },
     { id: "mapa", label: "Mapa do território", icon: MapIcon },
     { id: "expedicoes", label: `Expedições (${expedicoes.length})`, icon: Compass },
     { id: "registros", label: `Ocorrências (${ocorrencias.length})`, icon: AlertTriangle },
     { id: "galeria", label: `Galeria (${galeria.length + fotos.length})`, icon: ImageIcon },
+    { id: "sobre", label: "Sobre a escola", icon: Info },
   ];
 
   return (
@@ -240,9 +243,11 @@ export default function EscolaPublicaPage({
                   key={o.id}
                   className="bg-card border border-border rounded-md p-4 shadow-2xs flex gap-3"
                 >
-                  <span
-                    className="mt-1 w-3 h-3 rounded-full shrink-0 border-2 border-white shadow"
-                    style={{ backgroundColor: o.protocolo_cor ?? "#a63d40" }}
+                  <IconeBadge
+                    slug={slugDe(o.item_icone, o.protocolo_icone)}
+                    cor={o.protocolo_cor ?? "#a63d40"}
+                    tamanho={30}
+                    className="mt-0.5"
                   />
                   <div className="space-y-1 min-w-0">
                     <h3 className="text-sm font-semibold">

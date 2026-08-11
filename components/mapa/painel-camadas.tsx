@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { IconeBadge } from "./icones";
 
 // ─────────────────────────────────────────────
 // Painel lateral de camadas e filtros (desktop)
@@ -24,6 +25,8 @@ export interface ProtocoloCamada {
   codigo: string;
   nome: string;
   cor: string | null;
+  /** Slug do glifo em icones.tsx — o mesmo pin que aparece no mapa. */
+  icone: string | null;
   /** Protocolos de densidade viram grade; os demais, só pins. */
   forma_agregacao: string;
 }
@@ -99,10 +102,20 @@ export function PainelCamadas({
                   <button
                     key={p.codigo}
                     onClick={() => onToggleProtocolo(p.codigo)}
-                    className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2.5 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
                   >
+                    {/* O mesmo glifo do pin: o painel é a legenda do mapa. */}
+                    <IconeBadge
+                      slug={p.icone}
+                      cor={p.cor}
+                      tamanho={24}
+                      className={ligada ? "" : "opacity-35 saturate-0"}
+                    />
+                    <span className={`text-sm flex-1 ${ligada ? "" : "text-muted-foreground"}`}>
+                      {p.nome}
+                    </span>
                     <span
-                      className="w-8 h-5 rounded-full relative transition-colors"
+                      className="w-8 h-5 rounded-full relative transition-colors shrink-0"
                       style={{
                         backgroundColor: ligada
                           ? p.cor ?? "var(--color-primary)"
@@ -115,12 +128,6 @@ export function PainelCamadas({
                         }`}
                       />
                     </span>
-                    <span className="text-sm flex-1">{p.nome}</span>
-                    {p.forma_agregacao !== "densidade" && (
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        pin
-                      </span>
-                    )}
                   </button>
                 );
               })}
@@ -128,17 +135,28 @@ export function PainelCamadas({
               <div className="pt-1 mt-1 border-t border-glass-border space-y-2">
                 {(
                   [
-                    ["escolas", "Escolas"],
-                    ["ocorrencias", "Ocorrências"],
+                    ["escolas", "Escolas", "escola"],
+                    ["ocorrencias", "Ocorrências", null],
                   ] as const
-                ).map(([key, label]) => (
+                ).map(([key, label, slug]) => (
                   <button
                     key={key}
                     onClick={() => onToggleCamada(key)}
-                    className="flex items-center gap-3 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2.5 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
                   >
+                    <IconeBadge
+                      slug={slug}
+                      cor={null}
+                      tamanho={24}
+                      className={camadas[key] ? "" : "opacity-35 saturate-0"}
+                    />
                     <span
-                      className={`w-8 h-5 rounded-full relative transition-colors ${
+                      className={`text-sm flex-1 ${camadas[key] ? "" : "text-muted-foreground"}`}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      className={`w-8 h-5 rounded-full relative transition-colors shrink-0 ${
                         camadas[key] ? "bg-primary" : "bg-muted"
                       }`}
                     >
@@ -148,7 +166,6 @@ export function PainelCamadas({
                         }`}
                       />
                     </span>
-                    <span className="text-sm">{label}</span>
                   </button>
                 ))}
               </div>

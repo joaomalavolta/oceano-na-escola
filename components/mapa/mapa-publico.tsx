@@ -12,7 +12,7 @@ import MapGL, {
   type MapLayerMouseEvent,
 } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
-import { Loader2, AlertTriangle, SearchX, GraduationCap } from "lucide-react";
+import { Loader2, AlertTriangle, SearchX } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -24,6 +24,7 @@ import {
 import {
   mockEscolas,
   mockGrade,
+  mockPontuais,
   mockIndicadoresEscola,
   mockIndicadoresGerais,
   hexDensidade,
@@ -31,6 +32,7 @@ import {
   PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
 import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
+import { PinMapa, slugDe } from "./icones";
 import { BarraSuperior } from "./barra-superior";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
@@ -95,7 +97,7 @@ export function MapaPublico() {
     indicadoresEscola: mockIndicadoresEscola,
     indicadoresGerais: mockIndicadoresGerais,
     protocolos: PROTOCOLOS_INICIAIS,
-    pontuais: [],
+    pontuais: mockPontuais,
     origem: "mock",
     erro: null,
   });
@@ -317,6 +319,7 @@ export function MapaPublico() {
         codigo: p.codigo,
         nome: p.nome,
         cor: p.cor,
+        icone: p.icone,
         forma_agregacao: p.forma_agregacao,
       })),
     [dados.protocolos]
@@ -386,16 +389,20 @@ export function MapaPublico() {
               : null;
 
           return (
-            <Marker key={`oc-${o.id}`} latitude={lat} longitude={lng} anchor="center">
+            <Marker key={`oc-${o.id}`} latitude={lat} longitude={lng} anchor="bottom">
               <div
-                className="group relative flex items-center justify-center"
+                className="group relative flex flex-col items-center"
                 title={`${o.item_nome ?? o.descricao}${magnitude ? ` — ${magnitude}` : ""} · ${o.escola_nome}`}
               >
-                <span
-                  className="block w-3.5 h-3.5 rounded-full border-2 border-white shadow-md transition-transform group-hover:scale-125"
-                  style={{ backgroundColor: cor }}
+                {/* O glifo do item; sem ele, o do protocolo. A cauda da
+                    gota aponta a coordenada exata — por isso anchor bottom. */}
+                <PinMapa
+                  slug={slugDe(o.item_icone, o.protocolo_icone)}
+                  cor={cor}
+                  tamanho={28}
+                  className="drop-shadow-md transition-transform group-hover:scale-110 origin-bottom"
                 />
-                <div className="pointer-events-none absolute bottom-5 hidden group-hover:block whitespace-nowrap px-2 py-1 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground shadow-lg z-10">
+                <div className="pointer-events-none absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap px-2 py-1 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground shadow-lg z-10">
                   <strong>{o.item_nome ?? o.descricao}</strong>
                   {magnitude && <span className="ml-1 tabular-nums">{magnitude}</span>}
                   <span className="block text-muted-foreground">{o.protocolo_nome}</span>
@@ -419,9 +426,12 @@ export function MapaPublico() {
                 title={escola.nome}
                 className="group flex flex-col items-center"
               >
-                <div className="bg-primary text-primary-foreground rounded-full p-1.5 shadow-md group-hover:scale-110 transition-transform">
-                  <GraduationCap size={18} />
-                </div>
+                <PinMapa
+                  slug="escola"
+                  cor={null}
+                  tamanho={34}
+                  className="drop-shadow-md transition-transform group-hover:scale-110 origin-bottom"
+                />
                 <div className="mt-0.5 px-1.5 py-0.5 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground max-w-[120px] truncate">
                   {escola.nome.split(" ").slice(0, 3).join(" ")}
                 </div>

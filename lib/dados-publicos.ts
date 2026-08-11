@@ -22,6 +22,7 @@ import type {
 import {
   mockEscolas,
   mockGrade,
+  mockPontuais,
   mockIndicadoresEscola,
   mockIndicadoresGerais,
 } from "./mapa-publico";
@@ -44,7 +45,9 @@ export interface DadosPublicos {
 
 /**
  * Protocolos de reserva, para quando o mapa roda sobre o mock.
- * Espelham o que está cadastrado como RES e MIC.
+ * Espelham o catálogo do banco — os sete, não só RES e MIC: as camadas
+ * nascem desta lista, e protocolo ausente aqui deixaria o pin do mock
+ * invisível até o Supabase responder.
  */
 export const PROTOCOLOS_INICIAIS: PubProtocolo[] = [
   {
@@ -54,6 +57,26 @@ export const PROTOCOLOS_INICIAIS: PubProtocolo[] = [
   {
     id: 2, codigo: "MIC", nome: "Microplásticos", descricao: null,
     icone: "microplasticos", cor: "#7c5cbf", unidade_medida: "itens/m²", forma_agregacao: "densidade",
+  },
+  {
+    id: 3, codigo: "RST", nome: "Restinga e vegetação costeira", descricao: null,
+    icone: "restinga", cor: "#4a7c2d", unidade_medida: "m²", forma_agregacao: "area_afetada",
+  },
+  {
+    id: 4, codigo: "ESG", nome: "Esgoto e drenagem", descricao: null,
+    icone: "esgoto", cor: "#8a5a2b", unidade_medida: "pontos", forma_agregacao: "ocorrencia",
+  },
+  {
+    id: 5, codigo: "DES", nome: "Descarte irregular", descricao: null,
+    icone: "descarte", cor: "#a63d40", unidade_medida: "pontos", forma_agregacao: "ocorrencia",
+  },
+  {
+    id: 6, codigo: "AVI", nome: "Avifauna e fauna costeira", descricao: null,
+    icone: "avifauna", cor: "#2f6f9f", unidade_medida: "indivíduos", forma_agregacao: "ocorrencia",
+  },
+  {
+    id: 7, codigo: "AGU", nome: "Qualidade da água", descricao: null,
+    icone: "agua", cor: "#1f8a9e", unidade_medida: "valor medido", forma_agregacao: "medida",
   },
 ];
 
@@ -94,7 +117,7 @@ const DADOS_MOCK: DadosPublicos = {
   indicadoresEscola: mockIndicadoresEscola,
   indicadoresGerais: mockIndicadoresGerais,
   protocolos: PROTOCOLOS_INICIAIS,
-  pontuais: [],
+  pontuais: mockPontuais,
   origem: "mock",
   erro: null,
 };

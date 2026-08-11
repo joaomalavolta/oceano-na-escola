@@ -1,18 +1,29 @@
 'use client'
 
 import Link from 'next/link'
-import { Waves, LogIn } from 'lucide-react'
+import { Waves, LogIn, LayoutDashboard } from 'lucide-react'
+import { useSessao } from '@/lib/sessao'
 
-// Só rotas que existem. '/mapa' apontava para lugar nenhum: o mapa é a
-// home. '/sobre' sai até a página institucional ser escrita — link que
-// devolve 404 é pior que link ausente.
-const navLinks = [
+// Só rotas que existem e que abrem para quem está olhando. Expedições é
+// área autenticada: para o visitante o link terminava na tela de
+// entrada — promessa não cumprida. Logado, ele volta, junto do painel.
+const publicos = [
+  { href: '/', label: 'Mapa' },
+  { href: '/escolas', label: 'Escolas' },
+] as const
+
+const autenticados = [
   { href: '/', label: 'Mapa' },
   { href: '/escolas', label: 'Escolas' },
   { href: '/expedicoes', label: 'Expedições' },
+  { href: '/painel', label: 'Painel' },
 ] as const
 
 export function BarraSuperior() {
+  const { session } = useSessao()
+  const autenticado = session !== null
+  const navLinks = autenticado ? autenticados : publicos
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-glass-bg backdrop-blur-xl border-b border-glass-border">
       <div className="flex items-center justify-between px-4 py-2.5">
@@ -35,14 +46,24 @@ export function BarraSuperior() {
           ))}
         </nav>
 
-        {/* Entrar */}
-        <Link
-          href="/entrar"
-          className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition"
-        >
-          <LogIn className="h-4 w-4" />
-          <span>Entrar</span>
-        </Link>
+        {/* Entrar / Painel */}
+        {autenticado ? (
+          <Link
+            href="/painel"
+            className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Minha escola</span>
+          </Link>
+        ) : (
+          <Link
+            href="/entrar"
+            className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition"
+          >
+            <LogIn className="h-4 w-4" />
+            <span>Entrar</span>
+          </Link>
+        )}
       </div>
     </header>
   )

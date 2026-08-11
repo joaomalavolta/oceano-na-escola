@@ -8,7 +8,7 @@ import MapGL, {
   AttributionControl,
 } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
-import { GraduationCap } from "lucide-react";
+import { PinMapa, slugDe } from "./icones";
 
 import type {
   PubEscola,
@@ -87,11 +87,8 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
       <NavigationControl position="top-right" showCompass={false} />
 
       <Marker latitude={escola.lat} longitude={escola.lng} anchor="bottom">
-        <div
-          title={escola.nome}
-          className="bg-primary text-primary-foreground rounded-full p-1.5 shadow-md"
-        >
-          <GraduationCap size={18} />
+        <div title={escola.nome}>
+          <PinMapa slug="escola" cor={null} tamanho={34} className="drop-shadow-md" />
         </div>
       </Marker>
 
@@ -100,17 +97,20 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
           key={o.id}
           latitude={xy[1]}
           longitude={xy[0]}
-          anchor="center"
+          anchor="bottom"
           onClick={(e) => {
             e.originalEvent.stopPropagation();
             setAberta(o);
           }}
         >
-          <span
-            title={o.item_nome ?? o.descricao}
-            className="block w-3.5 h-3.5 rounded-full border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform"
-            style={{ backgroundColor: o.protocolo_cor ?? "#a63d40" }}
-          />
+          <div title={o.item_nome ?? o.descricao} className="cursor-pointer">
+            <PinMapa
+              slug={slugDe(o.item_icone, o.protocolo_icone)}
+              cor={o.protocolo_cor ?? "#a63d40"}
+              tamanho={28}
+              className="drop-shadow-md hover:scale-110 transition-transform origin-bottom"
+            />
+          </div>
         </Marker>
       ))}
 
