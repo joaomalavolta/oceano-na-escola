@@ -2,12 +2,11 @@
 
 **Instituto Ecosurf** · Itanhaém/SP · Agosto de 2026
 
-Atualização da v0.2 com as definições de João Malavolta e com o registro do que já foi construído.
+Terceira versão das premissas. As decisões da v0.2 que a construção confirmou seguem como estavam;
+as que a construção obrigou a rever estão marcadas *(revisto em 12/08/2026)*, e o que mudou está
+listado no changelog, no fim do documento.
 
-As premissas continuam sendo a decisão; os blocos em itálico marcados *Implementado* dizem como
-cada uma virou plataforma, e onde a construção foi além ou ficou aquém do previsto. Quando as duas
-coisas divergirem, a premissa manda — foi assim que a exportação de dados voltou para trás do
-login.
+Este documento é a decisão. Quando ele e a plataforma divergirem, ele manda.
 
 ---
 
@@ -39,55 +38,62 @@ Funcionalidade que não couber em pelo menos um deles fica fora.
 - Nome de estudante não aparece em página pública.
 - Imagens e informações permanecem na plataforma como **memória e documento** do trabalho da escola.
 - Galeria sempre pública, com **curadoria do professor ou coordenador** responsável pela escola.
+  A foto nasce despublicada e só entra na galeria por ato de uma pessoa, que fica registrada.
 
-**Remoção a pedido da família:** havendo pedido formalizado, o Ecosurf remove em até **72 horas**.
-O prazo entra no termo de parceria e no termo de uso de imagem. Na plataforma, o pedido chega por
-um botão de solicitação no perfil da escola, e a imagem passa ao estado "despublicada" antes da
-exclusão definitiva.
+**Remoção a pedido da família** *(revisto em 12/08/2026)*
 
-*Implementado.* O botão está em cada foto da galeria pública e é aberto a quem não tem conta —
-quem precisa pedir é a família, e família não tem login. O pedido tira a imagem do ar no mesmo
-instante, por gatilho no banco; o prazo de 72 horas conta para a exclusão do arquivo, que a
-escola ou o Ecosurf executam em `/galeria`. Quem tem vínculo com a escola pode atender, além do
-Ecosurf: o termo promete um prazo, não uma pessoa específica.
+Havendo pedido formalizado, o Ecosurf remove em até **72 horas**. O prazo entra no termo de
+parceria e no termo de uso de imagem.
+
+O prazo de 72 horas conta para a **exclusão do arquivo**, não para a retirada do ar: a imagem é
+despublicada no instante em que o pedido é registrado. Quem pede não espera atendimento para a foto
+sair de vista.
+
+O pedido é aberto a quem não tem conta — quem precisa pedir é a família, e família não tem login
+na plataforma. Pode atender tanto o Ecosurf quanto quem tem vínculo com a escola: o termo promete
+um prazo, não uma pessoa específica, e a escola é quem age mais rápido.
 
 ---
 
-## 3. Registro de campo
+## 3. Registro de campo *(revisto em 12/08/2026)*
 
-- A ficha impressa é o registro primário de toda ação de campo, obrigatória.
-- Duas fichas: a do aluno mapeador (bruta, por equipe) e a do professor (consolidada).
-- O professor transcreve pelo celular em campo ou pelo computador na escola ou em casa.
+O registro tem duas naturezas, e a v0.2 tratava as duas como uma só.
+
+**Contagem por área — a ficha impressa é o registro primário.** Vale para resíduos costeiros e
+microplásticos. A ficha é obrigatória, em duas versões: a do aluno mapeador (bruta, por equipe) e a
+do professor (consolidada). O professor transcreve depois, pelo celular em campo ou pelo computador
+na escola. A razão é metodológica e não muda: contagem sem esforço amostral registrado não vira
+densidade, e sem densidade o dado não compara praia nem ano.
+
+**Ocorrência pontual — nasce no celular.** Vale para entulho, lançamento de esgoto, supressão de
+restinga, encalhe, avistamento e medida de água. Não há quadrat nem trecho: o aluno registra o que
+encontra no ponto em que está, com GPS, foto e magnitude. Passar isso por ficha de papel seria
+transcrever uma coordenada que o aparelho já sabe.
+
+Demais regras de campo:
+
 - Depois da transcrição, a turma trabalha em sala sobre o que foi mapeado.
 - Impressão das fichas: Ecosurf ou escola, definido em acordo prévio.
-- Cronograma de saída de campo e prazo de transcrição: definidos no acordo prévio entre escola e
-  Ecosurf.
+- Cronograma de saída e prazo de transcrição: definidos no acordo prévio entre escola e Ecosurf.
 
 **Consequências técnicas assumidas:**
 
 - A definição do protocolo gera o formulário web **e** o PDF da ficha impressa, no mesmo layout e
-  na mesma ordem dos campos.
+  na mesma ordem dos campos. Protocolo novo entra por cadastro, sem alteração de schema.
 - A data da observação é a da saída de campo, não a da digitação. Dois carimbos de tempo distintos.
 - Foto ou digitalização das fichas dos alunos fica anexada à Expedição como evidência.
-- Offline completo não entra no MVP. Rascunho salvo no navegador e formulário que não perde o
-  preenchido se a conexão cair.
-
-*Implementado, e um pouco além do previsto.* A ficha impressa continua sendo o registro primário
-das contagens por área — resíduos e microplásticos —, porque contagem sem esforço amostral não
-vira densidade. O que passou a nascer direto no celular é a **ocorrência pontual**: entulho,
-lançamento de esgoto, supressão de restinga, encalhe. Em `/campo`, com GPS, foto e magnitude.
-
-Quando a rede falha, o registro não falha junto: ele entra numa fila em IndexedDB, foto inclusive,
-e sobe quando a conexão volta. A plataforma é instalável (PWA), mas o service worker guarda só o
-casco do app — dado nunca, porque mostrar dado velho como se fosse atual é pior do que dizer "sem
-conexão".
+- **Offline parcial, não completo.** O registro feito sem rede fica guardado no aparelho, foto
+  inclusive, e sobe quando a conexão volta. A plataforma é instalável, mas o cache guarda apenas o
+  casco do aplicativo: dado nunca. Mostrar dado velho como se fosse atual é pior do que dizer "sem
+  conexão".
 
 ---
 
 ## 4. Dispositivos em campo
 
 - Celular do professor, ou de aluno que se voluntarie a ceder o aparelho.
-- Há conectividade nas praias onde as expedições ocorrem.
+- Há conectividade nas praias onde as expedições ocorrem — e, quando não houver, o registro espera
+  no aparelho, conforme o bloco 3.
 - A escola solicita formalmente o uso do aparelho, previsto no termo de parceria.
 
 **Regras que decorrem disso:**
@@ -99,65 +105,70 @@ conexão".
 
 ---
 
-## 5. Papéis e validação
+## 5. Papéis e validação *(revisto em 12/08/2026)*
 
 | Papel | Faz o quê |
 |---|---|
-| Professor | Cadastra escola e turma, cria expedições, transcreve fichas, valida, publica |
+| Professor | Cadastra escola e turma, cria expedições, registra em campo, transcreve fichas, cura a galeria, valida, publica |
 | Coordenação escolar | Acompanha as turmas da escola e faz curadoria da galeria |
 | Coordenação municipal | Acompanha várias escolas |
 | Pesquisador | Consulta e exporta dados |
 | Administrador Ecosurf | Gestão da rede e validação técnica junto ao professor |
 
-Estados do dado: rascunho → enviado → revisado → validado → publicado.
+Estados do dado: **rascunho → enviado → revisado → validado → publicado.**
 
 - Validação **em lote**, por expedição, com possibilidade de marcar exceções individuais.
 - Validação técnica: responsabilidade do professor em parceria com o Ecosurf.
+- **A transição avança um degrau por vez.** Voltar é livre — devolver para correção faz parte do
+  fluxo, e expedição publicada por engano precisa poder sair do mapa sem refazer o caminho.
+- Devolver desfaz a validação: o carimbo de quem validou não sobrevive ao dado que ele validou.
+- **Não se publica expedição sem nenhum dado.** Ela não daria erro em lugar nenhum: apenas não
+  apareceria no mapa, e quem publicou ficaria procurando o defeito.
 
-*Implementado em `/expedicoes/[id]/revisar`.* A regra da transição mora no banco, não no botão: um
-gatilho só deixa avançar um degrau por vez, carimba quem validou e quando, limpa o carimbo se a
-expedição for devolvida para correção, e recusa publicar expedição sem nenhuma unidade amostral
-nem ocorrência — que não daria erro em lugar nenhum, apenas sumiria do mapa.
+Essas regras vivem no banco, não na tela. Botão não é regra.
 
-A tela confere, antes de publicar, as três condições que decidem se o dado aparece de fato, e
-nenhuma delas falha com mensagem: status publicado, escola publicada, e célula com pelo menos três
-unidades amostrais. A função `previa_grade_expedicao` responde a última repetindo a agregação da
-view pública para uma expedição só.
+**O que decide se o dado publicado aparece de fato.** Três condições, e nenhuma delas falha com
+mensagem de erro — quando falta uma, o dado simplesmente não aparece. Por isso a tela de revisão
+confere as três antes de publicar:
 
----
-
-## 6. Escopo do piloto
-
-O piloto será **fictício**, para demonstração e teste da plataforma:
-
-- Escola fictícia.
-- Território: Praia do Sonho, Itanhaém.
-- Duas expedições fictícias.
-- Um protocolo fictício, o mais completo possível.
-
-Critério de sucesso: percorrer o ciclo inteiro na plataforma, do cadastro da escola à publicação no
-mapa, sem travar em nenhuma etapa.
-
-Nesta fase, **tudo é fictício**: escola, turma, professores, expedições, protocolo, fichas
-preenchidas, fotos e indicadores. A base serve para construir e demonstrar a plataforma inteira,
-de ponta a ponta, sem envolver nenhuma escola, aluno ou dado real.
+1. Expedição publicada.
+2. Escola publicada.
+3. Célula da grade com pelo menos três unidades amostrais (bloco 9).
 
 ---
 
-## 7. Sustentação
+## 6. Escopo do piloto *(revisto em 12/08/2026)*
+
+O piloto é **inteiramente fictício**: escolas, turmas, territórios, expedições, protocolos, fichas
+preenchidas, ocorrências, diário e histórias. Nenhuma escola, aluno ou dado real nesta fase.
+
+- **Quatro escolas fictícias**, em Itanhaém.
+- **Territórios fictícios** — praia, restinga, foz, manguezal e costão. Nomes inventados: nomear a
+  praia real que uma turma monitora ajuda a identificar a turma, que é justamente o que o bloco 9
+  protege.
+- **Doze expedições fictícias**, com fichas transcritas e ocorrências registradas.
+- **Sete protocolos**, dois de densidade e cinco de ocorrência.
+
+Critério de sucesso: percorrer o ciclo inteiro na plataforma, sem travar em nenhuma etapa —
+cadastrar a escola, abrir a expedição, registrar em campo, transcrever a ficha, revisar, publicar
+no mapa e escrever a história do território. **Critério atingido.**
+
+---
+
+## 7. Sustentação *(revisto em 12/08/2026)*
 
 - O Instituto Ecosurf mantém a plataforma em www.oceanonaescola.org.
 - Recursos de patrocinadores, secretarias de ensino e fontes correlatas.
-- Plataforma privada, dados privados. Sem publicação de dados abertos nesta fase.
+- Plataforma privada, dados privados. **Sem publicação de dados abertos nesta fase.**
 
-*Como isso ficou na plataforma.* A página `/dados` mostra a quem não tem login apenas o que o §9
-já abre — indicadores agregados por escola, município e rede. A exportação em CSV, que o §9 põe
-sob login, pede sessão.
+O que existe hoje não é dado aberto: é a mesma informação do mapa, em outra forma. Quem não tem
+login vê os indicadores agregados que o bloco 9 já abre. A exportação em arquivo, que o bloco 9 põe
+sob login, exige sessão.
 
-Vale registrar o limite dessa trava: ela fecha a porta do produto, não a do banco. As views `pub_*`
-seguem legíveis pela chave anônima porque é delas que vive o mapa público, e quem souber usar a API
-do PostgREST alcança o mesmo conteúdo. Fechar de verdade significaria revogar o `select` do `anon`
-e derrubar o mapa junto. A decisão do cenário C já pesou isso ao publicar o mapa agregado.
+Registrado o limite dessa trava, para não se confiar demais nela: **ela fecha a porta do produto,
+não a do banco.** As views públicas continuam legíveis pela chave anônima, porque é delas que vive
+o mapa; quem souber usar a API alcança o mesmo conteúdo. Fechar de verdade significaria derrubar o
+mapa público junto. O cenário C já pesou esse custo quando decidiu publicar o mapa agregado.
 
 **Custo de infraestrutura:** sempre coberto por recursos próprios do Ecosurf ou de terceiros
 (patrocinadores, secretarias de ensino e fontes correlatas), inclusive a partir do segundo ano.
@@ -168,22 +179,28 @@ pesquisadores, poder público, imprensa e parceiros, e precisa constar do termo 
 
 ---
 
-## 8. Decisões técnicas fixadas
+## 8. Decisões técnicas fixadas *(revisto em 12/08/2026)*
 
 - Projeto Supabase separado do ecosurf.app, com PostgreSQL e PostGIS.
 - RLS escopado por escola desde a primeira migration.
 - Next.js com TypeScript, shadcn/ui e Tailwind. MapLibre GL como motor cartográfico.
 - Design system compartilhado com o ecosurf.app por cópia, não por runtime comum.
-- Iconografia própria. Os ícones do Green Map System são protegidos e servem só como referência.
+- **Iconografia própria.** Os ícones do Green Map System são protegidos e servem só como
+  referência. Nenhum asset de banco de ícones de terceiros entra no repositório: a licença
+  acompanha o arquivo, e o repositório é público.
+- **Armazenamento de imagem privado.** A camada pública entrega o caminho do arquivo a quem não tem
+  login; com armazenamento aberto, nem a curadoria nem o termo de imagem protegeriam a foto. A
+  imagem chega ao navegador por endereço assinado e temporário.
+- **A regra crítica mora no banco, não na tela.** Transição de status, despublicação por pedido de
+  remoção e piso de agregação são gatilhos e políticas. Tela é conveniência; quem protege é o banco.
 - Domínio oceanonaescola.org.
 
 ---
 
-## 9. Ponto que precisa de decisão antes do modelo de dados
+## 9. Visibilidade: o que o visitante enxerga
 
-A titularidade já está resolvida no bloco 7: os dados são do Ecosurf e das escolas, e terceiros só
-os usam com consentimento. Falta a outra metade da pergunta, que é de visibilidade: o que um
-visitante sem login enxerga ao abrir o site. O modelo de permissões muda conforme a resposta.
+A titularidade está resolvida no bloco 7: os dados são do Ecosurf e das escolas, e terceiros só os
+usam com consentimento. Este bloco resolve a outra metade — o que um visitante sem login enxerga.
 
 | Cenário | Mapa e página da escola | Dados brutos | Galeria |
 |---|---|---|---|
@@ -192,27 +209,27 @@ visitante sem login enxerga ao abrir o site. O modelo de permissões muda confor
 | **C. Mista** | Mapa público com dado agregado, sem coordenada exata | Só logado | Pública, curada |
 
 **Adotado: cenário C**, que é o padrão em plataformas de ciência cidadã com participação de menores.
-Na prática:
 
 **Aberto a visitante sem login**
 
 - Mapa da rede com as escolas participantes e os territórios monitorados.
-- Indicadores agregados por escola, município e rede (número de expedições, observações, extensão
-  monitorada, resíduos catalogados, espécies registradas).
+- Indicadores agregados por escola, município e rede.
 - Página pública de cada escola, sem nome de estudante.
 - Galeria pública curada pelo professor ou coordenador.
+- Histórias do Território publicadas pela escola.
 - Páginas institucionais do projeto.
 
 **Só com login**
 
-- Registro individual de observação e sua coordenada exata.
+- Registro individual de observação e a coordenada exata do esforço amostral.
 - Tabelas, filtros avançados, exportação e download de dados.
 - Fichas digitalizadas, fotos não curadas e qualquer dado em revisão.
+- Diário de Campo.
 - Área administrativa da escola e da turma.
 
 **Regras de proteção** *(revisto em 11/08/2026)*
 
-A regra deixou de ser uma só. Ela passou a distinguir o que a coordenada revela.
+A regra deixou de ser uma só. Ela distingue o que a coordenada revela.
 
 - **Esforço amostral — agregado em grade de 100 m.** Onde a turma percorreu o trecho ou instalou o
   quadrat aparece somado por célula, e a célula só é publicada a partir de três unidades amostrais.
@@ -228,14 +245,42 @@ A regra deixou de ser uma só. Ela passou a distinguir o que a coordenada revela
 - Pesquisador que precise da coordenada exata do esforço amostral solicita acesso ao Ecosurf,
   conforme a regra de uso de dados do bloco 7.
 
-*Sobre o armazenamento das fotos.* O bucket é **privado**, e essa decisão não é detalhe de
-infraestrutura: a view pública entrega o caminho do arquivo a quem não tem login, e com bucket
-público nem a curadoria do professor nem o `termos_ok` da escola protegeriam a imagem. As políticas
-do storage repetem as três condições acima, e a foto chega ao navegador por URL assinada.
+---
+
+## 10. Protocolos *(novo em 12/08/2026)*
+
+O protocolo se descreve a si mesmo: seções, campos e itens ficam em tabelas, e a mesma definição
+gera o formulário da tela e o PDF da ficha impressa. Protocolo novo entra por cadastro.
+
+Todo dado fica amarrado à versão do protocolo que o gerou. Revisar um protocolo não reescreve o
+passado.
+
+**Sete protocolos aprovados**, em duas famílias:
+
+| Família | Protocolos | O que o método enfatiza |
+|---|---|---|
+| Densidade | RES, MIC | Esforço amostral: área conhecida, ficha impressa, trecho e quadrat |
+| Ocorrência | RST, ESG, DES, AVI, AGU | Observar sem interferir e sem se expor |
+
+O método de cada um é parte do protocolo, não anexo: está escrito por extenso, vai para a ficha
+impressa e aparece na tela de campo no momento em que o aluno escolhe o protocolo — porque metade
+dele é cuidado de segurança, e a hora de ler é antes de chegar perto.
+
+Três regras atravessam os protocolos de ocorrência:
+
+- **Descrever vale mais que nomear errado.** Espécie só é registrada com identificação segura; na
+  dúvida, foto e descrição.
+- **Ninho não ganha coordenada de acesso.** Registro à distância, sem foto aproximada e sem indicar
+  trilha na descrição.
+- **Valor isolado diz pouco.** É a repetição no mesmo ponto e nas mesmas condições que constrói a
+  série.
+
+As listas de itens abrem com quatro entradas por protocolo de ocorrência e serão revistas conforme
+o uso real das escolas.
 
 ---
 
-## 10. Educomunicação
+## 11. Educomunicação *(novo em 12/08/2026)*
 
 Duas peças herdadas do Rio do Nosso Bairro, separadas por uma regra de privacidade.
 
@@ -250,12 +295,12 @@ fichas digitalizadas e das fotos sem curadoria: pode ter nome, desabafo, erro de
 indicadores das expedições que narra. A história **aponta** para as expedições em vez de copiar
 números, e por isso não envelhece quando uma contagem é corrigida na revisão.
 
-Publicar é decisão da escola, e retirar do ar apaga o carimbo de publicação — a página nunca
-mostra data de história que saiu.
+Publicar é decisão da escola, e retirar do ar apaga o carimbo de publicação — a página nunca mostra
+data de história que saiu.
 
 ---
 
-## 11. Reconhecimento, não classificação
+## 12. Reconhecimento, não classificação *(novo em 12/08/2026)*
 
 O plano de produção pede reconhecer expedições realizadas, territórios monitorados, protocolos
 aplicados e tempo de monitoramento. Pede também, na lista do que **não** reaproveitar do Rio do
@@ -266,17 +311,33 @@ percurso, e não existe classificação entre escolas nem entre estudantes. O cr
 a **continuidade** — meses distintos com saída de campo, não volume acumulado. Uma escola de duas
 turmas num município pequeno não aparece atrás de uma escola grande por ter menos gente.
 
-Nada é gravado: tudo se deriva do que já está publicado, sem tabela de pontos para desincronizar
-do dado real.
+Nada é gravado: tudo se deriva do que já está publicado, sem tabela de pontos para desincronizar do
+dado real.
+
+---
+
+## Changelog da v0.2 para a v0.3
+
+| Bloco | O que mudou | Por quê |
+|---|---|---|
+| 2 | O prazo de 72 h passou a valer para a exclusão do arquivo; a imagem sai do ar imediatamente | A v0.2 já dizia "despublicada antes da exclusão"; faltava dizer que isso é imediato |
+| 2 | A escola com vínculo também pode atender o pedido, além do Ecosurf | O termo promete prazo, não pessoa; a escola age mais rápido |
+| 3 | Separadas as duas naturezas de registro: contagem por área na ficha, ocorrência pontual no celular | Tratar as duas como uma só obrigava a transcrever coordenada que o aparelho já tem |
+| 3 | "Offline completo não entra no MVP" virou "offline parcial": fila local que sobe depois | O registro em campo não pode falhar por falta de sinal |
+| 5 | Explicitadas as regras de transição e o que impede a publicação | Estavam implícitas; passaram a viver no banco |
+| 6 | O piloto passou de 1 escola / 2 expedições / 1 protocolo para 4 / 12 / 7, com territórios fictícios | O piloto cresceu na construção; Praia do Sonho saiu por ser lugar real |
+| 7 | Descrito o que a página de dados abre e o limite real da trava de exportação | Evitar confiar numa trava que é de produto, não de banco |
+| 8 | Acrescentados armazenamento privado de imagem, proibição de asset de terceiros e a regra de que o crítico mora no banco | Decisões tomadas durante a construção |
+| 9 | Diário de Campo e Histórias entraram nas listas de visibilidade | Peças novas |
+| 10, 11, 12 | Blocos novos: protocolos, educomunicação e reconhecimento | Não existiam na v0.2 |
 
 ---
 
 ## Próximo passo
 
-Passo 2 concluído: os protocolos estão em `docs/02-protocolos.md` e no banco, e a ficha gera o
-formulário web. O ciclo do critério de sucesso do bloco 6 fecha ponta a ponta — cadastrar escola,
-abrir expedição, registrar em campo, transcrever a ficha, revisar, publicar no mapa, escrever a
-história.
+O ciclo do bloco 6 fecha ponta a ponta. Aberto para a próxima fase: API pública documentada,
+integração com universidades, sensoriamento remoto comparativo e identificação assistida de
+espécies.
 
-Aberto para a próxima fase: API pública documentada, integração com universidades, sensoriamento
-remoto comparativo e identificação assistida de espécies.
+Antes de qualquer escola real entrar: revisão técnica dos métodos e das listas de itens dos
+protocolos de ocorrência por quem conhece a restinga e a avifauna de Itanhaém.

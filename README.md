@@ -161,5 +161,7 @@ ocorrências, diário e histórias. Nenhuma escola, aluno ou dado real nesta fas
 
 ## Documentação
 
-- [`docs/01-premissas.md`](docs/01-premissas.md) — governança, dados pessoais, papéis, visibilidade
+- [`docs/01-premissas.md`](docs/01-premissas.md) — v0.3: governança, proteção de menores, registro
+  de campo, papéis e validação, visibilidade, educomunicação. Traz o changelog do que mudou desde
+  a v0.2 e por quê. **É a decisão: quando ele e a plataforma divergirem, ele manda.**
 - [`docs/02-protocolos.md`](docs/02-protocolos.md) — protocolos campo a campo e as duas fichas
