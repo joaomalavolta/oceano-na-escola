@@ -42,7 +42,6 @@ import { BarraSuperior } from "./barra-superior";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
 import { PopupCelula } from "./popup-celula";
-import { LegendaDensidade } from "./legenda-densidade";
 import { MobileSheet } from "./mobile-sheet";
 import { NavegacaoMobile } from "./navegacao-mobile";
 
@@ -415,20 +414,6 @@ export function MapaPublico() {
 
   // ── Listas para filtros ────────────────────────────────────────
 
-  // Protocolo que a legenda deve descrever. O filtro manda; sem ele,
-  // vale a camada ligada. Com as duas ligadas não há escala honesta que
-  // sirva para ambas, e a de resíduos é o padrão.
-  // A legenda descreve um protocolo por vez. Com o filtro, ele manda;
-  // sem filtro, vale a única camada de densidade ligada. Com mais de uma,
-  // não há escala honesta que sirva às duas — cai no padrão.
-  const protocoloExibido = useMemo(() => {
-    if (filtros.protocolo) return filtros.protocolo;
-    const densidadesLigadas = dados.protocolos.filter(
-      (p) => p.forma_agregacao === "densidade" && camadas.protocolos[p.codigo]
-    );
-    return densidadesLigadas.length === 1 ? densidadesLigadas[0].codigo : PROTOCOLO_PADRAO;
-  }, [filtros.protocolo, dados.protocolos, camadas.protocolos]);
-
   const listaMunicipios = useMemo(() => municipiosDe(dados.escolas), [dados.escolas]);
   const listaProtocolos = useMemo(
     () =>
@@ -662,16 +647,6 @@ export function MapaPublico() {
           ocorrenciasNaVista={ocorrenciasNaVista}
           totalDeOcorrencias={pontuaisFiltrados.length}
           onIrParaOcorrencia={irParaOcorrencia}
-        />
-      </div>
-
-      {/* Desktop: legenda */}
-      <div className="hidden md:block">
-        <LegendaDensidade
-          protocolo={protocoloExibido}
-          nome={dados.protocolos.find((p) => p.codigo === protocoloExibido)?.nome}
-          unidade={dados.protocolos.find((p) => p.codigo === protocoloExibido)?.unidade_medida}
-          escala={escalas.get(protocoloExibido) ?? escalaPadrao}
         />
       </div>
 
