@@ -12,6 +12,23 @@
  * uma conta que possa expirar e derrubar o mapa da rede.
  */
 
+import type { StyleSpecification } from "maplibre-gl";
+
+/**
+ * Estilo sem fonte alguma.
+ *
+ * O fundo entra como `Source` declarada em React, e não aqui, para
+ * poder trocar sem recriar o estilo — recriar derrubaria os pinos e a
+ * grade junto. O fundo pintado evita o vazio preto enquanto o primeiro
+ * tile não chega.
+ */
+export const ESTILO_SEM_FUNDO: StyleSpecification = {
+  version: 8,
+  name: "Oceano na Escola",
+  sources: {},
+  layers: [{ id: "fundo", type: "background", paint: { "background-color": "#dde5e3" } }],
+};
+
 export interface MapaDeFundo {
   id: string;
   nome: string;
@@ -67,3 +84,16 @@ export function fundoPorId(id: string): MapaDeFundo {
 
 /** Onde o navegador guarda a escolha, para ela sobreviver ao recarregar. */
 export const CHAVE_FUNDO = "oceano.mapa-de-fundo";
+
+/**
+ * Lê a escolha guardada. Só serve em componente com `ssr: false` — no
+ * servidor não há `window`, e ali devolve o padrão.
+ */
+export function fundoSalvo(): string {
+  if (typeof window === "undefined") return FUNDO_PADRAO.id;
+  return window.localStorage.getItem(CHAVE_FUNDO) || FUNDO_PADRAO.id;
+}
+
+export function salvaFundo(id: string): void {
+  window.localStorage.setItem(CHAVE_FUNDO, id);
+}

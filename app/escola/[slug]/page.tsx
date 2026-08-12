@@ -104,14 +104,33 @@ export default function EscolaPublicaPage({
   const { escola, indicador, expedicoes, ocorrencias, fotos, galeria } = dados;
   const km = ((indicador?.extensao_total_m ?? 0) / 1000).toFixed(1).replace(".", ",");
 
-  const abas: { id: Aba; label: string; icon: typeof Info }[] = [
-    { id: "mapa", label: "Mapa do território", icon: MapIcon },
-    { id: "expedicoes", label: `Expedições (${expedicoes.length})`, icon: Compass },
-    { id: "registros", label: `Ocorrências (${ocorrencias.length})`, icon: AlertTriangle },
-    { id: "historias", label: `Histórias (${historias.length})`, icon: BookText },
-    { id: "galeria", label: `Galeria (${galeria.length + fotos.length})`, icon: ImageIcon },
+  /**
+   * As abas.
+   *
+   * Os rótulos são curtos porque as sete somavam mais que a largura da
+   * faixa: nascia uma barra de rolagem horizontal com setas nas duas
+   * pontas, e as últimas abas ficavam escondidas atrás de um gesto que
+   * ninguém faz numa faixa de navegação. "Território" no lugar de "Mapa
+   * do território" também evita eco com o "Mapa" da barra de cima, que é
+   * outro mapa — o da rede inteira.
+   *
+   * A contagem sai do rótulo e vira campo próprio: assim a aba vazia
+   * pode se apagar sem que o número suma, que é o que diz "aqui ainda
+   * não tem nada" sem esconder a seção.
+   */
+  const abas: { id: Aba; label: string; contagem?: number; icon: typeof Info }[] = [
+    { id: "mapa", label: "Território", icon: MapIcon },
+    { id: "expedicoes", label: "Expedições", contagem: expedicoes.length, icon: Compass },
+    { id: "registros", label: "Ocorrências", contagem: ocorrencias.length, icon: AlertTriangle },
+    { id: "historias", label: "Histórias", contagem: historias.length, icon: BookText },
+    {
+      id: "galeria",
+      label: "Galeria",
+      contagem: galeria.length + fotos.length,
+      icon: ImageIcon,
+    },
     { id: "conquistas", label: "Conquistas", icon: Award },
-    { id: "sobre", label: "Sobre a escola", icon: Info },
+    { id: "sobre", label: "Sobre", icon: Info },
   ];
 
   const conquistas = calcularConquistas(indicador, expedicoes, ocorrencias, fotos.length);
@@ -176,21 +195,38 @@ export default function EscolaPublicaPage({
 
       {/* Abas */}
       <div className="bg-card border-b border-border sticky top-14 z-20">
-        <div className="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto">
-          {abas.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setAbaAtiva(id)}
-              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
-                abaAtiva === id
-                  ? "border-primary text-primary bg-primary/5"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-            </button>
-          ))}
+        {/* A rolagem continua, para o celular, mas sem a barra à mostra:
+            no desktop as abas cabem e o traço só sujava a faixa. */}
+        <div className="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto rolagem-invisivel">
+          {abas.map(({ id, label, contagem, icon: Icon }) => {
+            const ativa = abaAtiva === id;
+            const vazia = contagem === 0;
+            return (
+              <button
+                key={id}
+                onClick={() => setAbaAtiva(id)}
+                className={`flex items-center gap-2 px-3.5 py-3 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+                  ativa
+                    ? "border-primary text-primary bg-primary/5"
+                    : vazia
+                      ? "border-transparent text-muted-foreground/50 hover:text-muted-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
+                {contagem !== undefined && (
+                  <span
+                    className={`tabular-nums rounded-full px-1.5 py-px text-[10px] ${
+                      ativa ? "bg-primary/15" : "bg-muted"
+                    }`}
+                  >
+                    {contagem}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -208,12 +244,18 @@ export default function EscolaPublicaPage({
 
         {abaAtiva === "mapa" && (
           <div className="space-y-2">
-            <div className="h-[550px] border border-border rounded-md overflow-hidden relative shadow-sm">
+            {/* Altura pela janela, e não fixa em 550 px: num notebook de
+                tela baixa aquilo passava do rodapé e a legenda abaixo
+                ficava fora de vista; num monitor grande sobrava espaço
+                que o mapa não usava. Os limites impedem que encolha
+                demais no celular deitado. */}
+            <div className="h-[62vh] min-h-[380px] max-h-[640px] border border-border rounded-md overflow-hidden relative shadow-sm">
               <MapaEscola escola={escola} ocorrencias={ocorrencias} fotos={fotos} />
             </div>
             <p className="text-[11px] text-muted-foreground">
               Cada pino é uma ocorrência registrada em campo, na cor do seu protocolo.
-              Clique para ver a foto, a magnitude e a expedição de origem.
+              Clique para ver a foto, a magnitude e a expedição de origem. Troque para
+              satélite no canto do mapa para ver a restinga, a foz e a drenagem.
             </p>
           </div>
         )}

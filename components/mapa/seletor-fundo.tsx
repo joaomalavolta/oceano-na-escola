@@ -7,6 +7,16 @@ import { MAPAS_DE_FUNDO, type MapaDeFundo } from "@/lib/mapa-base";
 interface Props {
   atual: MapaDeFundo;
   onEscolher: (id: string) => void;
+  /**
+   * De que lado o painel cresce.
+   *
+   * Precisa acompanhar de que lado do mapa o botão está. Alinhado à
+   * direita num botão encostado na borda esquerda, o painel de 16rem
+   * avança para fora do mapa — e num mapa dentro de caixa com
+   * `overflow-hidden`, como o da página da escola, ele simplesmente
+   * some, com a camada de clique-fora ocupando o lugar dele.
+   */
+  alinhamento?: "direita" | "esquerda";
 }
 
 /**
@@ -18,7 +28,7 @@ interface Props {
  * diferença entre "Mapa" e "Satélite" é óbvia para quem já usou mapa
  * digital, e não é para quem está aprendendo a usar um.
  */
-export function SeletorFundo({ atual, onEscolher }: Props) {
+export function SeletorFundo({ atual, onEscolher, alinhamento = "direita" }: Props) {
   const [aberto, setAberto] = useState(false);
 
   return (
@@ -38,7 +48,11 @@ export function SeletorFundo({ atual, onEscolher }: Props) {
               mapa e roubaria a área de arrasto. */}
           <div className="fixed inset-0 z-40" onClick={() => setAberto(false)} />
 
-          <div className="absolute right-0 mt-1.5 z-50 w-64 rounded-sm bg-glass-bg backdrop-blur-xl border border-glass-border shadow-lg overflow-hidden">
+          <div
+            className={`absolute mt-1.5 z-50 w-64 rounded-sm bg-glass-bg backdrop-blur-xl border border-glass-border shadow-lg overflow-hidden ${
+              alinhamento === "direita" ? "right-0" : "left-0"
+            }`}
+          >
             {MAPAS_DE_FUNDO.map((m) => {
               const ativo = m.id === atual.id;
               return (

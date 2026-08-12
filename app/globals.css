@@ -171,6 +171,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Rola, mas sem a barra desenhada. Para faixas de navegação que cabem
+   no desktop e só precisam de rolagem no celular, onde a barra não é o
+   que se usa para rolar — o dedo é. */
+.rolagem-invisivel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rolagem-invisivel::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

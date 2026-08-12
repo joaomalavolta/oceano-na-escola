@@ -12,7 +12,6 @@ import MapGL, {
   type MapRef,
   type MapLayerMouseEvent,
 } from "react-map-gl/maplibre";
-import type { StyleSpecification } from "maplibre-gl";
 import { Loader2, AlertTriangle, SearchX } from "lucide-react";
 import Link from "next/link";
 
@@ -33,7 +32,7 @@ import {
   PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
 import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
-import { fundoPorId, CHAVE_FUNDO } from "@/lib/mapa-base";
+import { ESTILO_SEM_FUNDO, fundoPorId, fundoSalvo, salvaFundo } from "@/lib/mapa-base";
 import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
 import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
@@ -49,19 +48,6 @@ import { NavegacaoMobile } from "./navegacao-mobile";
 
 const ITANHAEM_CENTER = { longitude: -46.79, latitude: -24.18 };
 const INITIAL_ZOOM = 13;
-
-/**
- * Estilo sem fonte alguma: o mapa de fundo entra como Source declarada
- * em React, para poder trocar sem recriar o estilo — recriar derrubaria
- * a grade e os pinos junto. O fundo pintado evita o vazio preto
- * enquanto o primeiro tile não chega.
- */
-const MAP_STYLE: StyleSpecification = {
-  version: 8,
-  name: "Oceano na Escola",
-  sources: {},
-  layers: [{ id: "fundo", type: "background", paint: { "background-color": "#dde5e3" } }],
-};
 
 // ── Tipos internos ──────────────────────────────────────────────────
 
@@ -87,14 +73,12 @@ export function MapaPublico() {
   // ele nunca renderiza no servidor, então não há hidratação para
   // divergir. Buscar em effect obrigaria a pintar o fundo padrão antes
   // de trocar pelo escolhido, com um piscar de tiles a cada visita.
-  const [fundoId, setFundoId] = useState<string>(
-    () => (typeof window === "undefined" ? "" : window.localStorage.getItem(CHAVE_FUNDO)) || "ruas"
-  );
+  const [fundoId, setFundoId] = useState<string>(fundoSalvo);
   const fundo = fundoPorId(fundoId);
 
   const escolherFundo = useCallback((id: string) => {
     setFundoId(id);
-    window.localStorage.setItem(CHAVE_FUNDO, id);
+    salvaFundo(id);
   }, []);
 
   // Zoom só para o agrupamento dos pinos. Atualizado no fim do gesto e
@@ -446,7 +430,7 @@ export function MapaPublico() {
           zoom: INITIAL_ZOOM,
         }}
         style={{ width: "100%", height: "100%" }}
-        mapStyle={MAP_STYLE}
+        mapStyle={ESTILO_SEM_FUNDO}
         onLoad={onMapLoad}
         onError={onMapError}
         onZoomEnd={(e) => setZoom(e.viewState.zoom)}
