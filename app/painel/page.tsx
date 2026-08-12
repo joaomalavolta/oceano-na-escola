@@ -352,6 +352,7 @@ function PainelConteudo() {
             { href: "/galeria", titulo: "Curadoria da galeria", texto: "Publicar e retirar fotos, pedidos de remoção" },
             { href: "/historias", titulo: "Histórias do Território", texto: "O que os dados dizem deste lugar" },
             { href: "/dados", titulo: "Dados da rede", texto: "Indicadores por município e exportação" },
+            { href: "/admin", titulo: "Administração da rede", texto: "Papéis, vínculos e escolas" },
           ].map((a) => (
             <Link
               key={a.href}

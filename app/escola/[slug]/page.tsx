@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Award,
   BookText,
+  Pencil,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
@@ -24,6 +25,7 @@ import { EstadoContainer } from "@/components/ui/estado-container";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import { calcularConquistas } from "@/lib/conquistas";
 import { listarHistoriasPublicas, type HistoriaPublica } from "@/lib/historias";
+import { useSessao } from "@/lib/sessao";
 import { carregarEscolaPublica, type EscolaPublica } from "@/lib/dados-escola-publica";
 import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 import { PedirRemocao } from "@/components/ui/pedir-remocao";
@@ -53,6 +55,7 @@ export default function EscolaPublicaPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const { session } = useSessao();
   const [dados, setDados] = useState<EscolaPublica | null>(null);
   const [historias, setHistorias] = useState<HistoriaPublica[]>([]);
   const [historiaAberta, setHistoriaAberta] = useState<number | null>(null);
@@ -129,6 +132,18 @@ export default function EscolaPublicaPage({
               <p className="text-xs text-muted-foreground max-w-2xl">{escola.apresentacao}</p>
             )}
           </div>
+
+          {/* Só quem tem sessão vê o atalho. Quem tem sessão mas não tem
+              vínculo esbarra na própria tela de edição, que explica. */}
+          {session && (
+            <Link
+              href={`/escola/${escola.slug}/editar`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors self-start"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Editar esta escola
+            </Link>
+          )}
 
           <div className="flex items-center gap-4 bg-secondary/80 border border-border p-4 rounded-md">
             <div>
