@@ -10,7 +10,7 @@ import MapGL, {
 } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
 import { PinMapa, slugDe } from "./icones";
-import { PinoAgrupado } from "./pino-agrupado";
+import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
 
 import type {
@@ -94,8 +94,7 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
 
       {grupos.map((grupo) => {
         if (grupo.itens.length > 1) {
-          const protocolos = new Set(grupo.itens.map((o) => o.protocolo));
-          const unico = protocolos.size === 1 ? grupo.itens[0] : null;
+          const fatias = composicaoDoGrupo(grupo.itens);
           return (
             <Marker
               key={`gr-${grupo.chave}`}
@@ -105,8 +104,8 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
             >
               <PinoAgrupado
                 quantidade={grupo.itens.length}
-                cor={unico?.protocolo_cor ?? null}
-                titulo={`${grupo.itens.length} ocorrências aqui. Clique para aproximar.`}
+                fatias={fatias}
+                titulo={`${grupo.itens.length} ocorrências: ${resumoDoGrupo(fatias)}. Clique para aproximar.`}
                 onClick={() =>
                   mapRef.current?.easeTo({
                     center: [grupo.lng, grupo.lat],

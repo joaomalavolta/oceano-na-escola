@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Layers, X } from "lucide-react";
 import { IconeBadge } from "./icones";
+import { ListaOcorrencias } from "./lista-ocorrencias";
 import type { CamadasState, FiltrosState, ProtocoloCamada } from "./painel-camadas";
+import type { PubObservacaoPontual } from "@/lib/database.types";
 
 // ─────────────────────────────────────────────
 // Sheet deslizante de camadas e filtros (mobile)
@@ -19,6 +21,10 @@ interface MobileSheetProps {
   municipios: string[];
   escolas: { slug: string; nome: string }[];
   protocolos: ProtocoloCamada[];
+  contagens: Record<string, number>;
+  ocorrenciasNaVista: PubObservacaoPontual[];
+  totalDeOcorrencias: number;
+  onIrParaOcorrencia: (o: PubObservacaoPontual) => void;
 }
 
 export function MobileSheet({
@@ -30,8 +36,13 @@ export function MobileSheet({
   municipios,
   escolas,
   protocolos,
+  contagens,
+  ocorrenciasNaVista,
+  totalDeOcorrencias,
+  onIrParaOcorrencia,
 }: MobileSheetProps) {
   const [aberto, setAberto] = useState(false);
+  const [aba, setAba] = useState<"camadas" | "lista">("camadas");
 
   return (
     <>
@@ -72,18 +83,53 @@ export function MobileSheet({
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-2">
-            <span className="text-base font-semibold">Camadas e Filtros</span>
+          {/* Header com abas. No celular a lista importa mais que no
+              desktop: não há como passar o mouse sobre um pino para saber
+              o que ele é, então o mapa sozinho não diz nada em texto. */}
+          <div className="flex items-center gap-1 px-2 pb-1 border-b border-glass-border">
+            {(
+              [
+                ["camadas", "Camadas e filtros"],
+                ["lista", `Ocorrências (${ocorrenciasNaVista.length})`],
+              ] as const
+            ).map(([id, rotulo]) => (
+              <button
+                key={id}
+                onClick={() => setAba(id)}
+                className={`px-2.5 py-1.5 text-[13px] font-semibold rounded-sm transition-colors ${
+                  aba === id ? "text-primary bg-primary/10" : "text-muted-foreground"
+                }`}
+              >
+                {rotulo}
+              </button>
+            ))}
             <button
               onClick={() => setAberto(false)}
-              className="p-1 rounded-sm hover:bg-muted transition-colors"
+              aria-label="Fechar"
+              className="ml-auto p-1 rounded-sm hover:bg-muted transition-colors"
             >
               <X size={18} className="text-muted-foreground" />
             </button>
           </div>
 
-          <div className="px-4 pb-6 space-y-4">
+          <div className={`px-2 py-2 ${aba === "lista" ? "" : "hidden"}`}>
+            <p className="text-[11px] text-muted-foreground px-2 pb-2">
+              Ocorrências dentro do enquadramento. Mova o mapa para mudar a lista.
+            </p>
+            <ListaOcorrencias
+              ocorrencias={ocorrenciasNaVista}
+              totalNoFiltro={totalDeOcorrencias}
+              onIr={(o) => {
+                // Fecha junto: a folha cobre a metade de baixo da tela,
+                // e o ponto para onde o mapa acabou de ir ficaria embaixo
+                // dela.
+                onIrParaOcorrencia(o);
+                setAberto(false);
+              }}
+            />
+          </div>
+
+          <div className={`px-4 pb-6 pt-3 space-y-4 ${aba === "camadas" ? "" : "hidden"}`}>
             {/* Camadas */}
             <section>
               <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
@@ -104,8 +150,13 @@ export function MobileSheet({
                         tamanho={24}
                         className={ligada ? "" : "opacity-35 saturate-0"}
                       />
-                      <span className={`text-sm flex-1 ${ligada ? "" : "text-muted-foreground"}`}>
+                      <span
+                        className={`text-sm flex-1 truncate ${ligada ? "" : "text-muted-foreground"}`}
+                      >
                         {p.nome}
+                      </span>
+                      <span className="text-xs tabular-nums text-muted-foreground shrink-0 min-w-[1.5rem] text-right">
+                        {contagens[p.codigo] ?? 0}
                       </span>
                       <span
                         className="w-8 h-5 rounded-full relative transition-colors shrink-0"

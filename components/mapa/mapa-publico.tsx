@@ -7,6 +7,7 @@ import MapGL, {
   Popup,
   Marker,
   NavigationControl,
+  GeolocateControl,
   AttributionControl,
   type MapRef,
   type MapLayerMouseEvent,
@@ -35,7 +36,7 @@ import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.ty
 import { fundoPorId, CHAVE_FUNDO } from "@/lib/mapa-base";
 import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
 import { PinMapa, slugDe } from "./icones";
-import { PinoAgrupado } from "./pino-agrupado";
+import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BarraSuperior } from "./barra-superior";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
@@ -101,6 +102,27 @@ export function MapaPublico() {
   // não a cada quadro: a grade é em graus, então arrastar não muda
   // agrupamento nenhum — só aproximar muda.
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
+
+  // O enquadramento, para a lista e as contagens acompanharem o mapa.
+  // Diferente do zoom, este muda ao arrastar — por isso é lido no fim
+  // do movimento, e não durante.
+  const [vista, setVista] = useState<[number, number, number, number] | null>(null);
+
+  const lerVista = useCallback(() => {
+    const b = mapRef.current?.getBounds();
+    if (b) setVista([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
+  }, []);
+
+  const dentroDaVista = useCallback(
+    (geojson: string) => {
+      if (!vista) return true;
+      const xy = pontoDe(geojson);
+      if (!xy) return false;
+      const [lng, lat] = xy;
+      return lng >= vista[0] && lng <= vista[2] && lat >= vista[1] && lat <= vista[3];
+    },
+    [vista]
+  );
 
   // Dados públicos. Partem do mock e são substituídos pelo banco assim
   // que a consulta volta, para o mapa nunca renderizar vazio.
@@ -170,38 +192,53 @@ export function MapaPublico() {
 
   // ── Dados filtrados ─────────────────────────────────────────────
 
-  const gradeFiltrada = useMemo(() => {
+  /** Município de uma escola, por slug — usado pelos dois filtros. */
+  const municipioDaEscola = useCallback(
+    (slug: string) => dados.escolas.find((e) => e.slug === slug)?.municipio,
+    [dados.escolas]
+  );
+
+  /**
+   * Os filtros do painel, sem o liga-desliga das camadas.
+   *
+   * Separado porque as contagens do painel precisam justamente do que
+   * está desligado: o número existe para decidir se vale ligar a camada,
+   * e zeraria no momento em que é mais útil.
+   */
+  const gradeSemCamada = useMemo(() => {
     return dados.grade.filter((g) => {
-      if (filtros.municipio) {
-        const escola = dados.escolas.find((e) => e.slug === g.escola_slug);
-        if (escola?.municipio !== filtros.municipio) return false;
-      }
+      if (filtros.municipio && municipioDaEscola(g.escola_slug) !== filtros.municipio) return false;
       if (filtros.escola && g.escola_slug !== filtros.escola) return false;
       if (filtros.protocolo && g.protocolo !== filtros.protocolo) return false;
       if (filtros.mesInicio && g.mes < filtros.mesInicio) return false;
       if (filtros.mesFim && g.mes > filtros.mesFim + "-31") return false;
-
-      // A camada manda. Protocolo desconhecido fica oculto em vez de
-      // escapar dos testes e aparecer sempre, como acontecia com os
-      // dois booleanos fixos.
-      return camadas.protocolos[g.protocolo] === true;
+      return true;
     });
-  }, [dados.grade, dados.escolas, filtros, camadas.protocolos]);
+  }, [dados.grade, filtros, municipioDaEscola]);
 
-  const pontuaisFiltrados = useMemo(() => {
-    if (!camadas.ocorrencias) return [] as PubObservacaoPontual[];
+  const pontuaisSemCamada = useMemo(() => {
     return dados.pontuais.filter((o) => {
-      if (filtros.municipio) {
-        const escola = dados.escolas.find((e) => e.slug === o.escola_slug);
-        if (escola?.municipio !== filtros.municipio) return false;
-      }
+      if (filtros.municipio && municipioDaEscola(o.escola_slug) !== filtros.municipio) return false;
       if (filtros.escola && o.escola_slug !== filtros.escola) return false;
       if (filtros.protocolo && o.protocolo !== filtros.protocolo) return false;
       if (filtros.mesInicio && o.data_campo < filtros.mesInicio + "-01") return false;
       if (filtros.mesFim && o.data_campo > filtros.mesFim + "-31") return false;
-      return camadas.protocolos[o.protocolo] === true;
+      return true;
     });
-  }, [dados.pontuais, dados.escolas, filtros, camadas.protocolos, camadas.ocorrencias]);
+  }, [dados.pontuais, filtros, municipioDaEscola]);
+
+  // A camada manda no que o mapa desenha. Protocolo desconhecido fica
+  // oculto em vez de escapar dos testes e aparecer sempre, como
+  // acontecia com os dois booleanos fixos.
+  const gradeFiltrada = useMemo(
+    () => gradeSemCamada.filter((g) => camadas.protocolos[g.protocolo] === true),
+    [gradeSemCamada, camadas.protocolos]
+  );
+
+  const pontuaisFiltrados = useMemo(() => {
+    if (!camadas.ocorrencias) return [] as PubObservacaoPontual[];
+    return pontuaisSemCamada.filter((o) => camadas.protocolos[o.protocolo] === true);
+  }, [pontuaisSemCamada, camadas.protocolos, camadas.ocorrencias]);
 
   const escolasFiltradas = useMemo(() => {
     return dados.escolas.filter((e) => {
@@ -235,6 +272,42 @@ export function MapaPublico() {
   /** Aproxima até o grupo se desfazer, centrando nele. */
   const abrirGrupo = useCallback((lat: number, lng: number) => {
     mapRef.current?.easeTo({ center: [lng, lat], zoom: (mapRef.current.getZoom() ?? 13) + 2.5 });
+  }, []);
+
+  /** Ocorrências no enquadramento, que é o que a lista mostra. */
+  const ocorrenciasNaVista = useMemo(
+    () =>
+      pontuaisFiltrados
+        .filter((o) => dentroDaVista(o.ponto_geojson))
+        .sort((a, b) => b.data_campo.localeCompare(a.data_campo)),
+    [pontuaisFiltrados, dentroDaVista]
+  );
+
+  /**
+   * Quantas feições cada protocolo tem sob os filtros atuais.
+   *
+   * Conta o que o protocolo desenha: célula para os de densidade, pino
+   * para os de ocorrência.
+   *
+   * Duas decisões de escopo, e as duas são deliberadas. Ignora o
+   * liga-desliga da camada, porque o número existe para decidir se vale
+   * ligar e zeraria justamente quando é mais útil. E conta a rede
+   * inteira sob os filtros, não só o enquadramento — a lista já é o
+   * recorte do que está à vista, e um número que muda a cada arrasto
+   * não serviria para decidir nada.
+   */
+  const contagens = useMemo(() => {
+    const conta: Record<string, number> = {};
+    for (const g of gradeSemCamada) conta[g.protocolo] = (conta[g.protocolo] ?? 0) + 1;
+    for (const o of pontuaisSemCamada) conta[o.protocolo] = (conta[o.protocolo] ?? 0) + 1;
+    return conta;
+  }, [gradeSemCamada, pontuaisSemCamada]);
+
+  /** Leva o mapa até a ocorrência escolhida na lista. */
+  const irParaOcorrencia = useCallback((o: PubObservacaoPontual) => {
+    const xy = pontoDe(o.ponto_geojson);
+    if (!xy) return;
+    mapRef.current?.easeTo({ center: xy, zoom: Math.max(mapRef.current.getZoom() ?? 16, 17) });
   }, []);
 
   // ── GeoJSON para as células ────────────────────────────────────
@@ -274,7 +347,10 @@ export function MapaPublico() {
   const onMapLoad = useCallback(() => {
     jaCarregou.current = true;
     setCarregando(false);
-  }, []);
+    // Primeira leitura do enquadramento: sem ela a lista começaria com a
+    // rede inteira e só se ajustaria no primeiro arrasto.
+    lerVista();
+  }, [lerVista]);
 
   /**
    * Erro depois que o mapa já subiu não derruba a tela.
@@ -389,6 +465,7 @@ export function MapaPublico() {
         onLoad={onMapLoad}
         onError={onMapError}
         onZoomEnd={(e) => setZoom(e.viewState.zoom)}
+        onMoveEnd={lerVista}
         interactiveLayerIds={["celulas-fill"]}
         onClick={onCelulaClick}
         onMouseEnter={onMouseEnterCelula}
@@ -397,6 +474,15 @@ export function MapaPublico() {
       >
         <AttributionControl position="bottom-right" compact />
         <NavigationControl position="top-right" showCompass={false} />
+        {/* "Onde estou". O mapa é de território costeiro e quem usa em
+            campo está dentro dele: sem isto, a professora na praia tinha
+            de achar a própria posição arrastando. Só pede permissão de
+            localização quando clicado. */}
+        <GeolocateControl
+          position="top-right"
+          positionOptions={{ enableHighAccuracy: true }}
+          trackUserLocation
+        />
 
         {/* Mapa de fundo. A `key` força remontar ao trocar: fonte raster
             não muda de endereço de tile no lugar. Declarado antes de
@@ -439,8 +525,7 @@ export function MapaPublico() {
             Pinos próximos viram um grupo até o zoom separá-los. */}
         {gruposDeOcorrencia.map((grupo) => {
           if (grupo.itens.length > 1) {
-            const protocolos = new Set(grupo.itens.map((o) => o.protocolo));
-            const unico = protocolos.size === 1 ? grupo.itens[0] : null;
+            const fatias = composicaoDoGrupo(grupo.itens);
             return (
               <Marker
                 key={`gr-${grupo.chave}`}
@@ -451,12 +536,8 @@ export function MapaPublico() {
               >
                 <PinoAgrupado
                   quantidade={grupo.itens.length}
-                  cor={unico?.protocolo_cor ?? null}
-                  titulo={
-                    unico
-                      ? `${grupo.itens.length} ocorrências de ${unico.protocolo_nome}. Clique para aproximar.`
-                      : `${grupo.itens.length} ocorrências de ${protocolos.size} protocolos. Clique para aproximar.`
-                  }
+                  fatias={fatias}
+                  titulo={`${grupo.itens.length} ocorrências: ${resumoDoGrupo(fatias)}. Clique para aproximar.`}
                   onClick={() => abrirGrupo(grupo.lat, grupo.lng)}
                 />
               </Marker>
@@ -577,6 +658,10 @@ export function MapaPublico() {
           municipios={listaMunicipios}
           escolas={listaEscolas}
           protocolos={listaProtocolos}
+          contagens={contagens}
+          ocorrenciasNaVista={ocorrenciasNaVista}
+          totalDeOcorrencias={pontuaisFiltrados.length}
+          onIrParaOcorrencia={irParaOcorrencia}
         />
       </div>
 
@@ -603,6 +688,10 @@ export function MapaPublico() {
         municipios={listaMunicipios}
         escolas={listaEscolas}
         protocolos={listaProtocolos}
+        contagens={contagens}
+        ocorrenciasNaVista={ocorrenciasNaVista}
+        totalDeOcorrencias={pontuaisFiltrados.length}
+        onIrParaOcorrencia={irParaOcorrencia}
       />
       <NavegacaoMobile />
 

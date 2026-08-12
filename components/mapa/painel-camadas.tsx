@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { IconeBadge } from "./icones";
+import { ListaOcorrencias } from "./lista-ocorrencias";
+import type { PubObservacaoPontual } from "@/lib/database.types";
 
 // ─────────────────────────────────────────────
 // Painel lateral de camadas e filtros (desktop)
@@ -48,6 +50,13 @@ interface PainelCamadasProps {
   municipios: string[];
   escolas: { slug: string; nome: string }[];
   protocolos: ProtocoloCamada[];
+  /** Feições de cada protocolo sob os filtros, com a camada ligada ou não. */
+  contagens: Record<string, number>;
+  /** Ocorrências dentro do enquadramento, para a aba de lista. */
+  ocorrenciasNaVista: PubObservacaoPontual[];
+  /** Ocorrências sob os filtros, incluindo as que estão fora da vista. */
+  totalDeOcorrencias: number;
+  onIrParaOcorrencia: (o: PubObservacaoPontual) => void;
 }
 
 export function PainelCamadas({
@@ -59,8 +68,13 @@ export function PainelCamadas({
   municipios,
   escolas,
   protocolos,
+  contagens,
+  ocorrenciasNaVista,
+  totalDeOcorrencias,
+  onIrParaOcorrencia,
 }: PainelCamadasProps) {
   const [expandido, setExpandido] = useState(true);
+  const [aba, setAba] = useState<"camadas" | "lista">("camadas");
 
   return (
     <div className="hidden md:block fixed top-14 left-3 z-40">
@@ -86,10 +100,39 @@ export function PainelCamadas({
           bg-glass-bg backdrop-blur-xl border border-glass-border rounded-sm
           shadow-lg overflow-hidden
           transition-all duration-200 ease-out
-          ${expandido ? "w-72 opacity-100" : "w-0 opacity-0 pointer-events-none"}
+          ${expandido ? "w-80 opacity-100" : "w-0 opacity-0 pointer-events-none"}
         `}
       >
-        <div className="w-72 max-h-[calc(100vh-9rem)] overflow-y-auto px-3 py-2 space-y-3">
+        <div className="w-80">
+          {/* Duas abas no mesmo painel: o controle do mapa e o conteúdo
+              que ele está mostrando. Separá-los em dois painéis exigiria
+              tomar o outro lado da tela, que já tem legenda e zoom. */}
+          <div className="flex border-b border-glass-border">
+            {(
+              [
+                ["camadas", "Camadas"],
+                ["lista", `Ocorrências (${ocorrenciasNaVista.length})`],
+              ] as const
+            ).map(([id, rotulo]) => (
+              <button
+                key={id}
+                onClick={() => setAba(id)}
+                className={`flex-1 px-2 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                  aba === id
+                    ? "text-primary border-b-2 border-primary -mb-px"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {rotulo}
+              </button>
+            ))}
+          </div>
+
+          <div
+            className={`max-h-[calc(100vh-12rem)] overflow-y-auto px-3 py-2 space-y-3 ${
+              aba === "camadas" ? "" : "hidden"
+            }`}
+          >
           {/* ── CAMADAS ────────────────────────── */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
@@ -121,6 +164,16 @@ export function PainelCamadas({
                       }`}
                     >
                       {p.nome}
+                    </span>
+                    {/* Quantas feições este protocolo tem sob os filtros.
+                        Sem o número, ligar ou desligar uma camada era às
+                        cegas: não dava para saber se ela traz 1 ponto ou
+                        40 — nem se traz algum. */}
+                    <span
+                      className="text-[11px] tabular-nums text-muted-foreground shrink-0 min-w-[1.5rem] text-right"
+                      title="Feições deste protocolo sob os filtros atuais"
+                    >
+                      {contagens[p.codigo] ?? 0}
                     </span>
                     <span
                       className="w-7 h-4 rounded-full relative transition-colors shrink-0"
@@ -258,6 +311,22 @@ export function PainelCamadas({
               </div>
             </div>
           </section>
+          </div>
+
+          <div
+            className={`max-h-[calc(100vh-12rem)] overflow-y-auto px-2 py-2 ${
+              aba === "lista" ? "" : "hidden"
+            }`}
+          >
+            <p className="text-[11px] text-muted-foreground px-2 pb-2">
+              Ocorrências dentro do enquadramento. Mova o mapa para mudar a lista.
+            </p>
+            <ListaOcorrencias
+              ocorrencias={ocorrenciasNaVista}
+              totalNoFiltro={totalDeOcorrencias}
+              onIr={onIrParaOcorrencia}
+            />
+          </div>
         </div>
       </div>
     </div>
