@@ -96,6 +96,28 @@ function numOuNulo(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Ordem das camadas no painel do mapa.
+ *
+ * Ordenar por código deixava os dois protocolos de densidade — os que
+ * pintam a grade e são descritos pela legenda — no meio da lista, entre
+ * ocorrências, porque MIC e RES caem no meio do alfabeto. Densidade
+ * primeiro faz o painel acompanhar o que o mapa desenha: primeiro as
+ * manchas, depois os pinos, e a medida por último.
+ */
+const PESO_DA_FORMA: Record<string, number> = {
+  densidade: 0,
+  area_afetada: 1,
+  ocorrencia: 2,
+  medida: 3,
+};
+
+function ordemDeCamada(a: PubProtocolo, b: PubProtocolo): number {
+  const pa = PESO_DA_FORMA[a.forma_agregacao] ?? 9;
+  const pb = PESO_DA_FORMA[b.forma_agregacao] ?? 9;
+  return pa !== pb ? pa - pb : a.codigo.localeCompare(b.codigo);
+}
+
 function agregarGerais(
   escolas: PubEscola[],
   grade: PubObservacaoGrade[],
@@ -169,16 +191,18 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       registros_pontuais: num(i.registros_pontuais),
     }));
 
-    const protocolos: PubProtocolo[] = (protocolosRes.data ?? []).map((p) => ({
-      id: num(p.id),
-      codigo: String(p.codigo),
-      nome: String(p.nome),
-      descricao: p.descricao ?? null,
-      icone: p.icone ?? null,
-      cor: p.cor ?? null,
-      unidade_medida: p.unidade_medida ?? null,
-      forma_agregacao: String(p.forma_agregacao),
-    }));
+    const protocolos: PubProtocolo[] = (protocolosRes.data ?? [])
+      .map((p) => ({
+        id: num(p.id),
+        codigo: String(p.codigo),
+        nome: String(p.nome),
+        descricao: p.descricao ?? null,
+        icone: p.icone ?? null,
+        cor: p.cor ?? null,
+        unidade_medida: p.unidade_medida ?? null,
+        forma_agregacao: String(p.forma_agregacao),
+      }))
+      .sort(ordemDeCamada);
 
     const pontuais: PubObservacaoPontual[] = (pontuaisRes.data ?? []).map((o) => ({
       id: num(o.id),

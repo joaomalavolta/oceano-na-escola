@@ -32,7 +32,9 @@ import {
   PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
 import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
+import { fundoPorId, CHAVE_FUNDO } from "@/lib/mapa-base";
 import { PinMapa, slugDe } from "./icones";
+import { SeletorFundo } from "./seletor-fundo";
 import { BarraSuperior } from "./barra-superior";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
@@ -46,28 +48,17 @@ import { NavegacaoMobile } from "./navegacao-mobile";
 const ITANHAEM_CENTER = { longitude: -46.79, latitude: -24.18 };
 const INITIAL_ZOOM = 13;
 
-/** MapLibre style spec com tiles raster do OSM */
+/**
+ * Estilo sem fonte alguma: o mapa de fundo entra como Source declarada
+ * em React, para poder trocar sem recriar o estilo — recriar derrubaria
+ * a grade e os pinos junto. O fundo pintado evita o vazio preto
+ * enquanto o primeiro tile não chega.
+ */
 const MAP_STYLE: StyleSpecification = {
   version: 8,
-  name: "OSM Raster",
-  sources: {
-    osm: {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    },
-  },
-  layers: [
-    {
-      id: "osm-tiles",
-      type: "raster",
-      source: "osm",
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
+  name: "Oceano na Escola",
+  sources: {},
+  layers: [{ id: "fundo", type: "background", paint: { "background-color": "#dde5e3" } }],
 };
 
 // ── Tipos internos ──────────────────────────────────────────────────
@@ -88,6 +79,21 @@ export function MapaPublico() {
   const [carregando, setCarregando] = useState(true);
   const [erroTiles, setErroTiles] = useState(false);
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null);
+
+  // Mapa de fundo, lido já na inicialização do estado. Dá para fazer
+  // isso aqui porque a página carrega este componente com ssr: false —
+  // ele nunca renderiza no servidor, então não há hidratação para
+  // divergir. Buscar em effect obrigaria a pintar o fundo padrão antes
+  // de trocar pelo escolhido, com um piscar de tiles a cada visita.
+  const [fundoId, setFundoId] = useState<string>(
+    () => (typeof window === "undefined" ? "" : window.localStorage.getItem(CHAVE_FUNDO)) || "ruas"
+  );
+  const fundo = fundoPorId(fundoId);
+
+  const escolherFundo = useCallback((id: string) => {
+    setFundoId(id);
+    window.localStorage.setItem(CHAVE_FUNDO, id);
+  }, []);
 
   // Dados públicos. Partem do mock e são substituídos pelo banco assim
   // que a consulta volta, para o mapa nunca renderizar vazio.
@@ -243,11 +249,28 @@ export function MapaPublico() {
 
   // ── Handlers ──────────────────────────────────────────────────
 
+  // Guardado fora do estado: só o handler de erro precisa saber, e
+  // mudar estado a cada tile faltando causaria um render por tile.
+  const jaCarregou = useRef(false);
+
   const onMapLoad = useCallback(() => {
+    jaCarregou.current = true;
     setCarregando(false);
   }, []);
 
+  /**
+   * Erro depois que o mapa já subiu não derruba a tela.
+   *
+   * O `onError` do MapLibre dispara para cada tile que falha, e tile
+   * faltando é rotina — mais ainda em satélite, onde nem todo canto tem
+   * imagem no zoom máximo. Tratar isso como falha geral fazia um buraco
+   * de imagem virar "Erro ao carregar o mapa" em tela cheia, com o
+   * overlay bloqueando o mapa inteiro que estava ali, funcionando.
+   *
+   * O aviso fica para o que ele descreve de fato: o mapa não subiu.
+   */
   const onMapError = useCallback(() => {
+    if (jaCarregou.current) return;
     setErroTiles(true);
     setCarregando(false);
   }, []);
@@ -355,6 +378,21 @@ export function MapaPublico() {
       >
         <AttributionControl position="bottom-right" compact />
         <NavigationControl position="top-right" showCompass={false} />
+
+        {/* Mapa de fundo. A `key` força remontar ao trocar: fonte raster
+            não muda de endereço de tile no lugar. Declarado antes de
+            tudo, fica por baixo da grade e das ocorrências. */}
+        <Source
+          key={fundo.id}
+          id="fundo-mapa"
+          type="raster"
+          tiles={fundo.tiles}
+          tileSize={256}
+          maxzoom={fundo.maxzoom}
+          attribution={fundo.atribuicao}
+        >
+          <Layer id="fundo-mapa-tiles" type="raster" />
+        </Source>
 
         {/* Camada: Células de densidade */}
         <Source id="grade" type="geojson" data={gradeGeoJson}>
@@ -464,6 +502,11 @@ export function MapaPublico() {
       {/* ── Painéis flutuantes ─────────────────────────────────────── */}
 
       <BarraSuperior />
+
+      {/* Escolha do mapa de fundo, acima do controle de zoom */}
+      <div className="absolute top-16 right-3 z-30">
+        <SeletorFundo atual={fundo} onEscolher={escolherFundo} />
+      </div>
 
       {/* Desktop: painel lateral */}
       <div className="hidden md:block">

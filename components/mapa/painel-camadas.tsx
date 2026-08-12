@@ -89,33 +89,41 @@ export function PainelCamadas({
           ${expandido ? "w-72 opacity-100" : "w-0 opacity-0 pointer-events-none"}
         `}
       >
-        <div className="w-72 max-h-[calc(100vh-5rem)] overflow-y-auto px-3 py-2 space-y-4">
+        <div className="w-72 max-h-[calc(100vh-9rem)] overflow-y-auto px-3 py-2 space-y-3">
           {/* ── CAMADAS ────────────────────────── */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
               Camadas
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               {protocolos.map((p) => {
                 const ligada = camadas.protocolos[p.codigo] ?? false;
                 return (
                   <button
                     key={p.codigo}
                     onClick={() => onToggleProtocolo(p.codigo)}
-                    className="flex items-center gap-2.5 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                    title={p.nome}
+                    className="flex items-center gap-2.5 w-full text-left px-2 py-1 rounded-sm hover:bg-muted/50 transition-colors"
                   >
                     {/* O mesmo glifo do pin: o painel é a legenda do mapa. */}
                     <IconeBadge
                       slug={p.icone}
                       cor={p.cor}
-                      tamanho={24}
+                      tamanho={22}
                       className={ligada ? "" : "opacity-35 saturate-0"}
                     />
-                    <span className={`text-sm flex-1 ${ligada ? "" : "text-muted-foreground"}`}>
+                    {/* Uma linha só, com reticências. Nome de protocolo
+                        quebrado em duas linhas dobrava a altura da lista
+                        e empurrava os filtros para fora da tela. */}
+                    <span
+                      className={`text-[13px] flex-1 truncate ${
+                        ligada ? "" : "text-muted-foreground"
+                      }`}
+                    >
                       {p.nome}
                     </span>
                     <span
-                      className="w-8 h-5 rounded-full relative transition-colors shrink-0"
+                      className="w-7 h-4 rounded-full relative transition-colors shrink-0"
                       style={{
                         backgroundColor: ligada
                           ? p.cor ?? "var(--color-primary)"
@@ -123,7 +131,7 @@ export function PainelCamadas({
                       }}
                     >
                       <span
-                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                        className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
                           ligada ? "left-3.5" : "left-0.5"
                         }`}
                       />
@@ -132,7 +140,7 @@ export function PainelCamadas({
                 );
               })}
 
-              <div className="pt-1 mt-1 border-t border-glass-border space-y-2">
+              <div className="pt-1 mt-1 border-t border-glass-border space-y-0.5">
                 {(
                   [
                     ["escolas", "Escolas", "escola"],
@@ -142,26 +150,28 @@ export function PainelCamadas({
                   <button
                     key={key}
                     onClick={() => onToggleCamada(key)}
-                    className="flex items-center gap-2.5 w-full text-left px-2 py-1.5 rounded-sm hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2.5 w-full text-left px-2 py-1 rounded-sm hover:bg-muted/50 transition-colors"
                   >
                     <IconeBadge
                       slug={slug}
                       cor={null}
-                      tamanho={24}
+                      tamanho={22}
                       className={camadas[key] ? "" : "opacity-35 saturate-0"}
                     />
                     <span
-                      className={`text-sm flex-1 ${camadas[key] ? "" : "text-muted-foreground"}`}
+                      className={`text-[13px] flex-1 truncate ${
+                        camadas[key] ? "" : "text-muted-foreground"
+                      }`}
                     >
                       {label}
                     </span>
                     <span
-                      className={`w-8 h-5 rounded-full relative transition-colors shrink-0 ${
+                      className={`w-7 h-4 rounded-full relative transition-colors shrink-0 ${
                         camadas[key] ? "bg-primary" : "bg-muted"
                       }`}
                     >
                       <span
-                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                        className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${
                           camadas[key] ? "left-3.5" : "left-0.5"
                         }`}
                       />
@@ -174,17 +184,17 @@ export function PainelCamadas({
 
           {/* ── FILTROS ────────────────────────── */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
               Filtros
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {/* Município */}
               <div>
-                <label className="text-xs text-muted-foreground">Município</label>
+                <label className="text-[11px] text-muted-foreground">Município</label>
                 <select
                   value={filtros.municipio}
                   onChange={(e) => onChangeFiltro("municipio", e.target.value)}
-                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
                 >
                   <option value="">Todos</option>
                   {municipios.map((m) => (
@@ -195,11 +205,11 @@ export function PainelCamadas({
 
               {/* Escola */}
               <div>
-                <label className="text-xs text-muted-foreground">Escola</label>
+                <label className="text-[11px] text-muted-foreground">Escola</label>
                 <select
                   value={filtros.escola}
                   onChange={(e) => onChangeFiltro("escola", e.target.value)}
-                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
                 >
                   <option value="">Todas</option>
                   {escolas.map((e) => (
@@ -210,11 +220,11 @@ export function PainelCamadas({
 
               {/* Protocolo */}
               <div>
-                <label className="text-xs text-muted-foreground">Protocolo</label>
+                <label className="text-[11px] text-muted-foreground">Protocolo</label>
                 <select
                   value={filtros.protocolo}
                   onChange={(e) => onChangeFiltro("protocolo", e.target.value)}
-                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
                 >
                   <option value="">Todos</option>
                   {protocolos.map((p) => (
@@ -228,21 +238,21 @@ export function PainelCamadas({
               {/* Período */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-muted-foreground">De</label>
+                  <label className="text-[11px] text-muted-foreground">De</label>
                   <input
                     type="month"
                     value={filtros.mesInicio}
                     onChange={(e) => onChangeFiltro("mesInicio", e.target.value)}
-                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">Até</label>
+                  <label className="text-[11px] text-muted-foreground">Até</label>
                   <input
                     type="month"
                     value={filtros.mesFim}
                     onChange={(e) => onChangeFiltro("mesFim", e.target.value)}
-                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
                   />
                 </div>
               </div>
