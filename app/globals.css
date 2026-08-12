@@ -8,6 +8,13 @@
    Modo escuro ativado apenas pela classe .dark.
    ──────────────────────────────────────────────── */
 
+/* O `dark:` do Tailwind tem de seguir a mesma regra dos tokens acima.
+   Por padrão ele responde a prefers-color-scheme, e aí as duas metades
+   discordavam: quem tinha o sistema no escuro recebia os utilitários
+   `dark:` enquanto a paleta continuava clara. Na marca isso era fatal —
+   a arte branca da logo era pintada sobre um header claro e sumia. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Superfícies */
   --background: oklch(0.975 0.008 106);
