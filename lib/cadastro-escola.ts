@@ -69,34 +69,52 @@ function gerarSlug(nome: string): string {
 export async function cadastrarEscola(d: DadosCadastro): Promise<ResultadoCadastro> {
   const base = gerarSlug(d.nome);
 
-  // O slug é único no banco. Em vez de deixar a inserção falhar com erro
-  // de constraint, procuramos um livre antes — duas escolas com nome
-  // parecido em municípios diferentes são caso normal, não erro.
+  // O slug é único na tabela inteira, mas o RLS só deixa o professor
+  // enxergar as escolas dele. Procurar um slug livre com um select antes
+  // de inserir não funcionava: a consulta não via a escola alheia que já
+  // ocupava o nome, dava o slug por livre, e o insert estourava com o
+  // texto cru da constraint.
+  //
+  // Então tenta-se inserir e trata-se a colisão, que é o único jeito de
+  // saber o que existe sem poder ler. Duas escolas com nome parecido em
+  // municípios diferentes são caso normal, não erro.
+  let escolaId: number | null = null;
   let slug = base;
-  for (let tentativa = 2; tentativa <= 20; tentativa++) {
-    const { data } = await supabase.from("escola").select("id").eq("slug", slug).maybeSingle();
-    if (!data) break;
-    slug = `${base}-${tentativa}`;
+
+  for (let tentativa = 1; tentativa <= 20; tentativa += 1) {
+    slug = tentativa === 1 ? base : `${base}-${tentativa}`;
+
+    const { data: criada, error } = await supabase
+      .from("escola")
+      .insert({
+        municipio_id: d.municipio_id,
+        nome: d.nome,
+        slug,
+        rede_ensino: d.rede_ensino,
+        endereco: d.endereco,
+        apresentacao: d.apresentacao,
+        geom:
+          d.lat !== null && d.lng !== null ? `SRID=4326;POINT(${d.lng} ${d.lat})` : null,
+      })
+      .select("id, slug")
+      .single();
+
+    if (!error) {
+      escolaId = Number(criada.id);
+      break;
+    }
+    // 23505 é a colisão de slug: tenta o próximo sufixo. Qualquer outro
+    // erro é do cadastro em si e volta para a tela como está.
+    if (error.code !== "23505") return { slug: null, id: null, erro: error.message };
   }
 
-  const { data: criada, error } = await supabase
-    .from("escola")
-    .insert({
-      municipio_id: d.municipio_id,
-      nome: d.nome,
-      slug,
-      rede_ensino: d.rede_ensino,
-      endereco: d.endereco,
-      apresentacao: d.apresentacao,
-      geom:
-        d.lat !== null && d.lng !== null ? `SRID=4326;POINT(${d.lng} ${d.lat})` : null,
-    })
-    .select("id, slug")
-    .single();
-
-  if (error) return { slug: null, id: null, erro: error.message };
-
-  const escolaId = Number(criada.id);
+  if (escolaId === null) {
+    return {
+      slug: null,
+      id: null,
+      erro: "Já existem muitas escolas com um nome parecido. Diferencie o nome e tente de novo.",
+    };
+  }
 
   // `publicada` e `termos_ok` não entram no insert: as colunas não são
   // concedidas ao papel authenticated, justamente para que ninguém
