@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Layers, X } from "lucide-react";
-import { IconeBadge } from "./icones";
+import { IconeBadge, COR_ESCOLA } from "./icones";
 import { ListaOcorrencias } from "./lista-ocorrencias";
 import type { CamadasState, FiltrosState, ProtocoloCamada } from "./painel-camadas";
 import type { PubObservacaoPontual } from "@/lib/database.types";
@@ -177,10 +177,10 @@ export function MobileSheet({
                 })}
                 {(
                   [
-                    ["escolas", "Escolas", "escola"],
-                    ["ocorrencias", "Ocorrências", null],
-                  ] as ["escolas" | "ocorrencias", string, string | null][]
-                ).map(([key, label, slug]) => (
+                    ["escolas", "Escolas", "escola", COR_ESCOLA],
+                    ["ocorrencias", "Ocorrências", null, null],
+                  ] as ["escolas" | "ocorrencias", string, string | null, string | null][]
+                ).map(([key, label, slug, cor]) => (
                   <button
                     key={key}
                     onClick={() => onToggleCamada(key)}
@@ -188,7 +188,7 @@ export function MobileSheet({
                   >
                     <IconeBadge
                       slug={slug}
-                      cor={null}
+                      cor={cor}
                       tamanho={24}
                       className={camadas[key] ? "" : "opacity-35 saturate-0"}
                     />

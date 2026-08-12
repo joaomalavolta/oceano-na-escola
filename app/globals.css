@@ -16,32 +16,35 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Superfícies */
+  /* Superfícies — o papel quente fica. É a cor de caderno de campo, e
+     nada tem a ver com o verde que estava no primário. */
   --background: oklch(0.975 0.008 106);
-  --foreground: oklch(0.22 0.03 220);
+  --foreground: oklch(0.22 0.035 252);
   --card: oklch(0.995 0.004 106);
-  --card-foreground: oklch(0.22 0.03 220);
+  --card-foreground: oklch(0.22 0.035 252);
 
-  /* Primário — verde-azulado de água funda */
-  --primary: oklch(0.42 0.07 200);
-  --primary-foreground: oklch(0.98 0.005 200);
+  /* Primário — o azul institucional da Ecosurf, o mesmo da faixa.
+     Era um verde-azulado de croma 0.07: mesma luminosidade deste,
+     metade da saturação e 56° para o lado do verde. */
+  --primary: oklch(0.431 0.147 256);
+  --primary-foreground: oklch(0.99 0.005 256);
 
   /* Secundário */
-  --secondary: oklch(0.94 0.01 200);
-  --secondary-foreground: oklch(0.22 0.03 220);
+  --secondary: oklch(0.94 0.014 252);
+  --secondary-foreground: oklch(0.22 0.035 252);
 
   /* Acento — coral de boia (escasso: totais, densidade, foco) */
   --accent: oklch(0.68 0.16 45);
   --accent-foreground: oklch(0.15 0.03 45);
 
   /* Muted */
-  --muted: oklch(0.94 0.01 200);
-  --muted-foreground: oklch(0.48 0.02 215);
+  --muted: oklch(0.94 0.012 252);
+  --muted-foreground: oklch(0.48 0.025 252);
 
   /* Bordas e inputs */
-  --border: oklch(0.86 0.015 210);
-  --input: oklch(0.86 0.015 210);
-  --ring: oklch(0.42 0.07 200);
+  --border: oklch(0.86 0.02 252);
+  --input: oklch(0.86 0.02 252);
+  --ring: oklch(0.431 0.147 256);
 
   /* Destrutivo */
   --destructive: oklch(0.55 0.2 27);
@@ -65,38 +68,50 @@
   --marca-forte: oklch(0.657 0.135 235);
   --marca-foreground: oklch(0.99 0.005 256);
 
+  /* O pino da escola no mapa.
+     Não pode ser o primário. Agora que o primário é o azul da marca,
+     ele encostaria em "Avifauna e fauna costeira", que é oklch(0.523
+     0.100 244) — 12° de matiz e 0.09 de luminosidade de distância, o
+     bastante para confundir dois pinos do tamanho de uma unha. Este
+     desce a luminosidade para 0.30: fica do mesmo azul institucional,
+     e a 0.22 de distância da avifauna, que se lê de longe. */
+  --escola: oklch(0.30 0.105 256);
+
   /* Mapa — painéis flutuantes */
   --glass-bg: oklch(0.995 0.004 106 / 0.82);
-  --glass-border: oklch(0.86 0.015 210 / 0.5);
+  --glass-border: oklch(0.86 0.02 252 / 0.5);
 }
 
 .dark {
-  --background: oklch(0.18 0.03 220);
-  --foreground: oklch(0.92 0.01 210);
-  --card: oklch(0.22 0.025 220);
-  --card-foreground: oklch(0.92 0.01 210);
+  --background: oklch(0.18 0.035 252);
+  --foreground: oklch(0.92 0.012 252);
+  --card: oklch(0.22 0.03 252);
+  --card-foreground: oklch(0.92 0.012 252);
 
-  --primary: oklch(0.72 0.09 195);
-  --primary-foreground: oklch(0.15 0.03 200);
+  /* No escuro o azul institucional não tem contraste sobre a superfície
+     escura. Vale o mesmo #38bdf8 que o valordasondas.org usa no tema
+     escuro pela mesma razão. */
+  --primary: oklch(0.754 0.139 232);
+  --primary-foreground: oklch(0.15 0.04 250);
 
-  --secondary: oklch(0.26 0.02 220);
-  --secondary-foreground: oklch(0.92 0.01 210);
+  --secondary: oklch(0.26 0.025 252);
+  --secondary-foreground: oklch(0.92 0.012 252);
 
   --accent: oklch(0.68 0.16 45);
   --accent-foreground: oklch(0.15 0.03 45);
 
-  --muted: oklch(0.26 0.02 220);
-  --muted-foreground: oklch(0.65 0.02 215);
+  --muted: oklch(0.26 0.025 252);
+  --muted-foreground: oklch(0.65 0.025 252);
 
-  --border: oklch(0.32 0.02 220);
-  --input: oklch(0.32 0.02 220);
-  --ring: oklch(0.72 0.09 195);
+  --border: oklch(0.32 0.025 252);
+  --input: oklch(0.32 0.025 252);
+  --ring: oklch(0.754 0.139 232);
 
   --destructive: oklch(0.55 0.2 27);
   --destructive-foreground: oklch(0.98 0.005 27);
 
-  --popover: oklch(0.22 0.025 220);
-  --popover-foreground: oklch(0.92 0.01 210);
+  --popover: oklch(0.22 0.03 252);
+  --popover-foreground: oklch(0.92 0.012 252);
 
   /* A faixa da marca continua azul-escura no tema escuro: ela é uma
      assinatura, não uma superfície do tema. Só desce um pouco, para não
@@ -105,8 +120,11 @@
   --marca-forte: oklch(0.657 0.135 235);
   --marca-foreground: oklch(0.99 0.005 256);
 
-  --glass-bg: oklch(0.18 0.03 220 / 0.82);
-  --glass-border: oklch(0.32 0.02 220 / 0.5);
+  /* No escuro o pino da escola sobe, senão some no fundo. */
+  --escola: oklch(0.62 0.13 250);
+
+  --glass-bg: oklch(0.18 0.035 252 / 0.82);
+  --glass-border: oklch(0.32 0.025 252 / 0.5);
 }
 
 @theme inline {
@@ -133,6 +151,7 @@
   --color-marca: var(--marca);
   --color-marca-forte: var(--marca-forte);
   --color-marca-foreground: var(--marca-foreground);
+  --color-escola: var(--escola);
 
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);

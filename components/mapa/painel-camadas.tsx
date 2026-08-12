@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { IconeBadge } from "./icones";
+import { IconeBadge, COR_ESCOLA } from "./icones";
 import { ListaOcorrencias } from "./lista-ocorrencias";
 import type { PubObservacaoPontual } from "@/lib/database.types";
 
@@ -194,12 +194,14 @@ export function PainelCamadas({
               })}
 
               <div className="pt-1 mt-1 border-t border-glass-border space-y-0.5">
+                {/* A cor acompanha o pino do mapa: o painel é a legenda
+                    dele, e um disco de cor diferente do pino mentiria. */}
                 {(
                   [
-                    ["escolas", "Escolas", "escola"],
-                    ["ocorrencias", "Ocorrências", null],
+                    ["escolas", "Escolas", "escola", COR_ESCOLA],
+                    ["ocorrencias", "Ocorrências", null, null],
                   ] as const
-                ).map(([key, label, slug]) => (
+                ).map(([key, label, slug, cor]) => (
                   <button
                     key={key}
                     onClick={() => onToggleCamada(key)}
@@ -207,7 +209,7 @@ export function PainelCamadas({
                   >
                     <IconeBadge
                       slug={slug}
-                      cor={null}
+                      cor={cor}
                       tamanho={22}
                       className={camadas[key] ? "" : "opacity-35 saturate-0"}
                     />

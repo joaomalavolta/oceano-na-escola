@@ -325,6 +325,16 @@ export function Glifo({ slug, tamanho = 16, className }: GlifoProps) {
   );
 }
 
+/**
+ * A cor da escola no mapa, para pino e legenda.
+ *
+ * Fica fora de `--primary` de propósito. O primário virou o azul da
+ * marca, e o pino da escola pintado com ele encostaria em "Avifauna e
+ * fauna costeira" — 12° de matiz de distância, indistinguível no
+ * tamanho de um pino. Este é o mesmo azul, bem mais fundo.
+ */
+export const COR_ESCOLA = "var(--color-escola)";
+
 interface IconeBadgeProps {
   slug: string | null | undefined;
   cor: string | null | undefined;

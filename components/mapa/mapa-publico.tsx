@@ -35,7 +35,7 @@ import {
 import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
 import { fundoPorId, CHAVE_FUNDO } from "@/lib/mapa-base";
 import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
-import { PinMapa, slugDe } from "./icones";
+import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BarraSuperior } from "./barra-superior";
@@ -608,7 +608,7 @@ export function MapaPublico() {
                 </div>
                 <PinMapa
                   slug="escola"
-                  cor={null}
+                  cor={COR_ESCOLA}
                   tamanho={34}
                   className="drop-shadow-md transition-transform group-hover:scale-110 origin-bottom"
                 />

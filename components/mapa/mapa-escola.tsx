@@ -9,7 +9,7 @@ import MapGL, {
   type MapRef,
 } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
-import { PinMapa, slugDe } from "./icones";
+import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
 
@@ -88,7 +88,7 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
 
       <Marker latitude={escola.lat} longitude={escola.lng} anchor="bottom">
         <div title={escola.nome}>
-          <PinMapa slug="escola" cor={null} tamanho={34} className="drop-shadow-md" />
+          <PinMapa slug="escola" cor={COR_ESCOLA} tamanho={34} className="drop-shadow-md" />
         </div>
       </Marker>
 
