@@ -26,9 +26,14 @@ export function BarraSuperior() {
   const navLinks = autenticado ? autenticados : publicos
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-glass-bg backdrop-blur-xl border-b border-glass-border">
+    /* A mesma faixa azul das outras páginas, com um fio de
+       transparência para o mapa não sumir atrás dela. O vidro claro que
+       estava aqui tinha um problema além da marca: sobre satélite ele
+       ficava quase invisível, e os links pretos brigavam com a imagem.
+       Sobre azul cheio o texto branco lê igual em qualquer fundo. */
+    <header className="fixed inset-x-0 top-0 z-50 bg-marca/95 backdrop-blur-xl border-b-2 border-marca-forte">
       <div className="flex items-center justify-between px-4 py-2.5">
-        <Marca compacta />
+        <Marca compacta sobreEscuro />
 
         {/* Nav — desktop only */}
         <nav className="hidden md:flex items-center gap-6">
@@ -36,7 +41,7 @@ export function BarraSuperior() {
             <Link
               key={href}
               href={href}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition"
+              className="text-sm font-medium text-white/75 hover:text-white transition"
             >
               {label}
             </Link>
@@ -47,7 +52,7 @@ export function BarraSuperior() {
         {autenticado ? (
           <Link
             href="/painel"
-            className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition"
+            className="flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-white transition"
           >
             <LayoutDashboard className="h-4 w-4" />
             <span>Minha escola</span>
@@ -55,7 +60,7 @@ export function BarraSuperior() {
         ) : (
           <Link
             href="/entrar"
-            className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition"
+            className="flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-white transition"
           >
             <LogIn className="h-4 w-4" />
             <span>Entrar</span>

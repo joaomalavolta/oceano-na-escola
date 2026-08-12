@@ -85,9 +85,18 @@ function ImagemComAlternativas({ fontes, alt, className, onEsgotar }: ImagemProp
 interface MarcaProps {
   /** Compacta a marca, para a barra flutuante sobre o mapa. */
   compacta?: boolean;
+  /**
+   * A marca está sobre a faixa azul institucional.
+   *
+   * Aí não é o tema que decide qual arte usar: o fundo é escuro nos
+   * dois temas, então a versão clara é a natural e vai sem filtro
+   * nenhum — é a única situação em que a logo aparece exatamente como
+   * foi desenhada, em vez de rebatida.
+   */
+  sobreEscuro?: boolean;
 }
 
-export function Marca({ compacta = false }: MarcaProps) {
+export function Marca({ compacta = false, sobreEscuro = false }: MarcaProps) {
   const [semEscura, setSemEscura] = useState(false);
   const [semClara, setSemClara] = useState(false);
 
@@ -101,6 +110,31 @@ export function Marca({ compacta = false }: MarcaProps) {
   const base = `${altura} w-auto shrink-0`;
   const semNenhuma = semEscura && semClara;
 
+  // Qual das duas artes de fato aparece — precisa ser decidido em JS
+  // porque é ela que carrega o texto alternativo; a outra é decorativa.
+  // Fora da faixa azul, quem serve o tema claro é a escura, e o tema é
+  // coisa do CSS: por isso ali a escura leva, mesmo que o visitante
+  // esteja no escuro vendo a clara.
+  const escuraLeva = semClara || (!sobreEscuro && !semEscura);
+
+  const classeEscura = semEscura
+    ? "hidden"
+    : sobreEscuro
+      ? // Sobre o azul só entra se não houver arte clara — e aí é
+        // rebatida em branco, que é o que o fundo exige.
+        semClara
+        ? `${base} brightness-0 invert`
+        : "hidden"
+      : `${base} ${semClara ? "dark:brightness-0 dark:invert" : "dark:hidden"}`;
+
+  const classeClara = semClara
+    ? "hidden"
+    : sobreEscuro
+      ? base
+      : semEscura
+        ? `${base} brightness-0 dark:brightness-100`
+        : `${base} hidden dark:block`;
+
   // As duas imagens ficam montadas mesmo quando não aparecem. Desmontar
   // uma para mostrar a outra abortaria a tentativa dela no meio: é o
   // próprio `onError` que descobre qual arte existe, e uma imagem
@@ -112,45 +146,42 @@ export function Marca({ compacta = false }: MarcaProps) {
       aria-label="Oceano na Escola — Instituto Ecosurf"
     >
       {semNenhuma && (
-        <span className="w-7 h-7 rounded-sm bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+        <span
+          className={`w-7 h-7 rounded-sm flex items-center justify-center shrink-0 ${
+            sobreEscuro ? "bg-white/15 text-white" : "bg-primary text-primary-foreground"
+          }`}
+        >
           <Waves className="w-4 h-4" />
         </span>
       )}
 
       <ImagemComAlternativas
         fontes={LOGO}
-        alt="Instituto Ecosurf"
+        alt={escuraLeva ? "Instituto Ecosurf" : ""}
         onEsgotar={marcarSemEscura}
-        className={
-          semEscura
-            ? "hidden"
-            : `${base} ${semClara ? "dark:brightness-0 dark:invert" : "dark:hidden"}`
-        }
+        className={classeEscura}
       />
 
       <ImagemComAlternativas
         fontes={LOGO_CLARA}
-        /* Vira a arte visível quando não há versão escura; aí ela deixa
-           de ser decorativa e assume o texto alternativo. */
-        alt={semEscura ? "Instituto Ecosurf" : ""}
+        alt={escuraLeva ? "" : "Instituto Ecosurf"}
         onEsgotar={marcarSemClara}
-        className={
-          semClara
-            ? "hidden"
-            : semEscura
-              ? `${base} brightness-0 dark:brightness-100`
-              : `${base} hidden dark:block`
-        }
+        className={classeClara}
       />
 
       {/* O traço só aparece com a logo: sem ela, separaria a onda do
           nome sem motivo. */}
-      {!semNenhuma && <span className="w-px h-6 bg-border shrink-0" aria-hidden="true" />}
+      {!semNenhuma && (
+        <span
+          className={`w-px h-6 shrink-0 ${sobreEscuro ? "bg-white/30" : "bg-border"}`}
+          aria-hidden="true"
+        />
+      )}
 
       <span
-        className={`font-semibold tracking-tight text-foreground truncate ${
-          compacta ? "text-sm" : "text-sm md:text-[15px]"
-        }`}
+        className={`font-semibold tracking-tight truncate ${
+          sobreEscuro ? "text-white" : "text-foreground"
+        } ${compacta ? "text-sm" : "text-sm md:text-[15px]"}`}
       >
         Oceano na Escola
       </span>

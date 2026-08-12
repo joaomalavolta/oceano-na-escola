@@ -81,9 +81,14 @@ export function BarraNavegacao() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-card/90 backdrop-blur-md border-b border-border shadow-xs">
+    /* A faixa é a assinatura da Ecosurf: azul institucional cheio, com
+       o azul vivo da marca como fio embaixo. Antes era uma superfície
+       do tema — quase branca — e a barra não dizia de quem é a
+       plataforma. De quebra, a logo vem em branco vazado sobre ela, que
+       é como a arte foi desenhada. */
+    <header className="sticky top-0 z-40 w-full bg-marca border-b-2 border-marca-forte shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Marca />
+        <Marca sobreEscuro />
 
         {/* Links Desktop */}
         <nav className="hidden md:flex items-center gap-1">
@@ -95,6 +100,9 @@ export function BarraNavegacao() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  /* O coral do acento continua sendo a cor de ação, e
+                     sobre o azul ele fica mais claro do que era sobre o
+                     branco — que é o que se quer de um destaque. */
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent-foreground bg-accent hover:opacity-90 rounded-sm transition-opacity ml-2"
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -107,10 +115,14 @@ export function BarraNavegacao() {
                 key={item.href}
                 href={item.href}
                 aria-current={ativo ? "page" : undefined}
+                /* Branco translúcido em vez do azul vivo: sobre o azul
+                   institucional, texto branco sobre #139DD7 não chega
+                   aos 4,5:1 que letra pequena exige. O azul vivo fica
+                   no fio da borda, onde não carrega texto. */
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
                   ativo
-                    ? "bg-secondary text-foreground font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    ? "bg-white/20 text-white font-semibold"
+                    : "text-white/75 hover:text-white hover:bg-white/10"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -125,7 +137,7 @@ export function BarraNavegacao() {
           {autenticado ? (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-sm hover:bg-secondary/50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white border border-white/30 rounded-sm hover:bg-white/10 transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sair</span>
@@ -133,7 +145,10 @@ export function BarraNavegacao() {
           ) : (
             <Link
               href="/entrar"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 rounded-sm transition-opacity"
+              /* Invertido: branco cheio com o texto no azul da marca.
+                 Sobre a faixa azul é o que mais salta, e sem inventar
+                 uma quarta cor. */
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-marca hover:bg-white/90 rounded-sm transition-colors"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Entrar</span>
@@ -144,7 +159,7 @@ export function BarraNavegacao() {
         {/* Botão Mobile */}
         <button
           onClick={() => setMenuAberto(!menuAberto)}
-          className="md:hidden p-2 text-muted-foreground hover:text-foreground"
+          className="md:hidden p-2 text-white/80 hover:text-white"
           aria-label="Abrir menu"
         >
           {menuAberto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -153,7 +168,10 @@ export function BarraNavegacao() {
 
       {/* Menu Mobile Dropdown */}
       {menuAberto && (
-        <div className="md:hidden bg-card border-b border-border px-4 py-3 space-y-2">
+        /* O menu desce como continuação da faixa, e não como um cartão
+           claro colado nela: cortar a cor no meio do gesto de abrir
+           faria parecer que são dois elementos diferentes. */
+        <div className="md:hidden bg-marca border-b-2 border-marca-forte px-4 py-3 space-y-2">
           {links.map((item) => {
             const Icon = item.icon;
             const ativo = estaAtivo(item);
@@ -166,8 +184,8 @@ export function BarraNavegacao() {
                   item.destaque
                     ? "bg-accent text-accent-foreground font-semibold"
                     : ativo
-                    ? "bg-secondary text-foreground font-semibold"
-                    : "text-muted-foreground hover:bg-secondary/50"
+                    ? "bg-white/20 text-white font-semibold"
+                    : "text-white/75 hover:bg-white/10"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -175,11 +193,14 @@ export function BarraNavegacao() {
               </Link>
             );
           })}
-          <div className="pt-2 border-t border-border">
+          <div className="pt-2 border-t border-white/20">
             {autenticado ? (
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-sm"
+                /* Sobre o azul, o vermelho de "destrutivo" fica escuro
+                   demais para ler. O branco translúcido serve, e sair
+                   da conta não é uma ação que precise de alarme. */
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/10 rounded-sm"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sair da conta</span>
@@ -188,7 +209,7 @@ export function BarraNavegacao() {
               <Link
                 href="/entrar"
                 onClick={() => setMenuAberto(false)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-sm"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold bg-white text-marca rounded-sm"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Entrar no sistema</span>
