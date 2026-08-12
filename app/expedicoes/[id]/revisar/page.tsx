@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   ExternalLink,
   Eye,
@@ -216,6 +217,13 @@ function RevisarConteudo({ id }: { id: number }) {
           </div>
 
           <div className="flex items-center gap-2 self-start">
+            <Link
+              href={`/expedicoes/${cabecalho.id}/diario`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Diário
+            </Link>
             <Link
               href={`/expedicoes/${cabecalho.id}/relatorio`}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors"

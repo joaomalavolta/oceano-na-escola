@@ -16,12 +16,14 @@ import {
   Map as MapIcon,
   AlertTriangle,
   Award,
+  BookText,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import { calcularConquistas } from "@/lib/conquistas";
+import { listarHistoriasPublicas, type HistoriaPublica } from "@/lib/historias";
 import { carregarEscolaPublica, type EscolaPublica } from "@/lib/dados-escola-publica";
 import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 
@@ -31,7 +33,14 @@ const MapaEscola = dynamic(
   { ssr: false }
 );
 
-type Aba = "sobre" | "mapa" | "expedicoes" | "registros" | "galeria" | "conquistas";
+type Aba =
+  | "sobre"
+  | "mapa"
+  | "expedicoes"
+  | "registros"
+  | "historias"
+  | "galeria"
+  | "conquistas";
 
 function formatarData(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR");
@@ -44,6 +53,8 @@ export default function EscolaPublicaPage({
 }) {
   const { slug } = use(params);
   const [dados, setDados] = useState<EscolaPublica | null>(null);
+  const [historias, setHistorias] = useState<HistoriaPublica[]>([]);
+  const [historiaAberta, setHistoriaAberta] = useState<number | null>(null);
   // O mapa abre primeiro: é o centro da experiência — "o que está
   // acontecendo neste território?" — e o Sobre continua a um clique.
   const [abaAtiva, setAbaAtiva] = useState<Aba>("mapa");
@@ -51,6 +62,7 @@ export default function EscolaPublicaPage({
   useEffect(() => {
     let ativo = true;
     carregarEscolaPublica(slug).then((d) => ativo && setDados(d));
+    listarHistoriasPublicas(slug).then((h) => ativo && setHistorias(h));
     return () => {
       ativo = false;
     };
@@ -92,6 +104,7 @@ export default function EscolaPublicaPage({
     { id: "mapa", label: "Mapa do território", icon: MapIcon },
     { id: "expedicoes", label: `Expedições (${expedicoes.length})`, icon: Compass },
     { id: "registros", label: `Ocorrências (${ocorrencias.length})`, icon: AlertTriangle },
+    { id: "historias", label: `Histórias (${historias.length})`, icon: BookText },
     { id: "galeria", label: `Galeria (${galeria.length + fotos.length})`, icon: ImageIcon },
     { id: "conquistas", label: "Conquistas", icon: Award },
     { id: "sobre", label: "Sobre a escola", icon: Info },
@@ -272,6 +285,77 @@ export default function EscolaPublicaPage({
                   </div>
                 </div>
               ))}
+            </div>
+          </EstadoContainer>
+        )}
+
+        {abaAtiva === "historias" && (
+          <EstadoContainer
+            estado={historias.length === 0 ? "vazio" : "pronto"}
+            mensagemVazia="Esta escola ainda não publicou histórias do território."
+          >
+            <div className="space-y-3">
+              {historias.map((h) => {
+                const aberta = historiaAberta === h.id;
+                return (
+                  <article
+                    key={h.id}
+                    className="bg-card border border-border rounded-md overflow-hidden shadow-2xs"
+                  >
+                    {h.capa_storage_path && (
+                      <FotoEvidencia
+                        storagePath={h.capa_storage_path}
+                        alt={h.titulo}
+                        className="w-full h-56 object-cover"
+                      />
+                    )}
+                    <div className="p-5 space-y-2">
+                      <h3 className="text-lg font-bold leading-tight">{h.titulo}</h3>
+                      {h.resumo && <p className="text-sm text-muted-foreground">{h.resumo}</p>}
+
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                        {h.publicada_em && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(h.publicada_em).toLocaleDateString("pt-BR")}
+                          </span>
+                        )}
+                        {h.expedicoes.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Compass className="w-3 h-3" />
+                            {/* A história aponta para o dado: os números
+                                são das expedições publicadas que ela cita. */}
+                            A partir das expedições{" "}
+                            {h.expedicoes.map((n) => `#${n}`).join(", ")}
+                          </span>
+                        )}
+                      </div>
+
+                      {aberta && h.corpo.trim() !== "" && (
+                        <div className="pt-2 space-y-3 border-t border-border mt-3">
+                          {h.corpo
+                            .split(/\n\s*\n/)
+                            .filter((p) => p.trim() !== "")
+                            .map((paragrafo, i) => (
+                              <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap">
+                                {paragrafo.trim()}
+                              </p>
+                            ))}
+                        </div>
+                      )}
+
+                      {h.corpo.trim() !== "" && (
+                        <button
+                          onClick={() => setHistoriaAberta(aberta ? null : h.id)}
+                          className="text-xs font-semibold text-primary hover:underline"
+                        >
+                          {aberta ? "Fechar" : "Ler a história"}
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </EstadoContainer>
         )}

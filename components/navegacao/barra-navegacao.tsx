@@ -15,7 +15,8 @@ import {
   Menu,
   X,
   Waves,
-  Database
+  Database,
+  BookText
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -61,6 +62,7 @@ export function BarraNavegacao() {
     { href: "/", label: "Mapa", icon: Map },
     { href: "/painel", label: "Painel", icon: BarChart3 },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
+    { href: "/historias", label: "Histórias", icon: BookText },
     { href: "/escolas", label: "Escolas", icon: School },
     { href: "/dados", label: "Dados", icon: Database },
     { href: "/campo", label: "Registrar em campo", icon: PlusCircle, destaque: true },
