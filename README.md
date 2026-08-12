@@ -30,10 +30,27 @@ Município → Escola → Turma → Expedição → Equipe → Unidade amostral 
 
 ```
 supabase/migrations/
-├── 20260810203037_schema_oceano_na_escola.sql   tipos, 19 tabelas, índices GiST, triggers
-├── 20260810203118_rls_e_views_publicas.sql      RLS por escola + 5 views públicas
-├── 20260810203155_protocolos_seed_v1.sql        protocolos RES e MIC, versão 1.0
-└── 20260810203231_hardening_advisors.sql        correções dos Security Advisors
+├── …203037_schema_oceano_na_escola.sql        tipos, tabelas, índices GiST, triggers
+├── …203118_rls_e_views_publicas.sql           RLS por escola + views públicas
+├── …203155_protocolos_seed_v1.sql             protocolos RES e MIC, versão 1.0
+├── …203231_hardening_advisors.sql             correções dos Security Advisors
+├── …222309_correcoes_rls_e_indicadores.sql    grants por coluna, fim do fan-out nos indicadores
+├── …222320_piso_de_agregacao_da_grade.sql     célula exige 3 unidades amostrais
+├── …224005_celula_da_grade_vira_poligono.sql  st_expand para a célula ser polígono
+├── …012325_seed_piloto_ficticio.sql           4 escolas, 12 expedições, 12 células
+├── …012450_corrige_ancoragem_do_seed.sql      snap ao vértice antes do deslocamento
+├── …013610_revoga_execute_da_funcao_de_trigger.sql
+├── …120000_protocolo_se_descreve.sql          ícone, cor, unidade; várias turmas por expedição
+├── …123000_pins_e_fotos_georreferenciadas.sql views de ocorrência e foto
+├── …140000_ocorrencia_com_magnitude.sql       item + valor no ponto; 5 protocolos novos
+├── …160000_seed_ocorrencias.sql
+├── …170000_municipios_do_litoral_sul.sql
+├── …190000_transicao_de_status_e_previa_da_grade.sql
+├── …200000_seed_territorios_ficticios.sql
+├── …210000_storage_de_evidencias.sql          bucket privado + políticas
+├── …220000_diario_de_campo_e_historias.sql
+├── …230000_pedido_de_remocao_despublica.sql
+└── …233000_seed_diario_e_historias.sql
 ```
 
 Estas migrations já estão aplicadas no projeto `mtjtjnofjtouzmbdcwad`. Os arquivos refletem
@@ -57,11 +74,12 @@ select p.codigo, pv.versao,
 from protocolo p join protocolo_versao pv on pv.protocolo_id = p.id;
 ```
 
-Esperado: `RES / 1.0 / 30 / 9` e `MIC / 1.0 / 0 / 14`.
+Esperado: `RES / 1.0 / 30 / 9`, `MIC / 1.0 / 0 / 14`, e os cinco protocolos novos com seus itens
+em rascunho.
 
 ### Decisões de segurança registradas
 
-As cinco views `pub_*` são `security definer` de propósito. É o que impede o `anon` de alcançar
+As views `pub_*` são `security definer` de propósito. É o que impede o `anon` de alcançar
 qualquer tabela base — ele não tem grant em nenhuma. Com `security_invoker` seria preciso dar
 `select` nas tabelas e expor colunas indesejadas via PostgREST. O linter do Supabase marca isso
 como ERROR sem distinguir os dois casos; é uma exceção aceita e documentada.
@@ -89,24 +107,57 @@ A localização pública é agregada em grade de 100 m (SIRGAS 2000 / UTM 23S, E
 - A galeria pública depende de `escola.termos_ok = true` e de curadoria do professor.
 - Pedido formalizado de remoção de imagem: atendido em até **72 horas**. A tabela
   `solicitacao_remocao` aceita pedido de quem não tem conta e calcula o prazo automaticamente.
+  O pedido despublica a imagem no mesmo instante, por gatilho — o prazo é para apagar o arquivo,
+  não para deixar de exibi-lo.
+- O bucket `evidencias` é **privado**. A view pública entrega o caminho do arquivo ao `anon`; com
+  bucket público, nem a curadoria nem o `termos_ok` protegeriam a foto. As políticas do storage
+  repetem as três condições e a imagem chega por URL assinada.
+- O Diário de Campo não é público. Escrita de estudante em processo fica na mesma categoria das
+  fichas digitalizadas e das fotos sem curadoria.
 - A galeria deve ser servida com `noindex`.
 
 ## Protocolos
 
-| Código | Nome | Unidade amostral | Resultado |
+| Código | Nome | Forma de agregação | Resultado |
 |---|---|---|---|
-| RES | Resíduos costeiros e marinhos | Trecho de 50 m por equipe | itens/m² |
-| MIC | Microplásticos | 5 quadrats de 0,25 m² | itens/m² |
+| RES | Resíduos costeiros e marinhos | densidade, trecho de 50 m por equipe | itens/m² |
+| MIC | Microplásticos | densidade, 5 quadrats de 0,25 m² | itens/m² |
+| RST | Restinga e vegetação costeira | área afetada | m² |
+| ESG | Esgoto e drenagem | ocorrência pontual | pontos |
+| DES | Descarte irregular | ocorrência pontual | pontos |
+| AVI | Avifauna e fauna costeira | ocorrência pontual | indivíduos |
+| AGU | Qualidade da água | medida | valor medido |
 
-Protocolos são configuráveis: seções, campos e itens ficam em tabelas. Restinga, avifauna e
-qualidade da água entram sem migration nova.
+Protocolos são configuráveis: seções, campos e itens ficam em tabelas, e a mesma definição gera o
+formulário web e o PDF da ficha impressa. Protocolo novo aparece na plataforma sem uma linha de
+React.
+
+As listas de itens de RST, ESG, DES, AVI e AGU estão marcadas como **rascunho** e aguardam revisão
+técnica do Ecosurf.
 
 Todo dado fica amarrado à versão do protocolo que o gerou.
 
+## Telas
+
+| Rota | O que faz |
+|---|---|
+| `/` | Mapa público: grade de densidade, pins de ocorrência, escolas, filtros |
+| `/escolas`, `/escola/[slug]` | Rede e página pública de cada escola |
+| `/dados` | Indicadores por município; exportação em CSV sob login |
+| `/painel` | Centro da área autenticada |
+| `/expedicoes`, `/expedicoes/nova` | Saídas de campo |
+| `/campo` | Registro em campo: GPS, foto, ocorrência, fila offline |
+| `/expedicoes/[id]/transcrever` | Ficha de campo gerada pelo protocolo |
+| `/expedicoes/[id]/revisar` | Validação de rascunho a publicado |
+| `/expedicoes/[id]/relatorio` | Relatório para impressão |
+| `/expedicoes/[id]/diario` | Diário de Campo, interno à escola |
+| `/historias`, `/historias/[id]` | Histórias do Território |
+| `/galeria` | Curadoria de fotos e pedidos de remoção |
+
 ## Fase atual
 
-Base de demonstração inteiramente fictícia: escola, turma, expedições na Praia do Sonho, fichas e
-indicadores. Nenhuma escola, aluno ou dado real nesta fase.
+Base de demonstração inteiramente fictícia: escolas, turmas, territórios, expedições, fichas,
+ocorrências, diário e histórias. Nenhuma escola, aluno ou dado real nesta fase.
 
 ## Documentação
 

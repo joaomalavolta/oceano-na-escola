@@ -6,9 +6,18 @@
  * partir de três unidades amostrais e só expedição publicada de escola
  * publicada. O CSV é o mesmo dado do mapa, em coluna.
  *
- * As premissas dizem "sem publicação de dados abertos nesta fase";
- * esta página não amplia a superfície — quem quiser fechar o export,
- * fecha aqui sem tocar no banco.
+ * O §9 das premissas separa duas coisas que é fácil confundir:
+ * indicador agregado por escola, município e rede é aberto a quem não
+ * tem login; "tabelas, filtros avançados, exportação e download de
+ * dados" são só com login. A página respeita a separação.
+ *
+ * Vale dizer com todas as letras o que essa trava é e o que não é: ela
+ * fecha a porta do produto, não a do banco. As views pub_* seguem
+ * legíveis pela chave anônima porque é delas que vive o mapa público, e
+ * quem souber usar a API do PostgREST alcança o mesmo conteúdo. Fechar
+ * de verdade significaria revogar o select do anon e derrubar o mapa
+ * junto — a decisão de visibilidade do §9 já pesou isso ao publicar o
+ * mapa agregado.
  */
 
 import { supabase, supabaseConfigurado } from "./supabase";

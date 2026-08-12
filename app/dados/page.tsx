@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Database, Download, Loader2, AlertTriangle, MapPin } from "lucide-react";
+import { Database, Download, Loader2, AlertTriangle, MapPin, Lock } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
+import { useSessao } from "@/lib/sessao";
 import {
   CONJUNTOS,
   baixarCsv,
@@ -18,6 +19,8 @@ function numero(v: number, casas = 0): string {
 }
 
 export default function DadosPage() {
+  const { session } = useSessao();
+  const autenticado = session !== null;
   const [municipios, setMunicipios] = useState<IndicadorMunicipio[] | null>(null);
   const [baixando, setBaixando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -108,12 +111,34 @@ export default function DadosPage() {
           )}
         </section>
 
-        {/* Conjuntos para download */}
+        {/* Conjuntos para download.
+            As premissas separam as duas coisas: indicador agregado por
+            município é aberto a quem não tem login; "tabelas, filtros
+            avançados, exportação e download de dados" são só com login.
+            A tabela acima fica; o CSV pede sessão. */}
         <section className="space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
             <Download className="w-4 h-4" />
             Baixar em CSV
           </h2>
+
+          {!autenticado && (
+            <div className="p-4 rounded-md border border-dashed border-border bg-card/60 text-center space-y-2">
+              <Lock className="w-7 h-7 text-muted-foreground mx-auto" />
+              <p className="text-sm font-semibold">A exportação pede login</p>
+              <p className="text-xs text-muted-foreground max-w-lg mx-auto">
+                Os indicadores acima são abertos. O download dos conjuntos é restrito a quem tem
+                conta na rede, conforme o termo de parceria: os dados são do Instituto Ecosurf e
+                das escolas participantes, e o uso por terceiros depende de consentimento.
+              </p>
+              <Link
+                href="/entrar"
+                className="inline-block mt-1 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm hover:opacity-90"
+              >
+                Entrar
+              </Link>
+            </div>
+          )}
 
           {erro && (
             <div className="p-3 rounded-sm text-xs flex items-start gap-2 border bg-destructive/10 border-destructive/30 text-destructive">
@@ -122,7 +147,7 @@ export default function DadosPage() {
             </div>
           )}
 
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className={`grid gap-3 md:grid-cols-2 ${autenticado ? "" : "opacity-50"}`}>
             {CONJUNTOS.map((c) => (
               <div
                 key={c.id}
@@ -137,7 +162,7 @@ export default function DadosPage() {
                 </div>
                 <button
                   onClick={() => baixar(c.id)}
-                  disabled={baixando !== null}
+                  disabled={baixando !== null || !autenticado}
                   className="mt-auto py-2 text-xs font-semibold uppercase tracking-wider border border-border rounded-sm hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {baixando === c.id ? (
