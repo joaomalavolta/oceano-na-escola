@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { Waves, LogIn, LayoutDashboard } from 'lucide-react'
+import { LogIn, LayoutDashboard } from 'lucide-react'
 import { useSessao } from '@/lib/sessao'
+import { Marca } from '@/components/navegacao/marca'
 
 // Só rotas que existem e que abrem para quem está olhando. Expedições é
 // área autenticada: para o visitante o link terminava na tela de
@@ -27,11 +28,7 @@ export function BarraSuperior() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-glass-bg backdrop-blur-xl border-b border-glass-border">
       <div className="flex items-center justify-between px-4 py-2.5">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 text-foreground">
-          <Waves className="h-5 w-5 text-primary" />
-          <span className="text-base font-semibold">Oceano na Escola</span>
-        </Link>
+        <Marca compacta />
 
         {/* Nav — desktop only */}
         <nav className="hidden md:flex items-center gap-6">

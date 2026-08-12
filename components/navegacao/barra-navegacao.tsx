@@ -14,11 +14,11 @@ import {
   PlusCircle, 
   Menu,
   X,
-  Waves,
   Database,
   BookText,
   Image as ImageIcon
 } from "lucide-react";
+import { Marca } from "./marca";
 import type { LucideIcon } from "lucide-react";
 
 /** Só o link em destaque carrega `destaque`; sem o tipo, a lista do
@@ -83,13 +83,7 @@ export function BarraNavegacao() {
   return (
     <header className="sticky top-0 z-40 w-full bg-card/90 backdrop-blur-md border-b border-border shadow-xs">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        {/* Logo / Marca */}
-        <Link href="/" className="flex items-center gap-2 font-semibold text-sm tracking-wide text-foreground">
-          <div className="w-7 h-7 rounded-sm bg-primary text-primary-foreground flex items-center justify-center">
-            <Waves className="w-4 h-4" />
-          </div>
-          <span className="font-bold">Oceano na Escola</span>
-        </Link>
+        <Marca />
 
         {/* Links Desktop */}
         <nav className="hidden md:flex items-center gap-1">
