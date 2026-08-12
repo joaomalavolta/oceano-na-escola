@@ -33,7 +33,9 @@ import {
 } from "@/lib/mapa-publico";
 import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
 import { fundoPorId, CHAVE_FUNDO } from "@/lib/mapa-base";
+import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
 import { PinMapa, slugDe } from "./icones";
+import { PinoAgrupado } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BarraSuperior } from "./barra-superior";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
@@ -94,6 +96,11 @@ export function MapaPublico() {
     setFundoId(id);
     window.localStorage.setItem(CHAVE_FUNDO, id);
   }, []);
+
+  // Zoom só para o agrupamento dos pinos. Atualizado no fim do gesto e
+  // não a cada quadro: a grade é em graus, então arrastar não muda
+  // agrupamento nenhum — só aproximar muda.
+  const [zoom, setZoom] = useState(INITIAL_ZOOM);
 
   // Dados públicos. Partem do mock e são substituídos pelo banco assim
   // que a consulta volta, para o mapa nunca renderizar vazio.
@@ -218,6 +225,17 @@ export function MapaPublico() {
   }, [dados.protocolos, dados.grade]);
 
   const escalaPadrao = useMemo(() => escalaDe(PROTOCOLO_PADRAO), []);
+
+  /** Ocorrências agrupadas por proximidade, no zoom atual. */
+  const gruposDeOcorrencia = useMemo(
+    () => agruparPorProximidade(pontuaisFiltrados, (o) => pontoDe(o.ponto_geojson), zoom),
+    [pontuaisFiltrados, zoom]
+  );
+
+  /** Aproxima até o grupo se desfazer, centrando nele. */
+  const abrirGrupo = useCallback((lat: number, lng: number) => {
+    mapRef.current?.easeTo({ center: [lng, lat], zoom: (mapRef.current.getZoom() ?? 13) + 2.5 });
+  }, []);
 
   // ── GeoJSON para as células ────────────────────────────────────
 
@@ -370,6 +388,7 @@ export function MapaPublico() {
         mapStyle={MAP_STYLE}
         onLoad={onMapLoad}
         onError={onMapError}
+        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
         interactiveLayerIds={["celulas-fill"]}
         onClick={onCelulaClick}
         onMouseEnter={onMouseEnterCelula}
@@ -416,10 +435,35 @@ export function MapaPublico() {
         </Source>
 
         {/* Camada: Ocorrências ambientais, em coordenada exata.
-            Cor e magnitude vêm do protocolo e do item, no banco. */}
-        {pontuaisFiltrados.map((o) => {
-          const ponto = JSON.parse(o.ponto_geojson) as { coordinates: [number, number] };
-          const [lng, lat] = ponto.coordinates;
+            Cor e magnitude vêm do protocolo e do item, no banco.
+            Pinos próximos viram um grupo até o zoom separá-los. */}
+        {gruposDeOcorrencia.map((grupo) => {
+          if (grupo.itens.length > 1) {
+            const protocolos = new Set(grupo.itens.map((o) => o.protocolo));
+            const unico = protocolos.size === 1 ? grupo.itens[0] : null;
+            return (
+              <Marker
+                key={`gr-${grupo.chave}`}
+                latitude={grupo.lat}
+                longitude={grupo.lng}
+                anchor="center"
+                style={{ zIndex: 1 }}
+              >
+                <PinoAgrupado
+                  quantidade={grupo.itens.length}
+                  cor={unico?.protocolo_cor ?? null}
+                  titulo={
+                    unico
+                      ? `${grupo.itens.length} ocorrências de ${unico.protocolo_nome}. Clique para aproximar.`
+                      : `${grupo.itens.length} ocorrências de ${protocolos.size} protocolos. Clique para aproximar.`
+                  }
+                  onClick={() => abrirGrupo(grupo.lat, grupo.lng)}
+                />
+              </Marker>
+            );
+          }
+
+          const o = grupo.itens[0];
           const cor = o.protocolo_cor ?? "#a63d40";
           const magnitude =
             o.valor !== null && o.item_unidade
@@ -427,7 +471,13 @@ export function MapaPublico() {
               : null;
 
           return (
-            <Marker key={`oc-${o.id}`} latitude={lat} longitude={lng} anchor="bottom">
+            <Marker
+              key={`oc-${o.id}`}
+              latitude={grupo.lat}
+              longitude={grupo.lng}
+              anchor="bottom"
+              style={{ zIndex: 1 }}
+            >
               <div
                 className="group relative flex flex-col items-center"
                 title={`${o.item_nome ?? o.descricao}${magnitude ? ` — ${magnitude}` : ""} · ${o.escola_nome}`}
@@ -458,21 +508,29 @@ export function MapaPublico() {
               latitude={escola.lat}
               longitude={escola.lng}
               anchor="bottom"
+              /* Acima das ocorrências: o nome da escola é a âncora de
+                 leitura do mapa, e estava sendo coberto pelos grupos. */
+              style={{ zIndex: 2 }}
             >
+              {/* O rótulo vai acima do pino, não abaixo. Abaixo, ele caía
+                  bem onde as ocorrências da escola se agrupam: ou cobria
+                  os grupos e engolia o clique deles, ou era coberto. Acima,
+                  os dois convivem — e a ponta do pino passa a cair no
+                  ponto da escola, que é onde ela está. */}
               <Link
                 href={`/escola/${escola.slug}`}
                 title={escola.nome}
                 className="group flex flex-col items-center"
               >
+                <div className="mb-0.5 px-1.5 py-0.5 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground max-w-[120px] truncate shadow-sm">
+                  {escola.nome.split(" ").slice(0, 3).join(" ")}
+                </div>
                 <PinMapa
                   slug="escola"
                   cor={null}
                   tamanho={34}
                   className="drop-shadow-md transition-transform group-hover:scale-110 origin-bottom"
                 />
-                <div className="mt-0.5 px-1.5 py-0.5 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground max-w-[120px] truncate">
-                  {escola.nome.split(" ").slice(0, 3).join(" ")}
-                </div>
               </Link>
             </Marker>
           ))}

@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import MapGL, {
   Marker,
   Popup,
   NavigationControl,
   AttributionControl,
+  type MapRef,
 } from "react-map-gl/maplibre";
 import type { StyleSpecification } from "maplibre-gl";
 import { PinMapa, slugDe } from "./icones";
+import { PinoAgrupado } from "./pino-agrupado";
+import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
 
 import type {
   PubEscola,
@@ -38,14 +41,7 @@ interface MapaEscolaProps {
   fotos: PubFotoGeorreferenciada[];
 }
 
-function coordenadas(geojson: string): [number, number] | null {
-  try {
-    const g = JSON.parse(geojson) as { coordinates?: [number, number] };
-    return g.coordinates ?? null;
-  } catch {
-    return null;
-  }
-}
+const ZOOM_INICIAL = 14;
 
 /**
  * Mapa do território de uma escola.
@@ -65,12 +61,14 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
     return mapa;
   }, [fotos]);
 
-  const pins = useMemo(
-    () =>
-      ocorrencias
-        .map((o) => ({ o, xy: coordenadas(o.ponto_geojson) }))
-        .filter((p): p is { o: PubObservacaoPontual; xy: [number, number] } => p.xy !== null),
-    [ocorrencias]
+  // O mesmo agrupamento do mapa público: a escola do piloto concentra
+  // as ocorrências num trecho curto, e sobrepostas elas se escondem.
+  const [zoom, setZoom] = useState(ZOOM_INICIAL);
+  const mapRef = useRef<MapRef>(null);
+
+  const grupos = useMemo(
+    () => agruparPorProximidade(ocorrencias, (o) => coordenadas(o.ponto_geojson), zoom),
+    [ocorrencias, zoom]
   );
 
   const abertaXY = aberta ? coordenadas(aberta.ponto_geojson) : null;
@@ -78,10 +76,12 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
 
   return (
     <MapGL
-      initialViewState={{ latitude: escola.lat, longitude: escola.lng, zoom: 14 }}
+      ref={mapRef}
+      initialViewState={{ latitude: escola.lat, longitude: escola.lng, zoom: ZOOM_INICIAL }}
       style={{ width: "100%", height: "100%" }}
       mapStyle={MAP_STYLE}
       attributionControl={false}
+      onZoomEnd={(e) => setZoom(e.viewState.zoom)}
     >
       <AttributionControl position="bottom-right" compact />
       <NavigationControl position="top-right" showCompass={false} />
@@ -92,27 +92,55 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
         </div>
       </Marker>
 
-      {pins.map(({ o, xy }) => (
-        <Marker
-          key={o.id}
-          latitude={xy[1]}
-          longitude={xy[0]}
-          anchor="bottom"
-          onClick={(e) => {
-            e.originalEvent.stopPropagation();
-            setAberta(o);
-          }}
-        >
-          <div title={o.item_nome ?? o.descricao} className="cursor-pointer">
-            <PinMapa
-              slug={slugDe(o.item_icone, o.protocolo_icone)}
-              cor={o.protocolo_cor ?? "#a63d40"}
-              tamanho={28}
-              className="drop-shadow-md hover:scale-110 transition-transform origin-bottom"
-            />
-          </div>
-        </Marker>
-      ))}
+      {grupos.map((grupo) => {
+        if (grupo.itens.length > 1) {
+          const protocolos = new Set(grupo.itens.map((o) => o.protocolo));
+          const unico = protocolos.size === 1 ? grupo.itens[0] : null;
+          return (
+            <Marker
+              key={`gr-${grupo.chave}`}
+              latitude={grupo.lat}
+              longitude={grupo.lng}
+              anchor="center"
+            >
+              <PinoAgrupado
+                quantidade={grupo.itens.length}
+                cor={unico?.protocolo_cor ?? null}
+                titulo={`${grupo.itens.length} ocorrências aqui. Clique para aproximar.`}
+                onClick={() =>
+                  mapRef.current?.easeTo({
+                    center: [grupo.lng, grupo.lat],
+                    zoom: (mapRef.current.getZoom() ?? ZOOM_INICIAL) + 2.5,
+                  })
+                }
+              />
+            </Marker>
+          );
+        }
+
+        const o = grupo.itens[0];
+        return (
+          <Marker
+            key={o.id}
+            latitude={grupo.lat}
+            longitude={grupo.lng}
+            anchor="bottom"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setAberta(o);
+            }}
+          >
+            <div title={o.item_nome ?? o.descricao} className="cursor-pointer">
+              <PinMapa
+                slug={slugDe(o.item_icone, o.protocolo_icone)}
+                cor={o.protocolo_cor ?? "#a63d40"}
+                tamanho={28}
+                className="drop-shadow-md hover:scale-110 transition-transform origin-bottom"
+              />
+            </div>
+          </Marker>
+        );
+      })}
 
       {aberta && abertaXY && (
         <Popup
