@@ -13,6 +13,7 @@ import {
   Grid3x3,
   Info,
   MapPin,
+  Printer,
   RotateCcw,
   Ruler,
   Users,
@@ -214,15 +215,24 @@ function RevisarConteudo({ id }: { id: number }) {
             </div>
           </div>
 
-          {cabecalho.status === "publicado" && cabecalho.escola.publicada && (
+          <div className="flex items-center gap-2 self-start">
             <Link
-              href={`/escola/${cabecalho.escola.slug}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors self-start"
+              href={`/expedicoes/${cabecalho.id}/relatorio`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Ver na página pública
+              <Printer className="w-3.5 h-3.5" />
+              Relatório
             </Link>
-          )}
+            {cabecalho.status === "publicado" && cabecalho.escola.publicada && (
+              <Link
+                href={`/escola/${cabecalho.escola.slug}`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Ver na página pública
+              </Link>
+            )}
+          </div>
         </div>
 
         <Regua status={cabecalho.status} />

@@ -15,11 +15,13 @@ import {
   Package,
   Map as MapIcon,
   AlertTriangle,
+  Award,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
+import { calcularConquistas } from "@/lib/conquistas";
 import { carregarEscolaPublica, type EscolaPublica } from "@/lib/dados-escola-publica";
 import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 
@@ -29,7 +31,7 @@ const MapaEscola = dynamic(
   { ssr: false }
 );
 
-type Aba = "sobre" | "mapa" | "expedicoes" | "registros" | "galeria";
+type Aba = "sobre" | "mapa" | "expedicoes" | "registros" | "galeria" | "conquistas";
 
 function formatarData(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR");
@@ -91,8 +93,11 @@ export default function EscolaPublicaPage({
     { id: "expedicoes", label: `Expedições (${expedicoes.length})`, icon: Compass },
     { id: "registros", label: `Ocorrências (${ocorrencias.length})`, icon: AlertTriangle },
     { id: "galeria", label: `Galeria (${galeria.length + fotos.length})`, icon: ImageIcon },
+    { id: "conquistas", label: "Conquistas", icon: Award },
     { id: "sobre", label: "Sobre a escola", icon: Info },
   ];
+
+  const conquistas = calcularConquistas(indicador, expedicoes, ocorrencias, fotos.length);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -269,6 +274,60 @@ export default function EscolaPublicaPage({
               ))}
             </div>
           </EstadoContainer>
+        )}
+
+        {abaAtiva === "conquistas" && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground max-w-2xl">
+              O que esta escola construiu no próprio território. Não há classificação entre
+              escolas: cada uma é medida pelo seu percurso, e o que se reconhece é a
+              continuidade do monitoramento — uma saída por mês vale mais que dez num dia só.
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {conquistas.map((c) => {
+                const proporcao = Math.min(1, c.meta > 0 ? c.atual / c.meta : 0);
+                return (
+                  <div
+                    key={c.id}
+                    className={`bg-card border rounded-md p-4 shadow-2xs space-y-2 ${
+                      c.conquistada ? "border-border" : "border-dashed border-border"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <IconeBadge
+                        slug={c.icone}
+                        cor={c.cor}
+                        tamanho={36}
+                        className={c.conquistada ? "" : "opacity-30 saturate-0"}
+                      />
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-bold leading-tight">{c.nome}</h3>
+                        <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                          {c.descricao}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${proporcao * 100}%`,
+                            backgroundColor: c.conquistada ? c.cor : "var(--color-muted-foreground)",
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] tabular-nums text-muted-foreground">
+                        {c.progresso}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {abaAtiva === "galeria" && (

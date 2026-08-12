@@ -12,9 +12,10 @@ import {
   LogIn, 
   LogOut, 
   PlusCircle, 
-  Menu, 
+  Menu,
   X,
-  Waves
+  Waves,
+  Database
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -53,6 +54,7 @@ export function BarraNavegacao() {
   const navLinksVisitante: NavLink[] = [
     { href: "/", label: "Mapa", icon: Map },
     { href: "/escolas", label: "Escolas", icon: School },
+    { href: "/dados", label: "Dados", icon: Database },
   ];
 
   const navLinksAutenticado: NavLink[] = [
@@ -60,6 +62,7 @@ export function BarraNavegacao() {
     { href: "/painel", label: "Painel", icon: BarChart3 },
     { href: "/expedicoes", label: "Expedições", icon: Compass },
     { href: "/escolas", label: "Escolas", icon: School },
+    { href: "/dados", label: "Dados", icon: Database },
     { href: "/campo", label: "Registrar em campo", icon: PlusCircle, destaque: true },
   ];
 

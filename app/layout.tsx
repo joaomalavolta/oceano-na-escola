@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ProvedorSessao } from "@/lib/sessao";
+import { RegistraSw } from "@/components/ui/registra-sw";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({
           da janela, sem alcance até o botão de salvar. */}
       <body className="min-h-full">
         <ProvedorSessao>{children}</ProvedorSessao>
+        <RegistraSw />
       </body>
     </html>
   );
