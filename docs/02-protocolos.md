@@ -304,13 +304,53 @@ e são digitalizadas como evidência anexa à expedição.
 | Campo qualitativo | `observacao_texto` |
 | Ficha digitalizada | `evidencia` |
 
-Um protocolo novo — restinga, avifauna, qualidade da água — entra cadastrando seções, campos e
-itens. Nenhuma tabela nova, nenhuma migration.
+Um protocolo novo entra cadastrando seções, campos e itens. Nenhuma tabela nova, nenhuma migration
+de schema — foi assim que os cinco protocolos abaixo entraram.
+
+---
+
+# Protocolos de ocorrência
+
+*Aprovados em 12/08/2026.*
+
+RES e MIC medem **densidade**: exigem esforço amostral, área conhecida e ficha impressa, porque
+contagem sem área não vira densidade e não compara praia nem ano.
+
+Os cinco protocolos abaixo são de **ocorrência pontual**. O aluno registra o que encontra no ponto
+em que está, com coordenada exata e magnitude na unidade do item. Não têm quadrat nem trecho, e por
+isso nascem direto no celular, em `/campo`.
+
+| Código | O que registra | Magnitude |
+|---|---|---|
+| RST | Supressão de restinga, pisoteio, invasora, aterro | m² afetados |
+| ESG | Lançamento em drenagem, ligação irregular, espuma/odor, córrego | pontos, metros |
+| DES | Entulho, volumoso, queima, acúmulo em terreno | pontos, m² |
+| AVI | Espécie avistada, ninho, fauna com resíduo, encalhe | indivíduos, pontos |
+| AGU | pH, turbidez, temperatura, salinidade | valor medido |
+
+**O que o método destes cinco tem de diferente.** Em RES e MIC, o cuidado central é o esforço
+amostral — sem ele o dado não existe. Aqui o cuidado central é **observar sem interferir e sem se
+expor**, porque é esse o risco real: não tocar na água de lançamento, não revirar entulho, não
+aproximar de ninho, não entrar em terreno particular, não tocar em animal encalhado. Cada método
+está escrito por extenso em `protocolo_versao.metodo` e aparece na ficha impressa.
+
+Três regras que atravessam os cinco:
+
+- **Descrever vale mais que nomear errado.** Espécie só é registrada com identificação segura; na
+  dúvida, foto e descrição.
+- **Ninho não ganha coordenada de acesso.** Registro à distância, sem foto aproximada e sem indicar
+  trilha na descrição.
+- **Valor isolado diz pouco.** Em AGU, a medição repetida no mesmo ponto e no mesmo estágio de maré
+  é o que constrói a série; um número solto não sustenta conclusão.
+
+As listas de itens abrem com quatro entradas cada. Item novo entra por cadastro, sem migration, e o
+dado antigo continua amarrado à versão que o gerou.
 
 ---
 
 ## Próximo passo
 
-Passo 3: criar o projeto Supabase, escrever a primeira migration com essas entidades, PostGIS e RLS
-escopado por escola, e popular com a escola fictícia, as duas expedições da Praia do Sonho e os
-dados de demonstração.
+Passos 3 a 6 concluídos: banco com PostGIS e RLS por escola, piloto fictício, ciclo completo de
+campo à publicação. Aberto: revisão das listas de itens conforme o uso real das escolas, e os itens
+de terceira versão — API pública documentada, sensoriamento remoto comparativo e identificação
+assistida de espécies.

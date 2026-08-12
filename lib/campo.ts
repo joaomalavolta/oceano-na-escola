@@ -37,6 +37,9 @@ export interface ProtocoloDeCampo {
   nome: string;
   cor: string | null;
   icone: string | null;
+  /** O método de campo aprovado. Vale mais aqui do que na ficha: é o
+   *  lugar onde o aluno está prestes a se aproximar da ocorrência. */
+  metodo: string | null;
   itens: ItemDeCampo[];
 }
 
@@ -79,7 +82,7 @@ export async function listarProtocolosDeCampo(): Promise<ProtocoloDeCampo[]> {
   const { data, error } = await supabase
     .from("protocolo_versao")
     .select(
-      "id, ativa, protocolo:protocolo_id (codigo, nome, cor, icone, forma_agregacao), protocolo_item (id, codigo, nome, icone, unidade, ordem)"
+      "id, ativa, metodo, protocolo:protocolo_id (codigo, nome, cor, icone, forma_agregacao), protocolo_item (id, codigo, nome, icone, unidade, ordem)"
     )
     .eq("ativa", true);
   if (error) return [];
@@ -97,6 +100,7 @@ export async function listarProtocolosDeCampo(): Promise<ProtocoloDeCampo[]> {
         nome: String(p.nome),
         cor: p.cor ?? null,
         icone: p.icone ?? null,
+        metodo: v.metodo ?? null,
         itens: ((v.protocolo_item ?? []) as I[])
           .sort((a, b) => a.ordem - b.ordem)
           .map((i) => ({

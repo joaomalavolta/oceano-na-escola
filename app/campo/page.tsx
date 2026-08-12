@@ -346,6 +346,18 @@ function CampoConteudo() {
           ))}
         </div>
 
+        {/* O método aprovado do protocolo. Fica aberto, não escondido
+            atrás de um "saiba mais": metade dele é cuidado de segurança,
+            e o momento de ler é este, antes de chegar perto. */}
+        {protocolo?.metodo && (
+          <div className="p-3 rounded-sm bg-secondary/60 border border-border">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+              Como registrar · {protocolo.codigo}
+            </p>
+            <p className="text-[11px] leading-relaxed">{protocolo.metodo}</p>
+          </div>
+        )}
+
         {protocolo && protocolo.itens.length > 0 && (
           <div className="grid grid-cols-2 gap-1.5">
             {protocolo.itens.map((i) => (

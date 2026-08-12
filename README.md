@@ -74,8 +74,7 @@ select p.codigo, pv.versao,
 from protocolo p join protocolo_versao pv on pv.protocolo_id = p.id;
 ```
 
-Esperado: `RES / 1.0 / 30 / 9`, `MIC / 1.0 / 0 / 14`, e os cinco protocolos novos com seus itens
-em rascunho.
+Esperado: `RES / 1.0 / 30 / 9`, `MIC / 1.0 / 0 / 14`, e RST, ESG, DES, AVI e AGU com 4 itens cada.
 
 ### Decisões de segurança registradas
 
@@ -132,8 +131,9 @@ Protocolos são configuráveis: seções, campos e itens ficam em tabelas, e a m
 formulário web e o PDF da ficha impressa. Protocolo novo aparece na plataforma sem uma linha de
 React.
 
-As listas de itens de RST, ESG, DES, AVI e AGU estão marcadas como **rascunho** e aguardam revisão
-técnica do Ecosurf.
+Os sete estão aprovados, cada um com o método de campo escrito em `protocolo_versao.metodo` — é o
+texto que vai para a ficha impressa. RES e MIC medem densidade e exigem esforço amostral; os cinco
+de ocorrência registram o ponto exato e a magnitude na unidade do item.
 
 Todo dado fica amarrado à versão do protocolo que o gerou.
 
