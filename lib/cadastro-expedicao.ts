@@ -70,6 +70,7 @@ export async function listarTurmas(escolaId: number): Promise<TurmaDisponivel[]>
     .from("turma")
     .select("id, nome, ano_letivo")
     .eq("escola_id", escolaId)
+    .order("ano_letivo", { ascending: false })
     .order("nome");
   if (error) return [];
   return (data ?? []).map((t) => ({
@@ -77,6 +78,53 @@ export async function listarTurmas(escolaId: number): Promise<TurmaDisponivel[]>
     nome: String(t.nome),
     ano_letivo: Number(t.ano_letivo),
   }));
+}
+
+/**
+ * Cria uma turma no ato.
+ *
+ * O ano letivo faz parte da identidade da turma: "7º ano B" de 2026 e
+ * de 2027 são turmas diferentes, com estudantes diferentes, e o banco
+ * trata assim — a unicidade é (escola, nome, ano). Sem isso, a série
+ * histórica da escola misturaria gerações.
+ */
+export async function criarTurma(
+  escolaId: number,
+  nome: string,
+  anoLetivo: number,
+  nivel: string
+): Promise<{ turma: TurmaDisponivel | null; erro: string | null }> {
+  const { data, error } = await supabase
+    .from("turma")
+    .insert({
+      escola_id: escolaId,
+      nome: nome.trim(),
+      ano_letivo: anoLetivo,
+      nivel: nivel.trim() || null,
+    })
+    .select("id, nome, ano_letivo")
+    .single();
+
+  if (error) {
+    // 23505 é a unicidade (escola, nome, ano). Uma frase que diz o que
+    // aconteceu vale mais que o texto da constraint.
+    if (error.code === "23505") {
+      return {
+        turma: null,
+        erro: `A turma "${nome.trim()}" já existe nesta escola em ${anoLetivo}.`,
+      };
+    }
+    return { turma: null, erro: error.message };
+  }
+
+  return {
+    turma: {
+      id: Number(data.id),
+      nome: String(data.nome),
+      ano_letivo: Number(data.ano_letivo),
+    },
+    erro: null,
+  };
 }
 
 /** Protocolos com versão ativa, para a expedição escolher qual aplicar. */

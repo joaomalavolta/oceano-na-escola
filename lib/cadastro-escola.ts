@@ -22,8 +22,10 @@ export interface DadosCadastro {
   rede_ensino: string;
   endereco: string;
   apresentacao: string;
-  lat: number;
-  lng: number;
+  /** Nulos quando a escola é aberta no meio de outra tarefa. A escola
+   *  só aparece no mapa com coordenada, e ela pode chegar depois. */
+  lat: number | null;
+  lng: number | null;
   termosOk: boolean;
   turmas: { nome: string; ano_letivo: number; nivel: string }[];
 }
@@ -31,6 +33,8 @@ export interface DadosCadastro {
 export interface ResultadoCadastro {
   slug: string | null;
   erro: string | null;
+  /** O id da escola criada, para quem precisa continuar usando-a. */
+  id?: number | null;
 }
 
 /**
@@ -84,12 +88,13 @@ export async function cadastrarEscola(d: DadosCadastro): Promise<ResultadoCadast
       rede_ensino: d.rede_ensino,
       endereco: d.endereco,
       apresentacao: d.apresentacao,
-      geom: `SRID=4326;POINT(${d.lng} ${d.lat})`,
+      geom:
+        d.lat !== null && d.lng !== null ? `SRID=4326;POINT(${d.lng} ${d.lat})` : null,
     })
     .select("id, slug")
     .single();
 
-  if (error) return { slug: null, erro: error.message };
+  if (error) return { slug: null, id: null, erro: error.message };
 
   const escolaId = Number(criada.id);
 
@@ -102,7 +107,7 @@ export async function cadastrarEscola(d: DadosCadastro): Promise<ResultadoCadast
       .from("escola")
       .update({ termos_ok: true })
       .eq("id", escolaId);
-    if (erroTermos) return { slug, erro: erroTermos.message };
+    if (erroTermos) return { slug, id: escolaId, erro: erroTermos.message };
   }
 
   const turmas = d.turmas.filter((t) => t.nome.trim() !== "");
@@ -115,8 +120,8 @@ export async function cadastrarEscola(d: DadosCadastro): Promise<ResultadoCadast
         nivel: t.nivel,
       }))
     );
-    if (erroTurmas) return { slug, erro: erroTurmas.message };
+    if (erroTurmas) return { slug, id: escolaId, erro: erroTurmas.message };
   }
 
-  return { slug, erro: null };
+  return { slug, id: escolaId, erro: null };
 }

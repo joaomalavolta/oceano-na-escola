@@ -13,6 +13,7 @@ import {
   Waves,
   AlertTriangle,
   Route,
+  GraduationCap,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
@@ -27,6 +28,8 @@ import {
   type TurmaDisponivel,
   type TerritorioDisponivel,
 } from "@/lib/cadastro-expedicao";
+import { NovaEscolaEmbutida } from "@/components/ui/nova-escola-embutida";
+import { NovaTurmaEmbutida } from "@/components/ui/nova-turma-embutida";
 
 const MARES = ["", "baixamar", "vazante", "enchente", "preamar"];
 const CHUVA = ["", "nao", "sim", "nao_sei"];
@@ -44,6 +47,9 @@ function NovaExpedicaoConteudo() {
 
   const [escolaId, setEscolaId] = useState<number | null>(null);
   const [turmaIds, setTurmaIds] = useState<number[]>([]);
+  // O ano letivo abre no ano da data de campo: é quase sempre ele, e
+  // quem abrir a ficha em janeiro para uma saída de dezembro corrige.
+  const [anoLetivo, setAnoLetivo] = useState(new Date().getFullYear());
   const [territorioId, setTerritorioId] = useState<number | "">("");
   const [titulo, setTitulo] = useState("");
   const [dataCampo, setDataCampo] = useState(new Date().toISOString().split("T")[0]);
@@ -72,6 +78,15 @@ function NovaExpedicaoConteudo() {
     };
   }, []);
 
+  /** Relê a lista depois de cadastrar uma escola, e já seleciona a nova. */
+  const recarregarEscolas = async (novaId: number) => {
+    const lista = await listarEscolasDoProfessor();
+    setEscolas(lista);
+    setEscolaId(novaId);
+    setTurmaIds([]);
+    setTerritorioId("");
+  };
+
   const escola = escolas?.find((e) => e.id === escolaId) ?? null;
 
   useEffect(() => {
@@ -92,19 +107,35 @@ function NovaExpedicaoConteudo() {
     );
   }
 
+  // Sem escola nenhuma, a tela não é um beco: o cadastro aparece aqui.
   if (escolas.length === 0) {
     return (
-      <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
-        <EstadoContainer
-          estado="vazio"
-          mensagemVazia="A sua conta ainda não está vinculada a nenhuma escola. Cadastre a escola antes de abrir uma saída de campo."
-        />
+      <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8 space-y-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            <Compass className="w-5 h-5 text-primary" />
+            Abrir nova saída de campo
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Sua conta ainda não está vinculada a nenhuma escola. Cadastre a sua para abrir a
+            primeira saída.
+          </p>
+        </div>
+        <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
+          <NovaEscolaEmbutida onCriada={recarregarEscolas} />
+        </div>
       </main>
     );
   }
 
   const alternarTurma = (id: number) =>
     setTurmaIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+
+  // Turmas do ano escolhido. Sem o recorte, uma escola com cinco anos de
+  // histórico devolveria dezenas de chips e o professor escolheria a
+  // turma do ano errado sem perceber.
+  const turmasDoAno = turmas.filter((t) => t.ano_letivo === anoLetivo);
+  const anosComTurma = [...new Set(turmas.map((t) => t.ano_letivo))].sort((a, b) => b - a);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,26 +187,25 @@ function NovaExpedicaoConteudo() {
             1. Identificação
           </h2>
 
-          {escolas.length > 1 && (
-            <div>
-              <label className={rotulo}>Escola</label>
-              <select
-                value={escolaId ?? ""}
-                onChange={(e) => {
-                  setEscolaId(Number(e.target.value));
-                  setTurmaIds([]);
-                  setTerritorioId("");
-                }}
-                className={campo}
-              >
-                {escolas.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <label className={rotulo}>Escola</label>
+            <select
+              value={escolaId ?? ""}
+              onChange={(e) => {
+                setEscolaId(Number(e.target.value));
+                setTurmaIds([]);
+                setTerritorioId("");
+              }}
+              className={campo}
+            >
+              {escolas.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.nome}
+                </option>
+              ))}
+            </select>
+            <NovaEscolaEmbutida onCriada={recarregarEscolas} />
+          </div>
 
           <div>
             <label className={rotulo}>Título da expedição</label>
@@ -188,6 +218,39 @@ function NovaExpedicaoConteudo() {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={rotulo}>
+                <GraduationCap className="w-3 h-3 inline mr-1" />
+                Ano letivo
+              </label>
+              <input
+                type="number"
+                min={2000}
+                max={2100}
+                value={anoLetivo}
+                onChange={(e) => {
+                  setAnoLetivo(Number(e.target.value) || new Date().getFullYear());
+                  setTurmaIds([]);
+                }}
+                className={`${campo} tabular-nums`}
+              />
+              {anosComTurma.length > 0 && !anosComTurma.includes(anoLetivo) && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Esta escola tem turmas em {anosComTurma.join(", ")}.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className={rotulo}>Turmas selecionadas</label>
+              <p className="px-3 py-2 text-sm tabular-nums text-muted-foreground">
+                {turmaIds.length === 0
+                  ? "nenhuma ainda"
+                  : `${turmaIds.length} de ${turmasDoAno.length}`}
+              </p>
+            </div>
+          </div>
+
           <div>
             <label className={rotulo}>
               Turmas em campo{" "}
@@ -195,30 +258,41 @@ function NovaExpedicaoConteudo() {
                 (uma expedição pode reunir mais de uma)
               </span>
             </label>
-            {turmas.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Esta escola ainda não tem turmas cadastradas.
+            <div className="flex flex-wrap gap-2 items-start">
+              {turmasDoAno.map((t) => {
+                const marcada = turmaIds.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => alternarTurma(t.id)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-sm border transition-colors ${
+                      marcada
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-input text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t.nome}
+                  </button>
+                );
+              })}
+
+              {escolaId !== null && (
+                <NovaTurmaEmbutida
+                  escolaId={escolaId}
+                  anoLetivo={anoLetivo}
+                  onCriada={(t) => {
+                    setTurmas((prev) => [...prev, t]);
+                    setTurmaIds((prev) => [...prev, t.id]);
+                  }}
+                />
+              )}
+            </div>
+
+            {turmasDoAno.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Nenhuma turma cadastrada nesta escola em {anoLetivo}. Crie a primeira aqui mesmo.
               </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {turmas.map((t) => {
-                  const marcada = turmaIds.includes(t.id);
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => alternarTurma(t.id)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-sm border transition-colors ${
-                        marcada
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-input text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {t.nome} · {t.ano_letivo}
-                    </button>
-                  );
-                })}
-              </div>
             )}
           </div>
         </section>
