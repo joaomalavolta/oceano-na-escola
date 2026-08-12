@@ -339,6 +339,31 @@ function PainelConteudo() {
           </div>
         )}
       </div>
+
+      {/* O painel é o centro da área autenticada: daqui se alcança tudo
+          o que não coube na barra superior. */}
+      <div className="bg-card border border-border rounded-md p-5 shadow-2xs space-y-3">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-3">
+          Atalhos
+        </h2>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/campo", titulo: "Registrar em campo", texto: "GPS, foto e ocorrência pelo celular" },
+            { href: "/galeria", titulo: "Curadoria da galeria", texto: "Publicar e retirar fotos, pedidos de remoção" },
+            { href: "/historias", titulo: "Histórias do Território", texto: "O que os dados dizem deste lugar" },
+            { href: "/dados", titulo: "Dados da rede", texto: "Indicadores por município e exportação" },
+          ].map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="p-3 bg-background border border-border rounded-sm hover:bg-secondary/50 transition-colors"
+            >
+              <span className="block text-xs font-bold">{a.titulo}</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">{a.texto}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }

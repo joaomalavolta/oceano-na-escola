@@ -26,6 +26,7 @@ import { calcularConquistas } from "@/lib/conquistas";
 import { listarHistoriasPublicas, type HistoriaPublica } from "@/lib/historias";
 import { carregarEscolaPublica, type EscolaPublica } from "@/lib/dados-escola-publica";
 import { FotoEvidencia } from "@/components/ui/foto-evidencia";
+import { PedirRemocao } from "@/components/ui/pedir-remocao";
 
 // MapLibre exige o DOM.
 const MapaEscola = dynamic(
@@ -448,6 +449,9 @@ export default function EscolaPublicaPage({
                       <p className="text-[11px] text-muted-foreground">
                         Expedição #{f.expedicao_numero} · {formatarData(f.data_campo)}
                       </p>
+                      <div className="pt-1.5">
+                        <PedirRemocao evidenciaId={f.id} />
+                      </div>
                     </figcaption>
                   </figure>
                 ))}
@@ -462,13 +466,16 @@ export default function EscolaPublicaPage({
                       alt={g.legenda ?? "Foto de campo"}
                       className="w-full h-48 object-cover"
                     />
-                    <figcaption className="p-3">
+                    <figcaption className="p-3 space-y-0.5">
                       <p className="text-xs font-bold">{g.legenda ?? "Foto de campo"}</p>
                       {g.expedicao_numero !== null && (
                         <p className="text-[11px] text-muted-foreground">
                           Expedição #{g.expedicao_numero}
                         </p>
                       )}
+                      <div className="pt-1.5">
+                        <PedirRemocao evidenciaId={g.id} />
+                      </div>
                     </figcaption>
                   </figure>
                 ))}
