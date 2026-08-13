@@ -37,7 +37,7 @@ import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
 import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
-import { BarraSuperior } from "./barra-superior";
+import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
 import { PopupCelula } from "./popup-celula";
@@ -609,7 +609,8 @@ export function MapaPublico() {
 
       {/* ── Painéis flutuantes ─────────────────────────────────────── */}
 
-      <BarraSuperior />
+      {/* A mesma barra das outras páginas, flutuando sobre o mapa. */}
+      <BarraNavegacao flutuante />
 
       {/* Escolha do mapa de fundo, acima do controle de zoom */}
       <div className="absolute top-16 right-3 z-30">
