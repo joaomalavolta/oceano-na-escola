@@ -6,6 +6,9 @@ import {
   todosOsSlugs,
   minutosTotais,
   etapasAntesDoCampo,
+  metrosPorPixel,
+  barraDeEscala,
+  coordenadaLegivel,
 } from "./cartografia";
 import { temGlifo } from "@/components/mapa/icones";
 import { temSimboloSocial } from "@/components/cartografia/simbolos";
@@ -119,5 +122,68 @@ describe("roteiro da oficina", () => {
     // A oficina é facilitada em conjunto; sem etapa do facilitador ela
     // vira material que o professor recebe e aplica sozinho.
     expect(OFICINA.some((e) => e.conduz === "facilitador")).toBe(true);
+  });
+});
+
+/**
+ * A barra de escala impressa na prancha do território.
+ *
+ * É a parte que pode mentir em silêncio: uma barra errada não dá erro
+ * nenhum, e a turma mede o trecho por ela. O cosseno da latitude é o
+ * que quase sempre falta — em Itanhaém, a −24°, esquecê-lo erraria por
+ * 9%, o bastante para uma equipe amostrar um trecho que não é o que
+ * ela pensa que é.
+ */
+describe("barra de escala", () => {
+  const ITANHAEM = -24.1875;
+
+  it("encolhe o metro por pixel conforme o zoom aumenta", () => {
+    expect(metrosPorPixel(ITANHAEM, 15)).toBeLessThan(metrosPorPixel(ITANHAEM, 14));
+    expect(metrosPorPixel(ITANHAEM, 14) / metrosPorPixel(ITANHAEM, 15)).toBeCloseTo(2, 5);
+  });
+
+  it("aplica o cosseno da latitude", () => {
+    // No equador o pixel cobre mais chão que em Itanhaém, no mesmo zoom.
+    expect(metrosPorPixel(0, 15)).toBeGreaterThan(metrosPorPixel(ITANHAEM, 15));
+    expect(metrosPorPixel(ITANHAEM, 15) / metrosPorPixel(0, 15)).toBeCloseTo(
+      Math.cos((ITANHAEM * Math.PI) / 180),
+      5
+    );
+  });
+
+  it("a barra mede o que diz que mede", () => {
+    // O contrato que importa: a largura desenhada, convertida de volta
+    // pela mesma escala, dá a distância impressa no rótulo.
+    for (const zoom of [12, 14, 16, 18]) {
+      const b = barraDeEscala(ITANHAEM, zoom);
+      const medido = b.pixels * metrosPorPixel(ITANHAEM, zoom);
+      expect(Math.abs(medido - b.metros) / b.metros, `zoom ${zoom}`).toBeLessThan(0.01);
+    }
+  });
+
+  it("usa número redondo, que é o que se estima de cabeça", () => {
+    for (const zoom of [11, 13, 15, 17, 19]) {
+      const { metros } = barraDeEscala(ITANHAEM, zoom);
+      const digitos = String(metros).replace(/0+$/, "");
+      expect(digitos.length, `${metros} m não é redondo`).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it("nunca passa da largura que lhe foi dada", () => {
+    for (const zoom of [10, 14, 18, 20]) {
+      expect(barraDeEscala(ITANHAEM, zoom, 160).pixels, `zoom ${zoom}`).toBeLessThanOrEqual(160);
+    }
+  });
+
+  it("escreve em km quando passa de mil metros", () => {
+    expect(barraDeEscala(ITANHAEM, 10).rotulo).toMatch(/km$/);
+    expect(barraDeEscala(ITANHAEM, 18).rotulo).toMatch(/ m$/);
+  });
+});
+
+describe("coordenada legível", () => {
+  it("usa hemisfério em vez de sinal, como se lê em voz alta", () => {
+    expect(coordenadaLegivel(-24.1875, -46.8015)).toBe("24.18750° S, 46.80150° O");
+    expect(coordenadaLegivel(10.5, 20.25)).toBe("10.50000° N, 20.25000° L");
   });
 });

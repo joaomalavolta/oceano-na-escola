@@ -269,6 +269,61 @@ export function minutosTotais(etapas: EtapaOficina[] = OFICINA): number {
   return etapas.reduce((s, e) => s + e.minutos, 0);
 }
 
+// ── A prancha com o território real ───────────────────────────────────
+
+/**
+ * Quantos metros o mapa mostra por pixel, na latitude e no zoom dados.
+ *
+ * A fórmula é a do Web Mercator, e o cosseno da latitude não é
+ * detalhe: sem ele a barra de escala erra por um fator que cresce com
+ * a distância do equador. Em Itanhaém, a −24°, o erro seria de 9% —
+ * suficiente para uma turma medir errado o trecho que escolheu.
+ */
+export function metrosPorPixel(latitude: number, zoom: number): number {
+  return (156543.03392 * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, zoom);
+}
+
+export interface BarraDeEscala {
+  metros: number;
+  pixels: number;
+  rotulo: string;
+}
+
+/**
+ * Uma barra de escala com número redondo.
+ *
+ * Redondo importa: "247 m" numa régua impressa não serve para estimar
+ * nada de cabeça, e é de cabeça que a turma vai estimar o trecho.
+ */
+export function barraDeEscala(
+  latitude: number,
+  zoom: number,
+  larguraMaxPx = 160
+): BarraDeEscala {
+  const mpp = metrosPorPixel(latitude, zoom);
+  const maximo = mpp * larguraMaxPx;
+
+  const REDONDOS = [
+    10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 50000,
+  ];
+  // O maior valor redondo que ainda cabe; se nenhum couber, o menor —
+  // uma barra um pouco mais larga é melhor que barra nenhuma.
+  const metros = [...REDONDOS].reverse().find((m) => m <= maximo) ?? REDONDOS[0];
+
+  return {
+    metros,
+    pixels: Math.round(metros / mpp),
+    rotulo: metros >= 1000 ? `${metros / 1000} km` : `${metros} m`,
+  };
+}
+
+/** Coordenada em grau decimal, como se escreve num relatório. */
+export function coordenadaLegivel(lat: number, lng: number): string {
+  const eixo = (v: number, pos: string, neg: string) =>
+    `${Math.abs(v).toFixed(5)}° ${v >= 0 ? pos : neg}`;
+  return `${eixo(lat, "N", "S")}, ${eixo(lng, "L", "O")}`;
+}
+
 /** As etapas que cabem antes da saída — o "depois" é outra aula. */
 export function etapasAntesDoCampo(): EtapaOficina[] {
   return OFICINA.filter((e) => e.id !== "depois");

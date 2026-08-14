@@ -1,13 +1,26 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Clock, MapPinned, Printer, Users } from "lucide-react";
+import { Clock, MapPinned, Printer, Satellite, Users } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { MapaExemplo } from "@/components/cartografia/mapa-exemplo";
 import { PranchaEmBranco, FolhaDeSimbolos } from "@/components/cartografia/prancha";
+import {
+  PranchaTerritorio,
+  type TerritorioCapturado,
+} from "@/components/cartografia/prancha-territorio";
 import { OFICINA, etapasAntesDoCampo, minutosTotais } from "@/lib/cartografia";
+
+/* MapLibre toca em `window` na importação: sem `ssr: false` o build
+   quebra na geração estática, como já acontecia no mapa da rede. */
+const MapaDoTerritorio = dynamic(
+  () => import("@/components/cartografia/mapa-do-territorio").then((m) => m.MapaDoTerritorio),
+  { ssr: false, loading: () => <div className="h-[380px] rounded-md bg-muted animate-pulse" /> }
+);
 
 const QUEM = {
   professor: "Professor",
@@ -26,6 +39,7 @@ const QUEM = {
  */
 function CartografiaConteudo() {
   const antes = etapasAntesDoCampo();
+  const [territorio, setTerritorio] = useState<TerritorioCapturado | null>(null);
 
   return (
     <>
@@ -122,6 +136,40 @@ function CartografiaConteudo() {
           </ol>
         </section>
 
+        {/* ── O território real ─────────────────────────── */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+            <Satellite className="w-4 h-4" />
+            A imagem do território
+          </h2>
+          <div className="bg-card border border-border rounded-md p-4 shadow-2xs space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Enquadre o trecho da saída e gere uma folha com a imagem de satélite dele, já com
+              norte, barra de escala, coordenada do centro e o crédito da imagem — as quatro
+              coisas que separam um mapa de um print de tela.
+            </p>
+
+            {/* O aviso de ordem fica junto do botão, e não só no
+                roteiro: quem chega direto nesta seção é justamente quem
+                não leu o roteiro. */}
+            <p className="text-xs leading-relaxed p-3 rounded-sm border border-amber-500/40 bg-amber-500/10">
+              <strong>Quando usar esta folha.</strong> No roteiro ela entra na etapa 3, depois de
+              a turma desenhar de memória — e essa ordem é o método: com a imagem na parede antes,
+              ninguém mais se lembra do que a imagem não mostra, e a oficina vira aula de leitura
+              de foto aérea. Usar a imagem como base desde o começo também funciona e dá um mapa
+              mais preciso; o que se perde é justamente o que a turma sabe e o satélite não vê.
+            </p>
+
+            <MapaDoTerritorio onCapturar={setTerritorio} capturado={territorio !== null} />
+
+            {territorio && (
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                Prancha do território pronta — ela entra na impressão, junto das outras duas.
+              </p>
+            )}
+          </div>
+        </section>
+
         {/* ── O material ────────────────────────────────── */}
         <section className="space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-primary">
@@ -129,16 +177,23 @@ function CartografiaConteudo() {
           </h2>
           <div className="bg-card border border-border rounded-md p-4 shadow-2xs space-y-3">
             <p className="text-xs leading-relaxed">
-              Duas folhas: a <strong>prancha em branco</strong>, uma por grupo, e a{" "}
-              <strong>folha de símbolos</strong>, também uma por grupo. Em cartolina A3 fica
-              melhor, mas A4 resolve.
+              {territorio ? "Três folhas" : "Duas folhas"}: a{" "}
+              <strong>prancha em branco</strong>, uma por grupo, a{" "}
+              <strong>folha de símbolos</strong>, também uma por grupo
+              {territorio ? (
+                <>
+                  , e a <strong>prancha do território</strong>, com a imagem que você acabou de
+                  enquadrar
+                </>
+              ) : null}
+              . Em cartolina A3 fica melhor, mas A4 resolve.
             </p>
             <button
               onClick={() => window.print()}
               className="px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm inline-flex items-center gap-2"
             >
               <Printer className="w-4 h-4" />
-              Imprimir as 2 folhas
+              Imprimir as {territorio ? 3 : 2} folhas
             </button>
             <p className="text-[11px] text-muted-foreground">
               Prévia abaixo. Multiplique pelo número de grupos na caixa de impressão do navegador.
@@ -167,6 +222,14 @@ function CartografiaConteudo() {
         <div className="ficha-papel">
           <FolhaDeSimbolos />
         </div>
+        {/* A prancha do território vem por último: ela só existe depois
+            de o professor enquadrar o trecho, e na oficina ela entra
+            depois das outras duas. */}
+        {territorio && (
+          <div className="ficha-papel">
+            <PranchaTerritorio t={territorio} />
+          </div>
+        )}
       </div>
     </>
   );
