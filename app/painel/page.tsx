@@ -128,6 +128,46 @@ function PainelConteudo() {
         </div>
       </div>
 
+      {/* A situação do cadastro aparece aqui porque é aqui que a
+          professora cai logo depois de cadastrar a escola. Sem isto ela
+          sairia do cadastro sem saber que ainda falta uma etapa, e
+          descobriria pela ausência da escola no mapa. */}
+      {dados.escolas
+        .filter((e) => e.situacao !== "aprovada")
+        .map((e) => (
+          <div
+            key={e.id}
+            className={`p-3.5 rounded-sm border text-xs leading-relaxed ${
+              e.situacao === "recusada"
+                ? "border-destructive/40 bg-destructive/10"
+                : "border-amber-500/40 bg-amber-500/10"
+            }`}
+          >
+            {e.situacao === "recusada" ? (
+              <>
+                <p className="font-semibold text-destructive">
+                  O cadastro de {e.nome} foi recusado pelo Instituto Ecosurf.
+                </p>
+                {e.motivo_recusa && (
+                  <p className="mt-1 border-l-2 border-destructive/40 pl-2.5">{e.motivo_recusa}</p>
+                )}
+              </>
+            ) : (
+              <p className="font-semibold text-amber-800 dark:text-amber-300">
+                O cadastro de {e.nome} está em análise pelo Instituto Ecosurf. A escola entra no
+                mapa da rede quando ele aprovar — e o trabalho da turma não precisa esperar por
+                isso.
+              </p>
+            )}
+            <Link
+              href={`/escola/${e.slug}/editar`}
+              className="inline-block mt-1.5 font-semibold text-primary hover:underline"
+            >
+              Abrir a ficha da escola
+            </Link>
+          </div>
+        ))}
+
       {/* Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border p-4 rounded-md shadow-2xs">

@@ -379,9 +379,10 @@ function OnboardingConteudo() {
 
             <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border pt-3">
               Sem essa confirmação, nenhuma foto da escola aparece em página pública — a
-              galeria exige o termo, além da curadoria do professor. A escola também nasce
-              despublicada: quem a coloca no mapa da rede é o Instituto Ecosurf, depois da
-              validação técnica.
+              galeria exige o termo, além da curadoria do professor. O cadastro também vai para
+              análise do Instituto Ecosurf, e a escola entra no mapa da rede quando ele aprovar.
+              Você não precisa esperar por isso para trabalhar: a turma já pode sair a campo, e
+              as expedições ficam guardadas até a publicação.
             </p>
 
             {erro && (

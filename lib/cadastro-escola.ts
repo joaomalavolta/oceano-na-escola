@@ -116,9 +116,10 @@ export async function cadastrarEscola(d: DadosCadastro): Promise<ResultadoCadast
     };
   }
 
-  // `publicada` e `termos_ok` não entram no insert: as colunas não são
-  // concedidas ao papel authenticated, justamente para que ninguém
-  // publique escola no mapa apenas cadastrando. O termo é declaração da
+  // `publicada` e `termos_ok` não entram no insert: nenhuma das duas é
+  // concedida em insert, justamente para que ninguém publique escola no
+  // mapa apenas cadastrando. A escola nasce com o cadastro pendente, e
+  // quem a publica é o Ecosurf, ao aprovar. O termo é declaração da
   // escola e vai por update, depois do vínculo existir.
   if (d.termosOk) {
     const { error: erroTermos } = await supabase

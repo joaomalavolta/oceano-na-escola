@@ -15,6 +15,9 @@ export interface EscolaDoUsuario {
   slug: string;
   municipio: string;
   uf: string;
+  /** Parecer do Ecosurf sobre o cadastro: pendente, aprovada, recusada. */
+  situacao: string;
+  motivo_recusa: string | null;
 }
 
 export interface ExpedicaoResumo {
@@ -95,7 +98,9 @@ function primeiro<T>(v: T | T[] | null | undefined): T | null {
 export async function carregarPainel(): Promise<PainelEscola> {
   try {
     const [escolasRes, expedicoesRes, unidadesRes, contagensRes] = await Promise.all([
-      supabase.from("escola").select("id, nome, slug, municipio:municipio_id (nome, uf)"),
+      supabase
+        .from("escola")
+        .select("id, nome, slug, situacao, motivo_recusa, municipio:municipio_id (nome, uf)"),
       supabase
         .from("expedicao")
         // A string do select precisa ser literal: o supabase-js a analisa
@@ -128,6 +133,8 @@ export async function carregarPainel(): Promise<PainelEscola> {
         slug: String(e.slug),
         municipio: m?.nome ?? "",
         uf: m?.uf ?? "",
+        situacao: String(e.situacao ?? "aprovada"),
+        motivo_recusa: e.motivo_recusa ?? null,
       };
     });
 

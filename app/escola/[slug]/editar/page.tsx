@@ -6,13 +6,16 @@ import {
   AlertTriangle,
   CheckCircle2,
   Globe,
+  Hourglass,
   Loader2,
   MapPin,
   Pencil,
   Plus,
   Save,
+  Send,
   ShieldCheck,
   Trash2,
+  XCircle,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
@@ -26,6 +29,8 @@ import {
   listarTurmasDaEscola,
   salvarTurma,
   apagarTurma,
+  definirVisibilidade,
+  pedirAnalise,
   type EscolaEditavel,
   type TurmaEditavel,
 } from "@/lib/administracao";
@@ -85,13 +90,44 @@ function EditarConteudo({ slug }: { slug: string }) {
       apresentacao: escola.apresentacao,
       lat: escola.lat,
       lng: escola.lng,
-      publicada: escola.publicada,
       termos_ok: escola.termos_ok,
     });
     setSalvando(false);
     setAviso(
       erro ? { tipo: "erro", texto: erro } : { tipo: "ok", texto: "Escola atualizada." }
     );
+  };
+
+  /* Publicar age na hora, e não no botão de salvar como os demais
+     campos: é a única coisa nesta tela que muda o que estranho vê, e
+     misturá-la ao formulário fazia a página entrar no ar de brinde
+     junto com uma correção de endereço. */
+  const alternarPublicacao = async () => {
+    if (!escola) return;
+    setSalvando(true);
+    setAviso(null);
+    const alvo = !escola.publicada;
+    const { erro } = await definirVisibilidade(escola.id, alvo);
+    setSalvando(false);
+    if (erro) return setAviso({ tipo: "erro", texto: erro });
+    setEscola((prev) => (prev ? { ...prev, publicada: alvo } : prev));
+    setAviso({
+      tipo: "ok",
+      texto: alvo ? "A página da escola está no ar." : "A página da escola saiu do ar.",
+    });
+  };
+
+  const reenviar = async () => {
+    if (!escola) return;
+    setSalvando(true);
+    setAviso(null);
+    const { erro } = await pedirAnalise(escola.id);
+    setSalvando(false);
+    if (erro) return setAviso({ tipo: "erro", texto: erro });
+    setEscola((prev) =>
+      prev ? { ...prev, situacao: "pendente", motivo_recusa: null } : prev
+    );
+    setAviso({ tipo: "ok", texto: "Cadastro reenviado. O Ecosurf vai analisar de novo." });
   };
 
   const recarregarTurmas = async () => {
@@ -296,50 +332,111 @@ function EditarConteudo({ slug }: { slug: string }) {
           Publicação e termos
         </h2>
 
-        {(
-          [
-            {
-              chave: "publicada" as const,
-              Icone: Globe,
-              titulo: "Escola publicada no mapa",
-              texto:
-                "Enquanto não estiver, nada desta escola aparece para quem não tem login — nem expedição publicada, nem ocorrência.",
-            },
-            {
-              chave: "termos_ok" as const,
-              Icone: ShieldCheck,
-              titulo: "Termo de uso de imagem registrado",
-              texto:
-                "A escola declara ter colhido o termo. Sem ele, nenhuma foto entra na galeria pública, mesmo curada.",
-            },
-          ]
-        ).map(({ chave, Icone, titulo, texto }) => (
+        {/* Enquanto o cadastro não passa pelo Ecosurf, no lugar do botão
+            de publicar vai o estado dele. Um botão desligado sem
+            explicação faria parecer defeito. */}
+        {escola.situacao === "pendente" && (
+          <div className="p-3 rounded-sm border border-amber-500/40 bg-amber-500/10 space-y-1">
+            <p className="text-sm font-semibold flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+              <Hourglass className="w-3.5 h-3.5 shrink-0" />
+              Cadastro em análise pelo Instituto Ecosurf
+            </p>
+            <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+              A escola vai ao mapa da rede quando o Ecosurf aprovar. Até lá nada dela aparece
+              para quem não tem login — mas o trabalho não precisa esperar: a turma já pode sair
+              a campo, e as expedições ficam guardadas para publicar depois.
+            </p>
+          </div>
+        )}
+
+        {escola.situacao === "recusada" && (
+          <div className="p-3 rounded-sm border border-destructive/40 bg-destructive/10 space-y-2">
+            <p className="text-sm font-semibold flex items-center gap-1.5 text-destructive">
+              <XCircle className="w-3.5 h-3.5 shrink-0" />
+              Cadastro recusado
+            </p>
+            {escola.motivo_recusa && (
+              <p className="text-[11px] leading-relaxed border-l-2 border-destructive/40 pl-2.5 text-foreground">
+                {escola.motivo_recusa}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Corrija o que foi apontado, salve, e reenvie para uma nova análise.
+            </p>
+            <button
+              type="button"
+              onClick={reenviar}
+              disabled={salvando}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-sm disabled:opacity-50"
+            >
+              {salvando ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              Reenviar para análise
+            </button>
+          </div>
+        )}
+
+        {escola.situacao === "aprovada" && (
           <button
-            key={chave}
             type="button"
-            onClick={() => alterar(chave, !escola[chave])}
-            className="flex items-start gap-3 w-full text-left p-3 rounded-sm border border-border hover:bg-secondary/50 transition-colors"
+            onClick={alternarPublicacao}
+            disabled={salvando}
+            className="flex items-start gap-3 w-full text-left p-3 rounded-sm border border-border hover:bg-secondary/50 transition-colors disabled:opacity-50"
           >
             <span
               className={`mt-0.5 w-9 h-5 rounded-full relative shrink-0 transition-colors ${
-                escola[chave] ? "bg-primary" : "bg-muted"
+                escola.publicada ? "bg-primary" : "bg-muted"
               }`}
             >
               <span
                 className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                  escola[chave] ? "left-4.5" : "left-0.5"
+                  escola.publicada ? "left-4.5" : "left-0.5"
                 }`}
               />
             </span>
             <span className="min-w-0">
               <span className="text-sm font-semibold flex items-center gap-1.5">
-                <Icone className="w-3.5 h-3.5 text-primary" />
-                {titulo}
+                <Globe className="w-3.5 h-3.5 text-primary" />
+                Escola publicada no mapa
               </span>
-              <span className="block text-[11px] text-muted-foreground mt-0.5">{texto}</span>
+              <span className="block text-[11px] text-muted-foreground mt-0.5">
+                Cadastro aprovado pelo Ecosurf. Este botão tira a página do ar e a devolve
+                quando quiser — vale na hora, sem passar pelo botão de salvar.
+              </span>
             </span>
           </button>
-        ))}
+        )}
+
+        <button
+          type="button"
+          onClick={() => alterar("termos_ok", !escola.termos_ok)}
+          className="flex items-start gap-3 w-full text-left p-3 rounded-sm border border-border hover:bg-secondary/50 transition-colors"
+        >
+          <span
+            className={`mt-0.5 w-9 h-5 rounded-full relative shrink-0 transition-colors ${
+              escola.termos_ok ? "bg-primary" : "bg-muted"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                escola.termos_ok ? "left-4.5" : "left-0.5"
+              }`}
+            />
+          </span>
+          <span className="min-w-0">
+            <span className="text-sm font-semibold flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+              Termo de uso de imagem registrado
+            </span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">
+              A escola declara ter colhido o termo. Sem ele, nenhuma foto entra na galeria
+              pública, mesmo curada.
+            </span>
+          </span>
+        </button>
       </section>
 
       {/* Turmas */}

@@ -33,6 +33,15 @@ export const PAPEIS: { id: Papel; nome: string; descricao: string }[] = [
   { id: "admin_ecosurf", nome: "Administração Ecosurf", descricao: "Gestão da rede inteira e validação técnica" },
 ];
 
+/**
+ * O parecer do Ecosurf sobre o cadastro.
+ *
+ * Não se confunde com `publicada`, que é a escola estar no mapa agora.
+ * A escola aprovada que tira a própria página do ar continua aprovada —
+ * com uma coluna só, ela voltaria para a fila de análise a cada vez.
+ */
+export type SituacaoEscola = "pendente" | "aprovada" | "recusada";
+
 export interface EscolaEditavel {
   id: number;
   slug: string;
@@ -45,6 +54,8 @@ export interface EscolaEditavel {
   lng: number | null;
   publicada: boolean;
   termos_ok: boolean;
+  situacao: SituacaoEscola;
+  motivo_recusa: string | null;
 }
 
 export interface TurmaEditavel {
@@ -82,7 +93,9 @@ function numOuNulo(v: unknown): number | null {
 export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditavel | null> {
   const { data, error } = await supabase
     .from("escola")
-    .select("id, slug, nome, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok")
+    .select(
+      "id, slug, nome, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa"
+    )
     .eq("slug", slug)
     .maybeSingle();
 
@@ -103,12 +116,22 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
     lng: numOuNulo(ponto?.lng),
     publicada: Boolean(data.publicada),
     termos_ok: Boolean(data.termos_ok),
+    situacao: String(data.situacao) as SituacaoEscola,
+    motivo_recusa: data.motivo_recusa ?? null,
   };
 }
 
+/**
+ * Salva os campos da ficha.
+ *
+ * `publicada` saiu daqui: a coluna deixou de ser concedida ao cliente
+ * quando o cadastro passou a ter análise, e agora vive em
+ * `definirVisibilidade`. Mandá-la neste update faria o PostgREST
+ * recusar o salvamento inteiro — inclusive o nome e o endereço.
+ */
 export async function salvarEscola(
   id: number,
-  d: Omit<EscolaEditavel, "id" | "slug">
+  d: Omit<EscolaEditavel, "id" | "slug" | "publicada" | "situacao" | "motivo_recusa">
 ): Promise<{ erro: string | null }> {
   const { error } = await supabase
     .from("escola")
@@ -119,10 +142,32 @@ export async function salvarEscola(
       endereco: d.endereco?.trim() || null,
       apresentacao: d.apresentacao?.trim() || null,
       geom: d.lat !== null && d.lng !== null ? `SRID=4326;POINT(${d.lng} ${d.lat})` : null,
-      publicada: d.publicada,
       termos_ok: d.termos_ok,
     })
     .eq("id", id);
+  return { erro: error?.message ?? null };
+}
+
+/**
+ * Põe a página da escola no ar ou tira do ar.
+ *
+ * Tirar é sempre permitido. Botar exige cadastro aprovado, e é a função
+ * no banco que confere isso — não esta tela.
+ */
+export async function definirVisibilidade(
+  escolaId: number,
+  publicada: boolean
+): Promise<{ erro: string | null }> {
+  const { error } = await supabase.rpc("escola_define_visibilidade", {
+    p_escola_id: escolaId,
+    p_publicada: publicada,
+  });
+  return { erro: error?.message ?? null };
+}
+
+/** Devolve à fila um cadastro recusado, depois de a escola corrigir. */
+export async function pedirAnalise(escolaId: number): Promise<{ erro: string | null }> {
+  const { error } = await supabase.rpc("escola_pede_analise", { p_escola_id: escolaId });
   return { erro: error?.message ?? null };
 }
 
@@ -228,20 +273,79 @@ export async function removerVinculo(perfilId: string, escolaId: number): Promis
   return { erro: error?.message ?? null };
 }
 
-/** Todas as escolas que a sessão alcança. Para o admin, é a rede toda. */
-export async function listarEscolasAdministraveis(): Promise<
-  { id: number; nome: string; slug: string; publicada: boolean; termos_ok: boolean }[]
-> {
+export interface EscolaDaRede {
+  id: number;
+  nome: string;
+  slug: string;
+  publicada: boolean;
+  termos_ok: boolean;
+  situacao: SituacaoEscola;
+  motivo_recusa: string | null;
+  criado_em: string;
+  /** Sem coordenada a escola não pode ser aprovada: o mapa a exige. */
+  temCoordenada: boolean;
+}
+
+/**
+ * Todas as escolas que a sessão alcança. Para o admin, é a rede toda.
+ *
+ * A ordem é a da chegada, e não a alfabética: a tela é uma fila de
+ * análise, e numa fila o que chegou primeiro é atendido primeiro.
+ */
+export async function listarEscolasAdministraveis(): Promise<EscolaDaRede[]> {
   const { data, error } = await supabase
     .from("escola")
-    .select("id, nome, slug, publicada, termos_ok")
-    .order("nome");
+    .select(
+      "id, nome, slug, publicada, termos_ok, situacao, motivo_recusa, criado_em, tem_coordenada"
+    )
+    .order("criado_em");
+
   if (error) return [];
+
   return (data ?? []).map((e) => ({
     id: num(e.id),
     nome: String(e.nome),
     slug: String(e.slug),
     publicada: Boolean(e.publicada),
     termos_ok: Boolean(e.termos_ok),
+    situacao: String(e.situacao) as SituacaoEscola,
+    motivo_recusa: e.motivo_recusa ?? null,
+    criado_em: String(e.criado_em),
+    temCoordenada: Boolean(e.tem_coordenada),
   }));
+}
+
+/**
+ * Há quanto tempo um cadastro espera análise.
+ *
+ * Conta períodos de 24 horas decorridos, não dias do calendário, e o
+ * texto diz isso: "há menos de um dia" em vez de "chegou hoje", que
+ * seria falso para o cadastro que chegou ontem às 23h.
+ *
+ * Data no futuro devolve o mesmo texto do zero — relógio de máquina
+ * fora de hora não vira "espera há -3 dias" na tela do Ecosurf.
+ */
+export function esperaDesde(iso: string, agora: number = Date.now()): string {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "espera há um tempo indeterminado";
+  const dias = Math.floor((agora - t) / 86_400_000);
+  if (dias <= 0) return "chegou há menos de um dia";
+  if (dias === 1) return "espera há 1 dia";
+  return `espera há ${dias} dias`;
+}
+
+export async function aprovarEscola(escolaId: number): Promise<{ erro: string | null }> {
+  const { error } = await supabase.rpc("admin_aprova_escola", { p_escola_id: escolaId });
+  return { erro: error?.message ?? null };
+}
+
+export async function recusarEscola(
+  escolaId: number,
+  motivo: string
+): Promise<{ erro: string | null }> {
+  const { error } = await supabase.rpc("admin_recusa_escola", {
+    p_escola_id: escolaId,
+    p_motivo: motivo,
+  });
+  return { erro: error?.message ?? null };
 }

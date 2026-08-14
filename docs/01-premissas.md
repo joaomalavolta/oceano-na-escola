@@ -105,15 +105,39 @@ Demais regras de campo:
 
 ---
 
-## 5. Papéis e validação *(revisto em 12/08/2026)*
+## 5. Papéis e validação *(revisto em 14/08/2026)*
 
 | Papel | Faz o quê |
 |---|---|
-| Professor | Cadastra escola e turma, cria expedições, registra em campo, transcreve fichas, cura a galeria, valida, publica |
+| Professor | Cadastra escola e turma, cria expedições, registra em campo, transcreve fichas, cura a galeria, valida, publica expedição |
 | Coordenação escolar | Acompanha as turmas da escola e faz curadoria da galeria |
 | Coordenação municipal | Acompanha várias escolas |
 | Pesquisador | Consulta e exporta dados |
-| Administrador Ecosurf | Gestão da rede e validação técnica junto ao professor |
+| Administrador Ecosurf | Gestão da rede, análise dos cadastros de escola e validação técnica junto ao professor |
+
+### 5.1 Análise do cadastro de escola *(14/08/2026)*
+
+Qualquer pessoa cria conta e cadastra escola sem passar por ninguém — e isso continua assim de
+propósito, porque exigir aprovação da **conta** faria a professora que se inscreve numa quinta à
+noite esperar até alguém do instituto abrir o painel. O que passa pelo Ecosurf é a **escola**:
+
+**pendente → aprovada**, ou **pendente → recusada → pendente** depois de a escola corrigir.
+
+- A escola nasce **pendente** e, enquanto está, nada dela alcança quem não tem login.
+- **O trabalho não espera a aprovação.** A turma sai a campo, o professor transcreve e publica a
+  expedição; o que fica retido é a chegada ao mapa da rede, não o registro.
+- **Recusa exige motivo escrito**, que a escola lê na própria ficha. Recusa sem motivo é recusa
+  que ninguém tem como responder, e o mesmo cadastro volta igual na semana seguinte.
+- **Aprovar exige coordenada.** Sem posição a escola não apareceria no mapa mesmo aprovada, e o
+  painel diria que ela entrou.
+- `situacao` e `publicada` são colunas diferentes de propósito: a escola aprovada tira a própria
+  página do ar quando quiser e continua aprovada. Com uma coluna só, ela voltaria para a fila de
+  análise a cada vez.
+
+Isto é regra de banco, não de tela: `publicada` deixou de ser concedida ao cliente e passa por
+`escola_define_visibilidade()`, que exige o cadastro aprovado. Até 14/08 a coluna estava
+concedida em update ao papel `authenticated` — quem cadastrava escola podia publicá-la sozinho no
+mapa da rede, sem etapa nenhuma no Ecosurf.
 
 Estados do dado: **rascunho → enviado → revisado → validado → publicado.**
 

@@ -4,14 +4,18 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   Globe,
+  Inbox,
   Loader2,
+  MapPinOff,
   Pencil,
   Plus,
   ShieldCheck,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
@@ -23,18 +27,14 @@ import {
   definirPapel,
   criarVinculo,
   removerVinculo,
+  aprovarEscola,
+  recusarEscola,
+  esperaDesde,
   PAPEIS,
   type PerfilDaRede,
   type Papel,
+  type EscolaDaRede,
 } from "@/lib/administracao";
-
-interface EscolaDaRede {
-  id: number;
-  nome: string;
-  slug: string;
-  publicada: boolean;
-  termos_ok: boolean;
-}
 
 function AdminConteudo() {
   const [perfis, setPerfis] = useState<PerfilDaRede[] | null>(null);
@@ -42,6 +42,10 @@ function AdminConteudo() {
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [vinculando, setVinculando] = useState<Record<string, number | "">>({});
+  // Qual cadastro está com o campo de motivo aberto, e o que já foi
+  // escrito nele. Recusar sem motivo é recusa que a escola não tem como
+  // responder, então o motivo é passo, não caixa de diálogo.
+  const [recusando, setRecusando] = useState<{ id: number; motivo: string } | null>(null);
 
   const recarregar = async () => {
     const [ps, es] = await Promise.all([listarPerfisDaRede(), listarEscolasAdministraveis()]);
@@ -87,6 +91,7 @@ function AdminConteudo() {
   // deixa, e as escritas abaixo são recusadas pelo banco. O aviso existe
   // para explicar, não para proteger.
   const semPermissao = perfis.length <= 1;
+  const pendentes = escolas.filter((e) => e.situacao === "pendente");
 
   return (
     <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6">
@@ -96,9 +101,9 @@ function AdminConteudo() {
           Administração da rede
         </h1>
         <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
-          Papéis, vínculos e escolas de toda a rede. Alterar papel e criar vínculo são operações
-          exclusivas da administração do Ecosurf — o banco recusa de quem não é, mesmo que a tela
-          mostre os botões.
+          Análise de cadastro, papéis, vínculos e escolas de toda a rede. Aprovar cadastro,
+          alterar papel e criar vínculo são operações exclusivas da administração do Ecosurf — o
+          banco recusa de quem não é, mesmo que a tela mostre os botões.
         </p>
       </header>
 
@@ -126,6 +131,137 @@ function AdminConteudo() {
         </div>
       )}
 
+      {/* Fila de análise. Vem antes de tudo porque é a única parte
+          desta tela que é trabalho a fazer: o resto é consulta. */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+          <Inbox className="w-4 h-4" />
+          Cadastros à espera de análise · {pendentes.length}
+        </h2>
+
+        {pendentes.length === 0 ? (
+          <p className="text-xs text-muted-foreground bg-card border border-border rounded-md p-4">
+            Nenhum cadastro esperando. Escola nova entra aqui assim que alguém a cadastra, e só
+            vai ao mapa da rede depois que você aprovar.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {pendentes.map((e) => (
+              <div
+                key={e.id}
+                className="bg-card border-l-4 border-l-accent border border-border rounded-md p-4 shadow-2xs space-y-3"
+              >
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="text-sm font-bold">{e.nome}</span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {esperaDesde(e.criado_em)}
+                      {" · "}
+                      <span className="font-mono">{e.slug}</span>
+                      {" · termo de imagem "}
+                      {e.termos_ok ? "registrado" : "pendente"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/escola/${e.slug}/editar`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border border-border rounded-sm hover:bg-secondary"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      Conferir a ficha
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRecusando((r) => (r?.id === e.id ? null : { id: e.id, motivo: "" }))
+                      }
+                      disabled={ocupado}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border border-border rounded-sm hover:bg-secondary disabled:opacity-50"
+                    >
+                      <X className="w-3 h-3" />
+                      Recusar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        agir(() => aprovarEscola(e.id), `${e.nome} entrou no mapa da rede.`)
+                      }
+                      disabled={ocupado || !e.temCoordenada}
+                      title={
+                        e.temCoordenada
+                          ? undefined
+                          : "Sem coordenada a escola não aparece no mapa, mesmo aprovada."
+                      }
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-accent text-accent-foreground rounded-sm disabled:opacity-50"
+                    >
+                      {ocupado ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Check className="w-3 h-3" />
+                      )}
+                      Aprovar
+                    </button>
+                  </div>
+                </div>
+
+                {!e.temCoordenada && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
+                    <MapPinOff className="w-3.5 h-3.5 shrink-0 mt-px" />
+                    Esta escola ainda não tem coordenada. Sem posição ela não aparece no mapa,
+                    mesmo aprovada — abra a ficha e marque onde ela fica antes de aprovar.
+                  </p>
+                )}
+
+                {recusando?.id === e.id && (
+                  <div className="space-y-2 pt-2 border-t border-border">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Motivo da recusa
+                    </label>
+                    <textarea
+                      rows={2}
+                      autoFocus
+                      value={recusando.motivo}
+                      onChange={(ev) =>
+                        setRecusando((r) => (r ? { ...r, motivo: ev.target.value } : r))
+                      }
+                      placeholder="O que a escola precisa corrigir para reenviar."
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      A escola lê este texto na ficha dela e pode corrigir e reenviar. Ele não
+                      aparece em página pública.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRecusando(null)}
+                        className="px-3 py-1.5 text-xs font-semibold border border-border rounded-sm hover:bg-secondary"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          agir(
+                            () => recusarEscola(e.id, recusando.motivo),
+                            `Cadastro de ${e.nome} recusado. A escola já vê o motivo.`
+                          ).then(() => setRecusando(null))
+                        }
+                        disabled={ocupado || recusando.motivo.trim() === ""}
+                        className="px-3 py-1.5 text-xs font-semibold bg-destructive text-white rounded-sm disabled:opacity-50"
+                      >
+                        Confirmar recusa
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Escolas */}
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
@@ -138,6 +274,7 @@ function AdminConteudo() {
             <thead className="bg-muted/60">
               <tr className="border-b border-border text-left">
                 <th className="py-2.5 px-3 font-semibold">Escola</th>
+                <th className="py-2.5 px-3 font-semibold">Cadastro</th>
                 <th className="py-2.5 px-3 font-semibold">No mapa</th>
                 <th className="py-2.5 px-3 font-semibold">Termo de imagem</th>
                 <th className="py-2.5 px-3 font-semibold w-24"></th>
@@ -151,6 +288,27 @@ function AdminConteudo() {
                     <span className="block text-[10px] font-mono text-muted-foreground">
                       {e.slug}
                     </span>
+                  </td>
+                  {/* Cadastro e mapa são colunas separadas porque são
+                      coisas separadas: a escola aprovada que tira a
+                      própria página do ar continua aprovada. */}
+                  <td className="py-2 px-3 text-xs">
+                    {e.situacao === "aprovada" && (
+                      <span className="text-emerald-700 dark:text-emerald-400">aprovado</span>
+                    )}
+                    {e.situacao === "pendente" && (
+                      <span className="text-acento-texto font-semibold">em análise</span>
+                    )}
+                    {e.situacao === "recusada" && (
+                      <>
+                        <span className="text-destructive font-semibold">recusado</span>
+                        {e.motivo_recusa && (
+                          <span className="block text-[10px] text-muted-foreground max-w-56">
+                            {e.motivo_recusa}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </td>
                   <td className="py-2 px-3 text-xs">
                     {e.publicada ? (
