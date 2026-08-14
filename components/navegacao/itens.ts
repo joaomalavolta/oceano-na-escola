@@ -47,6 +47,27 @@ export function itensPara(autenticado: boolean): ItemNav[] {
 }
 
 /**
+ * Quem entra na barra do polegar, no celular. Só cabem quatro.
+ *
+ * É seleção, e não os quatro primeiros da lista: pegando o começo, o
+ * professor recebia "Dados" — página pública de indicadores — no lugar
+ * de "Expedições", que é onde ele trabalha. A regra de ordem única
+ * tinha caído justamente no espaço mais escasso da interface.
+ *
+ * A ordem, porém, continua vindo de `ITENS_NAV`: isto aqui diz quem
+ * entra, nunca em que sequência. Um `filter` preserva a ordem da lista,
+ * então a barra do polegar é sempre uma subsequência do menu do
+ * desktop — a mão aprende um lugar só.
+ */
+const POLEGAR_VISITANTE = ["/", "/escolas", "/dados"];
+const POLEGAR_AUTENTICADO = ["/", "/escolas", "/painel", "/expedicoes"];
+
+export function itensDoPolegar(autenticado: boolean): ItemNav[] {
+  const escolhidos = new Set(autenticado ? POLEGAR_AUTENTICADO : POLEGAR_VISITANTE);
+  return itensPara(autenticado).filter((i) => escolhidos.has(i.href));
+}
+
+/**
  * Ativo por prefixo: /expedicoes/5/revisar acende "Expedições". A raiz
  * só por igualdade, senão acenderia em toda página.
  */

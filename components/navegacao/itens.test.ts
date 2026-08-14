@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ITENS_NAV, itensPara, estaAtivo } from "./itens";
+import { ITENS_NAV, itensPara, itensDoPolegar, estaAtivo } from "./itens";
 
 /**
  * A regra da ordem existe para resolver um defeito visível: a sessão
@@ -35,6 +35,62 @@ describe("ordem da navegação", () => {
   it("não há href repetido", () => {
     const hrefs = ITENS_NAV.map((i) => i.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
+  });
+});
+
+/**
+ * A barra do polegar é seleção, não recorte: ela deixa "Dados" de fora
+ * para caber "Expedições", que é onde o professor trabalha. O que ela
+ * não pode fazer é inventar ordem — se um item aparecer no celular
+ * antes de outro que no desktop vem depois, a mão passa a ter dois
+ * lugares para aprender.
+ */
+describe("barra do polegar", () => {
+  const ehSubsequencia = (parte: string[], todo: string[]) => {
+    let i = 0;
+    for (const x of todo) if (x === parte[i]) i++;
+    return i === parte.length;
+  };
+
+  it("é sempre uma subsequência do menu completo", () => {
+    for (const autenticado of [false, true]) {
+      const polegar = itensDoPolegar(autenticado).map((i) => i.href);
+      const menu = itensPara(autenticado).map((i) => i.href);
+      expect(ehSubsequencia(polegar, menu), autenticado ? "logado" : "visitante").toBe(true);
+    }
+  });
+
+  it("cabe na barra: no máximo quatro", () => {
+    expect(itensDoPolegar(false).length).toBeLessThanOrEqual(4);
+    expect(itensDoPolegar(true).length).toBeLessThanOrEqual(4);
+  });
+
+  /**
+   * A decisão, escrita: o professor alcança Expedições com o polegar, e
+   * "Dados" — indicadores públicos — cede o lugar. Quem mudar isso muda
+   * um acordo, não um detalhe, e o teste faz a mudança ser deliberada.
+   */
+  it("leva o professor às expedições, e não aos indicadores públicos", () => {
+    const hrefs = itensDoPolegar(true).map((i) => i.href);
+    expect(hrefs).toEqual(["/", "/escolas", "/painel", "/expedicoes"]);
+    expect(hrefs).not.toContain("/dados");
+  });
+
+  it("para o visitante, os três públicos", () => {
+    expect(itensDoPolegar(false).map((i) => i.href)).toEqual(["/", "/escolas", "/dados"]);
+  });
+
+  it("não mostra ao visitante o que exige conta", () => {
+    expect(itensDoPolegar(false).some((i) => i.privado)).toBe(false);
+  });
+
+  it("só escolhe itens que existem no menu", () => {
+    const hrefs = new Set(ITENS_NAV.map((i) => i.href));
+    for (const autenticado of [false, true]) {
+      for (const item of itensDoPolegar(autenticado)) {
+        expect(hrefs.has(item.href), `${item.href} não está em ITENS_NAV`).toBe(true);
+      }
+    }
   });
 });
 

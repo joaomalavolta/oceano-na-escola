@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogIn, PlusCircle } from "lucide-react";
 import { useSessao } from "@/lib/sessao";
-import { itensPara, estaAtivo } from "@/components/navegacao/itens";
+import { itensDoPolegar, estaAtivo } from "@/components/navegacao/itens";
 
 /**
  * Barra inferior fixa do mapa — só no celular.
@@ -13,20 +13,17 @@ import { itensPara, estaAtivo } from "@/components/navegacao/itens";
  * que o documento de concepção pede. Por isso a página do mapa não tem
  * menu sanfona no alto, e esta barra é a navegação dela.
  *
- * Cabem poucos itens, então ela mostra os primeiros da mesma lista das
- * outras barras — os quatro primeiros, na mesma ordem. Não é uma
- * seleção própria: item nenhum aparece aqui em posição diferente da que
- * ocupa no menu do desktop, que era o que fazia o menu parecer outro a
- * cada tela.
+ * Cabem quatro, e quais são os quatro está em `itens.ts`. A ordem vem
+ * sempre da mesma lista das outras barras, então item nenhum aparece
+ * aqui em posição diferente da que ocupa no menu do desktop — era isso
+ * que fazia o menu parecer outro a cada tela.
  */
-const CABEM = 4;
-
 export function NavegacaoMobile() {
   const caminho = usePathname();
   const { session } = useSessao();
   const autenticado = session !== null;
 
-  const itens = itensPara(autenticado).slice(0, CABEM);
+  const itens = itensDoPolegar(autenticado);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-marca border-t-2 border-marca-forte">
