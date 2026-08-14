@@ -23,6 +23,7 @@ import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { listarMunicipios, type Municipio } from "@/lib/cadastro-escola";
 import { criarTurma } from "@/lib/cadastro-expedicao";
+import { Voltar } from "@/components/navegacao/voltar";
 import {
   carregarEscolaEditavel,
   salvarEscola,
@@ -193,6 +194,11 @@ function EditarConteudo({ slug }: { slug: string }) {
 
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8 space-y-5">
+      {/* Ao painel, e não à página pública da escola: o cabeçalho logo
+          abaixo já leva lá, com o verbo certo — "ver" é conferir o
+          resultado, "voltar" é sair daqui. Dois links para o mesmo
+          lugar, com nomes diferentes, seriam dois caminhos falsos. */}
+      <Voltar para="painel" />
       <header className="border-b border-border pb-4 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">

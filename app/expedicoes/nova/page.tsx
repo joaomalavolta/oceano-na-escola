@@ -30,6 +30,7 @@ import {
 } from "@/lib/cadastro-expedicao";
 import { NovaEscolaEmbutida } from "@/components/ui/nova-escola-embutida";
 import { NovaTurmaEmbutida } from "@/components/ui/nova-turma-embutida";
+import { Voltar } from "@/components/navegacao/voltar";
 
 const MARES = ["", "baixamar", "vazante", "enchente", "preamar"];
 const CHUVA = ["", "nao", "sim", "nao_sei"];
@@ -102,6 +103,7 @@ function NovaExpedicaoConteudo() {
   if (!escolas) {
     return (
       <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+      <Voltar para="expedicoes" />
         <EstadoContainer estado="carregando" />
       </main>
     );

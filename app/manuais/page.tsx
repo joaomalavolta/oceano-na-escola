@@ -6,6 +6,7 @@ import { BookOpen, GraduationCap, Printer, Users } from "lucide-react";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { MANUAIS, VERSAO_MANUAIS } from "@/lib/manuais";
+import { Voltar } from "@/components/navegacao/voltar";
 
 const ICONE = {
   professor: Users,
@@ -24,6 +25,7 @@ const ICONE = {
 function ManuaisConteudo() {
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8 space-y-6">
+      <Voltar para="painel" />
       <header className="border-b border-border pb-4">
         <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />

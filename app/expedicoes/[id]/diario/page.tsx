@@ -16,6 +16,7 @@ import {
   type Momento,
 } from "@/lib/diario";
 import { carregarExpedicaoFicha, type ExpedicaoFicha } from "@/lib/transcricao";
+import { Voltar } from "@/components/navegacao/voltar";
 
 function formatarData(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
@@ -110,6 +111,7 @@ function DiarioConteudo({ id }: { id: number }) {
 
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-6 space-y-5">
+      <Voltar para="expedicoes" />
       <header className="border-b border-border pb-4">
         <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />

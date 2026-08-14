@@ -21,6 +21,7 @@ import {
   type UnidadeFicha,
 } from "@/lib/transcricao";
 import { reabrirParaCorrecao, custoDaCorrecao } from "@/lib/revisao";
+import { Voltar } from "@/components/navegacao/voltar";
 
 /** Seções que a grade de contagem consome; as demais viram formulário. */
 const SECOES_DE_CONTAGEM = ["quadrat", "contagem"];
@@ -232,6 +233,7 @@ function TranscreverConteudo({ id }: { id: number }) {
 
   return (
     <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-5">
+      <Voltar para="expedicoes" />
       {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-4">
         <div>

@@ -24,6 +24,7 @@ import {
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
+import { Voltar } from "@/components/navegacao/voltar";
 import {
   carregarRevisao,
   moverStatus,
@@ -202,6 +203,7 @@ function RevisarConteudo({ id }: { id: number }) {
 
   return (
     <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-5">
+      <Voltar para="expedicoes" />
       {/* Cabeçalho */}
       <div className="border-b border-border pb-4 space-y-3">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">

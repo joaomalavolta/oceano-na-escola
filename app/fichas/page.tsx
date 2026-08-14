@@ -11,6 +11,7 @@ import { FichaEquipe } from "@/components/fichas/ficha-equipe";
 import { FichaConsolidacao } from "@/components/fichas/ficha-consolidacao";
 import { listarProtocolos, type ProtocoloDisponivel } from "@/lib/cadastro-expedicao";
 import { carregarDefinicaoProtocolo, type DefinicaoProtocolo } from "@/lib/transcricao";
+import { Voltar } from "@/components/navegacao/voltar";
 import {
   comporFicha,
   linhasDeOcorrencia,
@@ -89,6 +90,7 @@ function FichasConteudo() {
     <>
       {/* ── Controles, só na tela ─────────────────────── */}
       <main className="print:hidden flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 space-y-5">
+        <Voltar para="painel" />
         <header className="border-b border-border pb-4">
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />

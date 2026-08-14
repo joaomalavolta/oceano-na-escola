@@ -14,6 +14,7 @@ import {
   type TerritorioCapturado,
 } from "@/components/cartografia/prancha-territorio";
 import { OFICINA, etapasAntesDoCampo, minutosTotais } from "@/lib/cartografia";
+import { Voltar } from "@/components/navegacao/voltar";
 
 /* MapLibre toca em `window` na importação: sem `ssr: false` o build
    quebra na geração estática, como já acontecia no mapa da rede. */
@@ -44,6 +45,7 @@ function CartografiaConteudo() {
   return (
     <>
       <main className="print:hidden flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 space-y-8">
+        <Voltar para="painel" />
         <header className="border-b border-border pb-4">
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <MapPinned className="w-5 h-5 text-primary" />

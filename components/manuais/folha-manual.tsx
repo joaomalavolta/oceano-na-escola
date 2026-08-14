@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Info, Printer, ShieldAlert } from "lucide-react";
-import Link from "next/link";
+import { Voltar } from "@/components/navegacao/voltar";
 import type { Bloco, Manual } from "@/lib/manuais";
 import { VERSAO_MANUAIS } from "@/lib/manuais";
 
@@ -130,9 +130,7 @@ export function FolhaManual({ manual }: { manual: Manual }) {
     <>
       <div className="print:hidden bg-card border-b border-border">
         <div className="max-w-3xl mx-auto px-6 py-3 flex items-center justify-between gap-3">
-          <Link href="/manuais" className="text-xs text-primary hover:underline">
-            ← Todos os manuais
-          </Link>
+          <Voltar para="manuais" />
           <button
             onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-sm hover:opacity-90 transition-opacity"

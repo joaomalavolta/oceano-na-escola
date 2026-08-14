@@ -18,6 +18,7 @@ import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { IconeBadge } from "@/components/mapa/icones";
+import { Voltar } from "@/components/navegacao/voltar";
 import {
   listarExpedicoesAbertas,
   listarProtocolosDeCampo,
@@ -324,6 +325,7 @@ function CampoConteudo() {
 
   return (
     <main className="flex-1 max-w-xl mx-auto w-full p-4 pb-24 space-y-4">
+      <Voltar para="painel" />
       <div>
         <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
           <MapPin className="w-5 h-5 text-primary" />

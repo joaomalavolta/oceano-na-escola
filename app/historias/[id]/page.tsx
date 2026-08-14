@@ -15,6 +15,7 @@ import {
   type Historia,
 } from "@/lib/historias";
 import { supabase } from "@/lib/supabase";
+import { Voltar } from "@/components/navegacao/voltar";
 
 interface ExpedicaoCitavel {
   id: number;
@@ -134,6 +135,7 @@ function EditorConteudo({ id }: { id: number }) {
 
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-6 space-y-5">
+      <Voltar para="historias" />
       <header className="border-b border-border pb-4 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
