@@ -163,12 +163,16 @@
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
 
-  /* Escala de densidade — 5 níveis sequenciais */
-  --color-density-1: oklch(0.90 0.06 195);
-  --color-density-2: oklch(0.75 0.10 190);
-  --color-density-3: oklch(0.60 0.12 185);
-  --color-density-4: oklch(0.48 0.12 180);
-  --color-density-5: oklch(0.36 0.10 175);
+  /* Escala de densidade — 5 níveis sequenciais.
+     Segue o protocolo de resíduos, que é quem ela pinta: a grade e o
+     pino do mesmo dado não podem ser de cores diferentes. Croma subiu
+     junto com a paleta, e o degrau mais claro clareou, para o vazio da
+     célula sem dado não competir com a célula que tem pouco. */
+  --color-density-1: oklch(0.90 0.068 190);
+  --color-density-2: oklch(0.78 0.112 190);
+  --color-density-3: oklch(0.64 0.150 190);
+  --color-density-4: oklch(0.52 0.158 190);
+  --color-density-5: oklch(0.40 0.135 190);
 
   --radius-sm: var(--radius);
   --radius-md: calc(var(--radius) + 0.125rem);

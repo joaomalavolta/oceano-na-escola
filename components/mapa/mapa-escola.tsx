@@ -170,7 +170,7 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
               <div title={o.item_nome ?? o.descricao} className="cursor-pointer">
                 <PinMapa
                   slug={slugDe(o.item_icone, o.protocolo_icone)}
-                  cor={o.protocolo_cor ?? "#a63d40"}
+                  cor={o.protocolo_cor ?? "#c51d28"}
                   tamanho={28}
                   className="drop-shadow-md hover:scale-110 transition-transform origin-bottom"
                 />

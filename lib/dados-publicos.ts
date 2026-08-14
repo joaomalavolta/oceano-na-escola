@@ -62,31 +62,31 @@ export interface DadosPublicos {
 export const PROTOCOLOS_INICIAIS: PubProtocolo[] = [
   {
     id: 1, codigo: "RES", nome: "Resíduos costeiros e marinhos", descricao: null,
-    icone: "residuos", cor: "#2d7d72", unidade_medida: "itens/m²", forma_agregacao: "densidade",
+    icone: "residuos", cor: "#00736d", unidade_medida: "itens/m²", forma_agregacao: "densidade",
   },
   {
     id: 2, codigo: "MIC", nome: "Microplásticos", descricao: null,
-    icone: "microplasticos", cor: "#7c5cbf", unidade_medida: "itens/m²", forma_agregacao: "densidade",
+    icone: "microplasticos", cor: "#773ac1", unidade_medida: "itens/m²", forma_agregacao: "densidade",
   },
   {
     id: 3, codigo: "RST", nome: "Restinga e vegetação costeira", descricao: null,
-    icone: "restinga", cor: "#4a7c2d", unidade_medida: "m²", forma_agregacao: "area_afetada",
+    icone: "restinga", cor: "#329929", unidade_medida: "m²", forma_agregacao: "area_afetada",
   },
   {
     id: 4, codigo: "ESG", nome: "Esgoto e drenagem", descricao: null,
-    icone: "esgoto", cor: "#8a5a2b", unidade_medida: "pontos", forma_agregacao: "ocorrencia",
+    icone: "esgoto", cor: "#b16600", unidade_medida: "pontos", forma_agregacao: "ocorrencia",
   },
   {
     id: 5, codigo: "DES", nome: "Descarte irregular", descricao: null,
-    icone: "descarte", cor: "#a63d40", unidade_medida: "pontos", forma_agregacao: "ocorrencia",
+    icone: "descarte", cor: "#c51d28", unidade_medida: "pontos", forma_agregacao: "ocorrencia",
   },
   {
     id: 6, codigo: "AVI", nome: "Avifauna e fauna costeira", descricao: null,
-    icone: "avifauna", cor: "#2f6f9f", unidade_medida: "indivíduos", forma_agregacao: "ocorrencia",
+    icone: "avifauna", cor: "#0051b0", unidade_medida: "indivíduos", forma_agregacao: "ocorrencia",
   },
   {
     id: 7, codigo: "AGU", nome: "Qualidade da água", descricao: null,
-    icone: "agua", cor: "#1f8a9e", unidade_medida: "valor medido", forma_agregacao: "medida",
+    icone: "agua", cor: "#009daf", unidade_medida: "valor medido", forma_agregacao: "medida",
   },
 ];
 

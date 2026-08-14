@@ -24,7 +24,7 @@ interface Props {
 const CIRCUNFERENCIA = 2 * Math.PI * 50;
 
 /** Cor de quem não tem protocolo com cor definida — a mesma do pino solto. */
-const COR_PADRAO = "#a63d40";
+const COR_PADRAO = "#c51d28";
 
 /**
  * A composição do grupo, por protocolo.

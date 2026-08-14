@@ -545,7 +545,7 @@ export function MapaPublico() {
           }
 
           const o = grupo.itens[0];
-          const cor = o.protocolo_cor ?? "#a63d40";
+          const cor = o.protocolo_cor ?? "#c51d28";
           const magnitude =
             o.valor !== null && o.item_unidade
               ? `${o.valor.toLocaleString("pt-BR")} ${o.item_unidade}`

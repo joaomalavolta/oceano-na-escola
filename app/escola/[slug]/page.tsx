@@ -318,7 +318,7 @@ export default function EscolaPublicaPage({
                 >
                   <IconeBadge
                     slug={slugDe(o.item_icone, o.protocolo_icone)}
-                    cor={o.protocolo_cor ?? "#a63d40"}
+                    cor={o.protocolo_cor ?? "#c51d28"}
                     tamanho={30}
                     className="mt-0.5"
                   />

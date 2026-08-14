@@ -76,7 +76,7 @@ export function calcularConquistas(
       nome: "Escola em campo",
       descricao: "Saídas de campo realizadas e publicadas pela escola.",
       icone: "escola",
-      cor: "#1e6a78",
+      cor: "#00736d",
       atual: nExpedicoes,
     },
     {
@@ -84,7 +84,7 @@ export function calcularConquistas(
       nome: "Monitoramento contínuo",
       descricao: "Meses diferentes com saída de campo. O mapa nunca termina.",
       icone: "agua",
-      cor: "#1f8a9e",
+      cor: "#009daf",
       atual: meses,
     },
     {
@@ -92,7 +92,7 @@ export function calcularConquistas(
       nome: "Territórios adotados",
       descricao: "Trechos distintos que a escola acompanha: praia, restinga, foz, manguezal.",
       icone: "restinga",
-      cor: "#4a7c2d",
+      cor: "#329929",
       atual: territorios,
     },
     {
@@ -100,7 +100,7 @@ export function calcularConquistas(
       nome: "Olhar ampliado",
       descricao: "Protocolos diferentes aplicados em campo pela escola.",
       icone: "microplasticos",
-      cor: "#7c5cbf",
+      cor: "#773ac1",
       atual: protocolos,
     },
     {
@@ -108,7 +108,7 @@ export function calcularConquistas(
       nome: "Catálogo de resíduos",
       descricao: "Itens contados e classificados nas fichas de campo.",
       icone: "residuos",
-      cor: "#2d7d72",
+      cor: "#00736d",
       atual: itens,
     },
     {
@@ -116,7 +116,7 @@ export function calcularConquistas(
       nome: "Ocorrências mapeadas",
       descricao: "Pontos registrados com coordenada: descarte, esgoto, supressão, fauna.",
       icone: "descarte",
-      cor: "#a63d40",
+      cor: "#c51d28",
       atual: pontuais,
     },
     {
@@ -124,7 +124,7 @@ export function calcularConquistas(
       nome: "Costa percorrida",
       descricao: "Metros de orla efetivamente caminhados e monitorados.",
       icone: "trilha",
-      cor: "#8a5a2b",
+      cor: "#b16600",
       atual: metros,
     },
     {
@@ -132,7 +132,7 @@ export function calcularConquistas(
       nome: "Memória do território",
       descricao: "Fotos curadas pelo professor e publicadas na galeria da escola.",
       icone: "avifauna",
-      cor: "#2f6f9f",
+      cor: "#0051b0",
       atual: fotosPublicadas,
     },
   ];
