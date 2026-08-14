@@ -15,7 +15,7 @@ import {
   type Historia,
 } from "@/lib/historias";
 import { supabase } from "@/lib/supabase";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 
 interface ExpedicaoCitavel {
   id: number;
@@ -291,6 +291,7 @@ function EditorConteudo({ id }: { id: number }) {
           {historia.publicada ? "Retirar do ar" : "Publicar na página da escola"}
         </button>
       </div>
+      <VoltarRodape para="historias" />
     </main>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readdirSync, existsSync } from "node:fs";
+import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DESTINOS } from "./voltar";
 import { ITENS_NAV } from "./itens";
@@ -100,5 +100,45 @@ describe("destinos do botão de voltar", () => {
     // mesmo assim é destino, porque tem as duas folhas embaixo dele.
     expect(ITENS_NAV.map((i) => i.href)).not.toContain(DESTINOS.manuais.href);
     expect(temSubpaginas(DESTINOS.manuais.href)).toBe(true);
+  });
+});
+
+/**
+ * Toda página que tem o botão no topo tem também o do rodapé.
+ *
+ * A razão é o motivo de o rodapé existir: as páginas são longas, e
+ * quem chega ao fim rolando está a várias telas do topo. Uma página
+ * com um e sem o outro é justamente a que deixa a pessoa sem saída no
+ * ponto em que ela procura — e é o tipo de esquecimento que passa
+ * despercebido, porque o topo continua ali funcionando.
+ */
+describe("topo e rodapé andam juntos", () => {
+  function paginasComVoltar(dir = RAIZ): { arquivo: string; topo: boolean; rodape: boolean }[] {
+    const achados: { arquivo: string; topo: boolean; rodape: boolean }[] = [];
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const caminho = join(dir, e.name);
+      if (e.isDirectory()) {
+        achados.push(...paginasComVoltar(caminho));
+      } else if (e.name === "page.tsx") {
+        const s = readFileSync(caminho, "utf-8");
+        const topo = /<Voltar\s/.test(s);
+        const rodape = /<VoltarRodape\s/.test(s);
+        if (topo || rodape) achados.push({ arquivo: caminho.replace(RAIZ, "app"), topo, rodape });
+      }
+    }
+    return achados;
+  }
+
+  const paginas = paginasComVoltar();
+
+  it("encontra as páginas que usam o botão", () => {
+    expect(paginas.length).toBeGreaterThanOrEqual(9);
+  });
+
+  it("nenhuma tem só um dos dois", () => {
+    for (const p of paginas) {
+      expect(p.rodape, `${p.arquivo} tem o do topo e não o do rodapé`).toBe(true);
+      expect(p.topo, `${p.arquivo} tem o do rodapé e não o do topo`).toBe(true);
+    }
   });
 });

@@ -16,7 +16,7 @@ import {
   type Momento,
 } from "@/lib/diario";
 import { carregarExpedicaoFicha, type ExpedicaoFicha } from "@/lib/transcricao";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 
 function formatarData(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
@@ -246,6 +246,7 @@ function DiarioConteudo({ id }: { id: number }) {
           Escrever a História do Território
         </Link>
       </div>
+      <VoltarRodape para="expedicoes" />
     </main>
   );
 }

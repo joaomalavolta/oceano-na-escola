@@ -30,7 +30,7 @@ import {
 } from "@/lib/cadastro-expedicao";
 import { NovaEscolaEmbutida } from "@/components/ui/nova-escola-embutida";
 import { NovaTurmaEmbutida } from "@/components/ui/nova-turma-embutida";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 
 const MARES = ["", "baixamar", "vazante", "enchente", "preamar"];
 const CHUVA = ["", "nao", "sim", "nao_sei"];
@@ -493,6 +493,7 @@ function NovaExpedicaoConteudo() {
           {salvando ? "Abrindo…" : "Abrir expedição e transcrever a ficha"}
         </button>
       </form>
+      <VoltarRodape para="expedicoes" />
     </main>
   );
 }

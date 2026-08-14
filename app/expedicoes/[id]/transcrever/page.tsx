@@ -21,7 +21,7 @@ import {
   type UnidadeFicha,
 } from "@/lib/transcricao";
 import { reabrirParaCorrecao, custoDaCorrecao } from "@/lib/revisao";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 
 /** Seções que a grade de contagem consome; as demais viram formulário. */
 const SECOES_DE_CONTAGEM = ["quadrat", "contagem"];
@@ -569,6 +569,7 @@ function TranscreverConteudo({ id }: { id: number }) {
           </Link>
         </>
       )}
+      <VoltarRodape para="expedicoes" />
     </main>
   );
 }

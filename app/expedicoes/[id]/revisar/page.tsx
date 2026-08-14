@@ -24,7 +24,7 @@ import {
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
   carregarRevisao,
   moverStatus,
@@ -686,9 +686,7 @@ function RevisarConteudo({ id }: { id: number }) {
           ))}
       </div>
 
-      <Link href="/expedicoes" className="block text-center text-xs text-primary hover:underline">
-        Voltar para as expedições
-      </Link>
+      <VoltarRodape para="expedicoes" />
     </main>
   );
 }

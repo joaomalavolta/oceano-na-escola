@@ -40,18 +40,55 @@ interface Props {
   className?: string;
 }
 
+function alvoDe(para?: Destino, href?: string, texto?: string) {
+  const conhecido = para ? DESTINOS[para] : null;
+  return {
+    href: href ?? conhecido?.href ?? "/",
+    texto: texto ?? conhecido?.texto ?? "Voltar",
+  };
+}
+
 export function Voltar({ para, href, texto, className = "" }: Props) {
-  const alvo = para ? DESTINOS[para] : { href: href ?? "/", texto: texto ?? "Voltar" };
+  const alvo = alvoDe(para, href, texto);
 
   return (
     <Link
-      href={href ?? alvo.href}
+      href={alvo.href}
       /* `print:hidden`: em folha impressa não há para onde voltar, e o
          link viraria uma linha de texto solta no alto da página. */
       className={`print:hidden inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors ${className}`}
     >
       <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
-      {texto ?? alvo.texto}
+      {alvo.texto}
     </Link>
+  );
+}
+
+/**
+ * O mesmo caminho de volta, no fim da página.
+ *
+ * Existe porque as páginas desta plataforma são longas — o roteiro da
+ * oficina, o manual do professor, a revisão de uma expedição com trinta
+ * itens contados. Quem chega ao fim rolando está a várias telas do
+ * botão do topo, e a saída natural é procurar embaixo do que acabou de
+ * ler, não subir de volta.
+ *
+ * Tem contorno e área de toque maior que o do topo, e não é a mesma
+ * peça repetida: no alto ele é um caminho que se ignora enquanto se lê;
+ * no rodapé é o próximo passo de quem terminou.
+ */
+export function VoltarRodape({ para, href, texto, className = "" }: Props) {
+  const alvo = alvoDe(para, href, texto);
+
+  return (
+    <div className={`print:hidden pt-5 mt-2 border-t border-border ${className}`}>
+      <Link
+        href={alvo.href}
+        className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4 shrink-0" />
+        {alvo.texto}
+      </Link>
+    </div>
   );
 }

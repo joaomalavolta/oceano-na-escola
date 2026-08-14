@@ -6,7 +6,7 @@ import { BookOpen, GraduationCap, Printer, Users } from "lucide-react";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { MANUAIS, VERSAO_MANUAIS } from "@/lib/manuais";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 
 const ICONE = {
   professor: Users,
@@ -73,6 +73,8 @@ function ManuaisConteudo() {
           onde o limite de detecção e a calibragem mudam o que o número significa.
         </p>
       </div>
+
+      <VoltarRodape para="painel" />
     </main>
   );
 }

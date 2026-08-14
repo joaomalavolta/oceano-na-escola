@@ -14,7 +14,7 @@ import {
   type TerritorioCapturado,
 } from "@/components/cartografia/prancha-territorio";
 import { OFICINA, etapasAntesDoCampo, minutosTotais } from "@/lib/cartografia";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 
 /* MapLibre toca em `window` na importação: sem `ssr: false` o build
    quebra na geração estática, como já acontecia no mapa da rede. */
@@ -203,7 +203,9 @@ function CartografiaConteudo() {
           </div>
         </section>
 
-        <div className="flex flex-wrap gap-x-5 gap-y-1 justify-center text-xs">
+        <VoltarRodape para="painel" />
+
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
           <Link href="/fichas" className="text-primary hover:underline">
             Fichas de campo da saída
           </Link>

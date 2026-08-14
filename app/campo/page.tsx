@@ -18,7 +18,7 @@ import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { IconeBadge } from "@/components/mapa/icones";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
   listarExpedicoesAbertas,
   listarProtocolosDeCampo,
@@ -626,6 +626,7 @@ function CampoConteudo() {
           Para salvar: expedição, GPS e um item escolhido — ou uma descrição.
         </p>
       )}
+      <VoltarRodape para="painel" />
     </main>
   );
 }

@@ -11,7 +11,7 @@ import { FichaEquipe } from "@/components/fichas/ficha-equipe";
 import { FichaConsolidacao } from "@/components/fichas/ficha-consolidacao";
 import { listarProtocolos, type ProtocoloDisponivel } from "@/lib/cadastro-expedicao";
 import { carregarDefinicaoProtocolo, type DefinicaoProtocolo } from "@/lib/transcricao";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
   comporFicha,
   linhasDeOcorrencia,
@@ -206,7 +206,9 @@ function FichasConteudo() {
           </p>
         )}
 
-        <Link href="/manuais" className="block text-center text-xs text-primary hover:underline">
+        <VoltarRodape para="painel" />
+
+        <Link href="/manuais" className="block text-xs text-primary hover:underline">
           Ver os manuais do professor e do aluno
         </Link>
       </main>

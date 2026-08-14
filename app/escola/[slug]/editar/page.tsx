@@ -23,7 +23,7 @@ import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { listarMunicipios, type Municipio } from "@/lib/cadastro-escola";
 import { criarTurma } from "@/lib/cadastro-expedicao";
-import { Voltar } from "@/components/navegacao/voltar";
+import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
   carregarEscolaEditavel,
   salvarEscola,
@@ -592,6 +592,7 @@ function EditarConteudo({ slug }: { slug: string }) {
         {salvando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
         Guardar alterações da escola
       </button>
+      <VoltarRodape para="painel" />
     </main>
   );
 }
