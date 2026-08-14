@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Users,
   ArrowRight,
-  Info,
 } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
@@ -197,30 +196,6 @@ export default function SobrePage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </section>
-
-          {/* Fase atual — dito alto, não escondido */}
-          <section>
-            <div className="flex gap-3 p-5 rounded-md border-2 border-marca-forte/40 bg-marca-forte/5">
-              <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <div className="text-xs leading-relaxed space-y-2">
-                <h2 className="text-sm font-bold text-foreground">
-                  Nesta fase, tudo o que está no mapa é fictício
-                </h2>
-                <p>
-                  As quatro escolas, os territórios, as expedições, as fichas preenchidas, as
-                  ocorrências, o diário de campo e as histórias são demonstração. Nenhuma escola,
-                  nenhum estudante e nenhum dado real estão publicados aqui — inclusive os nomes de
-                  praia são inventados, porque nomear o trecho que uma turma monitora ajuda a
-                  identificar a turma.
-                </p>
-                <p className="text-muted-foreground">
-                  O que a demonstração mostra é o ciclo completo funcionando, de ponta a ponta, para
-                  que escolas e parceiros vejam o que estão aceitando antes de haver criança em
-                  campo.
-                </p>
-              </div>
             </div>
           </section>
 
