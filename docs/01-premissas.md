@@ -115,6 +115,33 @@ Demais regras de campo:
 | Pesquisador | Consulta e exporta dados |
 | Administrador Ecosurf | Gestão da rede, análise dos cadastros de escola e validação técnica junto ao professor |
 
+### 5.0 As duas portas de entrada *(14/08/2026)*
+
+**Porta 1 — a pessoa chega.** Cadastro espontâneo, e o Ecosurf decide depois: a escola entra na
+fila de análise (5.1) e vai ao mapa quando for aprovada.
+
+**Porta 2 — o Ecosurf vai buscar.** Convite por link, criado no painel de administração, e aqui a
+decisão vem antes. Por isso o convite já carrega **papel** e, quando faz sentido, **vínculo com
+uma escola** — é assim que se convida uma pesquisadora, que não tem escola nenhuma, ou uma
+coordenadora municipal, que responde por várias. **Quem entra por convite não passa pela fila**:
+seria pedir duas vezes a mesma permissão.
+
+Regras do convite, todas no banco:
+
+- **Preso a um e-mail.** O resgate confere o endereço da sessão contra o do convite. Link
+  repassado no grupo da escola não vira acesso para quem pegou.
+- **O e-mail sai mascarado** na página do convite (`c***@escola.sp.gov.br`). Link vaza — print de
+  grupo, histórico de navegador emprestado — e um link vazado não precisa entregar de brinde o
+  endereço de alguém. A máscara basta para a pessoa se reconhecer e não para um estranho anotar.
+- **Um convite aberto por e-mail**, e não se convida quem já tem conta: papel e vínculo de quem já
+  está dentro se ajustam direto na lista de pessoas.
+- **Validade de 1 a 90 dias**, 14 por padrão. Vence sozinho, sem ninguém mexer na linha.
+- **Cancelável** enquanto não aceito.
+
+O link **não é enviado pela plataforma** — ela não manda e-mail nesta fase. O painel mostra o
+link para o Ecosurf copiar e mandar por onde quiser. Prometer envio que não acontece seria pior
+que pedir para copiar.
+
 ### 5.1 Análise do cadastro de escola *(14/08/2026)*
 
 Qualquer pessoa cria conta e cadastra escola sem passar por ninguém — e isso continua assim de

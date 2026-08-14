@@ -12,6 +12,12 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase, supabaseConfigurado } from "./supabase";
+import {
+  conviteGuardado,
+  esquecerConvite,
+  falhaDefinitiva,
+  resgatarConvite,
+} from "./convites";
 
 /**
  * Sessão do Supabase Auth, disponível para a árvore inteira.
@@ -94,13 +100,40 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   // Sem configuração não há o que carregar: já nasce resolvido.
   const [carregando, setCarregando] = useState(supabaseConfigurado);
 
-  const sincronizarPerfil = useCallback(async (s: Session | null) => {
-    if (!s?.user) {
-      setPerfil(null);
-      return;
-    }
-    setPerfil(await garantirPerfil(s.user));
+  /**
+   * Resgata o convite que ficou esperando uma sessão, se houver um.
+   *
+   * Mora aqui, e não na página do convite, porque a volta nem sempre
+   * passa por ela: quem cria conta com confirmação de e-mail volta pelo
+   * link do Supabase, cai na home já logado, e o convite ficaria aberto
+   * para sempre — a pessoa dentro da plataforma sem papel e sem escola,
+   * sem nada explicando por quê.
+   *
+   * Roda antes de ler o perfil de propósito: o resgate é quem define o
+   * papel, e ler antes traria o valor velho.
+   */
+  const resgatarConvitePendente = useCallback(async () => {
+    const token = conviteGuardado();
+    if (!token) return;
+
+    const { erro } = await resgatarConvite(token);
+    // "Outro e-mail" é recuperável — a pessoa sai e entra com o
+    // endereço certo —, então o token continua guardado. O resto é
+    // definitivo, e insistir a cada carregamento só repetiria o erro.
+    if (!erro || falhaDefinitiva(erro)) esquecerConvite();
   }, []);
+
+  const sincronizarPerfil = useCallback(
+    async (s: Session | null) => {
+      if (!s?.user) {
+        setPerfil(null);
+        return;
+      }
+      await resgatarConvitePendente();
+      setPerfil(await garantirPerfil(s.user));
+    },
+    [resgatarConvitePendente]
+  );
 
   useEffect(() => {
     if (!supabaseConfigurado) return;
