@@ -165,3 +165,39 @@ ocorrências, diário e histórias. Nenhuma escola, aluno ou dado real nesta fas
   de campo, papéis e validação, visibilidade, educomunicação. Traz o changelog do que mudou desde
   a v0.2 e por quê. **É a decisão: quando ele e a plataforma divergirem, ele manda.**
 - [`docs/02-protocolos.md`](docs/02-protocolos.md) — protocolos campo a campo e as duas fichas
+
+## Testes
+
+```bash
+npm test          # roda uma vez
+npm run test:watch
+```
+
+São 52 testes sobre a lógica pura, e a escolha do que cobrir não foi por cobertura: cada arquivo
+guarda um erro que passaria despercebido em revisão e não apareceria na tela.
+
+| Arquivo | O que protege |
+|---|---|
+| `lib/agrupamento.test.ts` | Nenhuma ocorrência some ou aparece duas vezes ao agrupar; chave estável, que o React usa de `key` |
+| `lib/mapa-publico.test.ts` | A escala de densidade, onde a cor **é** o dado — errar aqui pinta uma praia mais limpa do que ela é |
+| `lib/conquistas.test.ts` | Ninguém é premiado sem ter feito nada, nem desconquista ao avançar; e nada de comparação entre escolas |
+| `lib/campo.test.ts` | O catálogo que faz o modo offline existir, incluindo dado corrompido de versão anterior |
+| `components/navegacao/itens.test.ts` | Item público não muda de lugar quando a sessão chega — o menu não se reorganiza na frente de quem lê |
+| `components/mapa/pino-agrupado.test.ts` | As fatias do anel somam o grupo inteiro e não trocam de ordem entre renders |
+
+A suíte foi conferida por mutação: sete defeitos plantados de propósito — pino no canto da célula,
+chave instável, item privado fora de lugar, anel fora de ordem, densidade sempre na faixa mais
+baixa, conquista dada de graça, catálogo corrompido engolido — e os sete foram pegos.
+
+### O que os testes NÃO cobrem
+
+Suíte verde não é sistema verificado. Fora do alcance destes testes:
+
+- **RLS, upload e a fila subindo** — só existem contra o Supabase, e dependem de verificação manual
+  com sessão de verdade. As mudanças de política desta base foram conferidas assim: `set local role
+  authenticated`, medição, e estado devolvido ao lugar.
+- **O service worker** (`public/sw.js`) — é script de escopo global, não módulo, e não dá para
+  importar num teste sem desfigurá-lo. Foi verificado em navegador, envenenando o cache de
+  propósito e conferindo que o service worker novo o limpa.
+- **Layout e o que se vê** — posição, contraste e transbordo foram medidos no navegador com
+  Playwright, não aqui.
