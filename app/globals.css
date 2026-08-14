@@ -67,6 +67,11 @@
   --marca: oklch(0.431 0.147 256);
   --marca-forte: oklch(0.657 0.135 235);
   --marca-foreground: oklch(0.99 0.005 256);
+  /* A ponta clara da faixa. O azul institucional sozinho é chapado numa
+     barra de 1600 px; com um degradê curto até aqui, ela ganha vida sem
+     deixar de ser a mesma cor — e este ponto ainda é escuro o bastante
+     para texto branco passar em contraste, que foi medido. */
+  --marca-viva: oklch(0.50 0.152 250);
 
   /* O pino da escola no mapa.
      Não pode ser o primário. Agora que o primário é o azul da marca,
@@ -119,6 +124,7 @@
   --marca: oklch(0.365 0.125 256);
   --marca-forte: oklch(0.657 0.135 235);
   --marca-foreground: oklch(0.99 0.005 256);
+  --marca-viva: oklch(0.425 0.13 250);
 
   /* No escuro o pino da escola sobe, senão some no fundo. */
   --escola: oklch(0.62 0.13 250);
@@ -150,6 +156,7 @@
 
   --color-marca: var(--marca);
   --color-marca-forte: var(--marca-forte);
+  --color-marca-viva: var(--marca-viva);
   --color-marca-foreground: var(--marca-foreground);
   --color-escola: var(--escola);
 

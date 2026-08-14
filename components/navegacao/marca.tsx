@@ -89,16 +89,21 @@ export function Marca({ compacta = false, sobreEscuro = false }: MarcaProps) {
           {/* O traço só aparece com a logo: sem ela, separaria a onda do
               nome sem motivo. */}
           <span
-            className={`w-px h-6 shrink-0 ${sobreEscuro ? "bg-white/30" : "bg-border"}`}
+            className={`w-px h-6 shrink-0 ${
+              sobreEscuro ? "bg-white/30" : "bg-border"
+            }`}
             aria-hidden="true"
           />
         </>
       )}
 
+      {/* Sem truncar. Antes ficava "Oceano na Esc…", que não é nome de
+          nada; agora o nome não encolhe, e quem cede espaço é a
+          navegação, que só entra a partir de lg. */}
       <span
-        className={`font-semibold tracking-tight truncate ${
+        className={`font-semibold tracking-tight whitespace-nowrap ${
           sobreEscuro ? "text-white" : "text-foreground"
-        } ${compacta ? "text-sm" : "text-sm md:text-[15px]"}`}
+        } ${compacta ? "text-sm" : "text-sm lg:text-[15px]"}`}
       >
         Oceano na Escola
       </span>

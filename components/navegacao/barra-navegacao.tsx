@@ -56,14 +56,27 @@ export function BarraNavegacao({ flutuante = false }: Props) {
 
   return (
     <header
+      /* O degradê curto até --marca-viva tira o chapado de uma faixa
+         larga sem trocar a cor da marca. */
       className={`${
         flutuante ? "fixed" : "sticky"
-      } top-0 inset-x-0 z-40 w-full bg-marca border-b-2 border-marca-forte shadow-sm`}
+      } top-0 inset-x-0 z-40 w-full border-b-2 border-marca-forte shadow-sm
+         bg-[linear-gradient(100deg,var(--marca)_0%,var(--marca)_45%,var(--marca-viva)_100%)]`}
     >
-      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
+      {/* 1600 e não 1280: com o menu completo do professor — oito itens
+          mais duas ações — a barra de 1280 não tinha onde caber, e
+          comprimia até o nome da plataforma truncar e "Registrar em
+          campo" quebrar em duas linhas. Numa tela de 1920 sobravam 640
+          px sem uso ao lado. */}
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6 h-14 flex items-center gap-3 lg:gap-5">
         <Marca sobreEscuro />
 
-        <nav className="hidden md:flex items-center gap-1">
+        {/* Só a partir de lg. Com os oito itens do professor, abaixo de
+            1024 px não cabe nem sem ícone — e item escondido atrás de
+            rolagem invisível é pior que item na sanfona, que ao menos
+            se anuncia. A rolagem fica como válvula, para um item novo
+            no futuro apertar em vez de quebrar. */}
+        <nav className="hidden lg:flex items-center gap-0.5 2xl:gap-1 min-w-0 overflow-x-auto rolagem-invisivel">
           {itens.map(({ href, label, icon: Icon }) => {
             const ativo = estaAtivo(href, caminho);
             return (
@@ -71,14 +84,32 @@ export function BarraNavegacao({ flutuante = false }: Props) {
                 key={href}
                 href={href}
                 aria-current={ativo ? "page" : undefined}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+                /* O item ativo ganha um traço no azul vivo da marca,
+                   embaixo, onde ele não carrega texto: branco sobre
+                   #139DD7 não chega aos 4,5:1 que letra pequena exige,
+                   mas um traço não precisa de contraste de texto.
+
+                   O inativo está em 88% e não em 80%: com o degradê, o
+                   item mais à direita cai sobre a ponta clara da faixa,
+                   e a 80% ele media 4,39 — abaixo do mínimo. Medido.
+
+                   E o preenchimento do ativo é discreto pela mesma
+                   razão: ele clareia o fundo embaixo do próprio texto,
+                   e quem marca a seleção é o traço, não a mancha. */
+                className={`relative flex items-center gap-1.5 px-2 2xl:px-3 py-1.5 text-xs font-medium rounded-sm whitespace-nowrap shrink-0 transition-colors ${
                   ativo
-                    ? "bg-white/20 text-white font-semibold"
-                    : "text-white/75 hover:text-white hover:bg-white/10"
+                    ? "bg-white/10 text-white font-semibold"
+                    : "text-white/[0.88] hover:text-white hover:bg-white/10"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3.5 h-3.5 shrink-0 hidden 2xl:block" />
                 <span>{label}</span>
+                {ativo && (
+                  <span
+                    className="absolute inset-x-2 -bottom-[7px] h-[3px] rounded-full bg-marca-forte"
+                    aria-hidden="true"
+                  />
+                )}
               </Link>
             );
           })}
@@ -87,28 +118,35 @@ export function BarraNavegacao({ flutuante = false }: Props) {
         {/* Ações, encostadas à direita. Ficam fora da navegação de
             propósito: "Registrar em campo" é ação, não lugar, e no meio
             dos links ela acendia como se fosse uma seção. */}
-        <div className="ml-auto hidden md:flex items-center gap-2">
+        <div className="ml-auto hidden lg:flex items-center gap-2 shrink-0 pl-2 2xl:pl-4 2xl:border-l 2xl:border-white/20">
           {autenticado ? (
             <>
               <Link
                 href="/campo"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent-foreground bg-accent hover:opacity-90 rounded-sm transition-opacity"
+                title="Registrar ocorrência em campo"
+                /* "em campo" só entra quando há espaço: sem isso o
+                   rótulo quebrava em duas linhas e deformava a barra.
+                   Cresce em 2xl e não em xl: a 1280 exatamente, o
+                   alargamento chegava antes do espaço para ele. */
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-accent-foreground bg-accent hover:brightness-110 rounded-sm transition-all shadow-sm"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Registrar em campo</span>
+                <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  Registrar<span className="hidden 2xl:inline"> em campo</span>
+                </span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white border border-white/30 rounded-sm hover:bg-white/10 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white/80 hover:text-white border border-white/30 rounded-sm hover:bg-white/10 transition-colors"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
                 <span>Sair</span>
               </button>
             </>
           ) : (
             <Link
               href="/entrar"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-marca hover:bg-white/90 rounded-sm transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap bg-white text-marca hover:bg-white/90 rounded-sm transition-colors shadow-sm"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Entrar</span>
@@ -119,7 +157,7 @@ export function BarraNavegacao({ flutuante = false }: Props) {
         {!flutuante && (
           <button
             onClick={() => setMenuAberto(!menuAberto)}
-            className="ml-auto md:hidden p-2 text-white/80 hover:text-white"
+            className="ml-auto lg:hidden p-2 text-white/80 hover:text-white"
             aria-label="Abrir menu"
             aria-expanded={menuAberto}
           >
@@ -132,7 +170,7 @@ export function BarraNavegacao({ flutuante = false }: Props) {
         /* O menu desce como continuação da faixa, e não como um cartão
            claro colado nela: cortar a cor no meio do gesto de abrir
            faria parecer que são dois elementos diferentes. */
-        <div className="md:hidden bg-marca border-b-2 border-marca-forte px-4 py-3 space-y-2">
+        <div className="lg:hidden bg-marca border-b-2 border-marca-forte px-4 py-3 space-y-2">
           {itens.map(({ href, label, icon: Icon }) => {
             const ativo = estaAtivo(href, caminho);
             return (

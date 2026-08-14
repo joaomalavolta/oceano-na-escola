@@ -26,7 +26,12 @@ export function NavegacaoMobile() {
   const itens = itensDoPolegar(autenticado);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-marca border-t-2 border-marca-forte">
+    /* Some só a partir de lg, e não de md, porque é em lg que a barra
+       de cima passa a mostrar a navegação. Com o corte em md havia uma
+       faixa — 768 a 1023, que é tablet — em que esta barra já tinha
+       sumido e a de cima ainda não tinha aparecido: no mapa, que não
+       tem sanfona, a navegação desaparecia por inteiro. */
+    <nav className="fixed inset-x-0 bottom-0 z-50 lg:hidden bg-marca border-t-2 border-marca-forte">
       <div className="flex items-stretch justify-around h-14">
         {itens.map(({ href, label, icon: Icon }) => {
           const ativo = estaAtivo(href, caminho);
