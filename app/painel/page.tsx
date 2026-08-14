@@ -156,7 +156,7 @@ function PainelConteudo() {
             Densidade por Protocolo
           </span>
           {densidades.length === 0 ? (
-            <span className="text-2xl font-bold tabular-nums text-accent">—</span>
+            <span className="text-2xl font-bold tabular-nums text-acento-texto">—</span>
           ) : (
             <div className="space-y-0.5">
               {densidades.map((d) => (
@@ -164,7 +164,7 @@ function PainelConteudo() {
                   <span className="text-[10px] font-mono font-bold text-muted-foreground w-7">
                     {d.protocolo}
                   </span>
-                  <span className="text-lg font-bold tabular-nums text-accent">
+                  <span className="text-lg font-bold tabular-nums text-acento-texto">
                     {d.densidade === null
                       ? "—"
                       : d.densidade.toFixed(3).replace(".", ",")}
@@ -254,7 +254,7 @@ function PainelConteudo() {
                     </span>
                     <span className="font-semibold text-foreground">{item.nome}</span>
                   </div>
-                  <span className="font-bold tabular-nums text-accent bg-accent/10 px-2 py-0.5 rounded-sm">
+                  <span className="font-bold tabular-nums text-acento-texto bg-accent/10 px-2 py-0.5 rounded-sm">
                     {item.quantidade.toLocaleString("pt-BR")} un.
                   </span>
                 </div>

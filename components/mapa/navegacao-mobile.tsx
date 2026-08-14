@@ -66,7 +66,7 @@ export function NavegacaoMobile() {
             todo o resto. */}
         <Link
           href={autenticado ? "/campo" : "/entrar"}
-          className="flex flex-col items-center justify-center gap-0.5 flex-1 text-accent"
+          className="flex flex-col items-center justify-center gap-0.5 flex-1"
         >
           <span className="flex items-center justify-center w-9 h-9 -mt-3 rounded-full bg-accent text-accent-foreground shadow-lg">
             {autenticado ? <PlusCircle size={20} /> : <LogIn size={18} />}

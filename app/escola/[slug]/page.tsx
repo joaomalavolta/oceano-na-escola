@@ -327,7 +327,7 @@ export default function EscolaPublicaPage({
                       {o.item_nome ?? o.descricao}
                     </h3>
                     {o.valor !== null && o.item_unidade && (
-                      <p className="text-sm font-bold tabular-nums text-accent">
+                      <p className="text-sm font-bold tabular-nums text-acento-texto">
                         {o.valor.toLocaleString("pt-BR")} {o.item_unidade}
                       </p>
                     )}
@@ -499,7 +499,7 @@ export default function EscolaPublicaPage({
                     <figcaption className="p-3 space-y-0.5">
                       <p className="text-xs font-bold">{f.item_nome ?? f.ocorrencia}</p>
                       {f.valor !== null && f.item_unidade && (
-                        <p className="text-[11px] tabular-nums text-accent font-semibold">
+                        <p className="text-[11px] tabular-nums text-acento-texto font-semibold">
                           {f.valor.toLocaleString("pt-BR")} {f.item_unidade}
                         </p>
                       )}

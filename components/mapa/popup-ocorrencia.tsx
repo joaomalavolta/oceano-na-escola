@@ -61,7 +61,7 @@ export function PopupOcorrencia({ ocorrencia: o, foto, comLinkParaEscola }: Prop
       </div>
 
       {magnitude && (
-        <p className="text-xs tabular-nums text-accent font-semibold">{magnitude}</p>
+        <p className="text-xs tabular-nums text-acento-texto font-semibold">{magnitude}</p>
       )}
 
       {o.origem_provavel && (

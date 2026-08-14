@@ -72,7 +72,7 @@ export function EstadoContainer({
       )}
       {estado === "salvando" && (
         <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 bg-card border border-border shadow-lg rounded-sm text-xs font-medium text-foreground">
-          <Save className="w-4 h-4 text-accent animate-bounce" />
+          <Save className="w-4 h-4 text-acento-texto animate-bounce" />
           <span>Salvando alterações…</span>
         </div>
       )}

@@ -64,7 +64,7 @@ export function ListaOcorrencias({ ocorrencias, totalNoFiltro, onIr }: Props) {
                 {o.item_nome ?? o.descricao}
               </span>
               {magnitude && (
-                <span className="block text-[12px] tabular-nums font-semibold text-accent">
+                <span className="block text-[12px] tabular-nums font-semibold text-acento-texto">
                   {magnitude}
                 </span>
               )}

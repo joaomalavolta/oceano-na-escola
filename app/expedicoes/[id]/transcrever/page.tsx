@@ -326,7 +326,7 @@ function TranscreverConteudo({ id }: { id: number }) {
                           <td
                             key={eq.id}
                             className={`py-2 px-2 text-center tabular-nums ${
-                              area === null ? "text-muted-foreground" : "text-accent"
+                              area === null ? "text-muted-foreground" : "text-acento-texto"
                             }`}
                           >
                             {area === null ? "—" : area.toLocaleString("pt-BR")}

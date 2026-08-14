@@ -33,9 +33,18 @@
   --secondary: oklch(0.94 0.014 252);
   --secondary-foreground: oklch(0.22 0.035 252);
 
-  /* Acento — coral de boia (escasso: totais, densidade, foco) */
-  --accent: oklch(0.68 0.16 45);
-  --accent-foreground: oklch(0.15 0.03 45);
+  /* Acento — âmbar de boia (escasso: ação, totais, densidade).
+     É cor de FUNDO de botão, com texto escuro em cima: 9,16:1. */
+  --accent: oklch(0.78 0.170 70);
+  --accent-foreground: oklch(0.18 0.04 60);
+
+  /* O mesmo acento quando ele é TEXTO, sobre superfície clara.
+     São dois trabalhos diferentes e não cabiam num token só: o âmbar
+     que brilha como fundo de botão dá 2,04:1 como letra sobre o cartão
+     creme — e o coral anterior já dava 3,02, abaixo do mínimo de 4,5,
+     em toda magnitude de ocorrência e todo indicador do rodapé. Este
+     tom desce a luminosidade até passar, mantendo a família quente. */
+  --acento-texto: oklch(0.50 0.16 55);
 
   /* Muted */
   --muted: oklch(0.94 0.012 252);
@@ -102,8 +111,10 @@
   --secondary: oklch(0.26 0.025 252);
   --secondary-foreground: oklch(0.92 0.012 252);
 
-  --accent: oklch(0.68 0.16 45);
-  --accent-foreground: oklch(0.15 0.03 45);
+  --accent: oklch(0.78 0.170 70);
+  --accent-foreground: oklch(0.18 0.04 60);
+  /* No escuro o acento como texto sobe, em vez de descer. */
+  --acento-texto: oklch(0.80 0.150 68);
 
   --muted: oklch(0.26 0.025 252);
   --muted-foreground: oklch(0.65 0.025 252);
@@ -144,6 +155,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-acento-texto: var(--acento-texto);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);

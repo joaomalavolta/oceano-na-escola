@@ -25,7 +25,7 @@ export function FaixaIndicadores({ dados }: FaixaIndicadoresProps) {
             <div key={chave} className="flex items-center gap-2">
               <Icon size={16} className="text-muted-foreground shrink-0" />
               <div className="flex flex-col">
-                <span className="text-lg font-bold tabular-nums text-accent">
+                <span className="text-lg font-bold tabular-nums text-acento-texto">
                   {dados[chave].toLocaleString("pt-BR")}
                 </span>
                 <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -45,7 +45,7 @@ export function FaixaIndicadores({ dados }: FaixaIndicadoresProps) {
             >
               <Icon size={14} className="text-muted-foreground shrink-0" />
               <div className="flex flex-col">
-                <span className="text-base font-bold tabular-nums text-accent">
+                <span className="text-base font-bold tabular-nums text-acento-texto">
                   {dados[chave].toLocaleString("pt-BR")}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">

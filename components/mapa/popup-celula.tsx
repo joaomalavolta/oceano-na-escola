@@ -24,7 +24,7 @@ export function PopupCelula({
     <div className="px-3 py-2.5 min-w-[200px]">
       {/* Densidade — destaque principal */}
       <div className="flex items-baseline gap-1.5 mb-2">
-        <span className="text-lg font-bold tabular-nums text-accent">
+        <span className="text-lg font-bold tabular-nums text-acento-texto">
           {densidade !== null ? densidade.toLocaleString("pt-BR", { minimumFractionDigits: 3 }) : "—"}
         </span>
         <span className="text-[11px] text-muted-foreground">itens/m²</span>
