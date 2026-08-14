@@ -391,6 +391,10 @@ function PainelConteudo() {
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { href: "/campo", titulo: "Registrar em campo", texto: "GPS, foto e ocorrência pelo celular" },
+            // Aqui, e não na barra de cima: o menu do professor já tem
+            // oito itens e brigou por espaço até caber. Este quadro é o
+            // lugar declarado do que não coube lá.
+            { href: "/manuais", titulo: "Manuais", texto: "Do professor e do aluno, para imprimir" },
             { href: "/galeria", titulo: "Curadoria da galeria", texto: "Publicar e retirar fotos, pedidos de remoção" },
             { href: "/historias", titulo: "Histórias do Território", texto: "O que os dados dizem deste lugar" },
             { href: "/dados", titulo: "Dados da rede", texto: "Indicadores por município e exportação" },
