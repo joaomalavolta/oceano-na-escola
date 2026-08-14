@@ -6,6 +6,7 @@ import {
   Compass,
   BookText,
   Image as ImageIcon,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ export const ITENS_NAV: ItemNav[] = [
   { href: "/", label: "Mapa", icon: Map },
   { href: "/escolas", label: "Escolas", icon: School },
   { href: "/dados", label: "Dados", icon: Database },
+  { href: "/sobre", label: "Sobre", icon: Info },
   { href: "/painel", label: "Painel", icon: BarChart3, privado: true },
   { href: "/expedicoes", label: "Expedições", icon: Compass, privado: true },
   { href: "/historias", label: "Histórias", icon: BookText, privado: true },
