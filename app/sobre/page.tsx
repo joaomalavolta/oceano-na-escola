@@ -8,7 +8,6 @@ import {
   Sprout,
   ShieldCheck,
   Users,
-  FlaskConical,
   ArrowRight,
   Info,
 } from "lucide-react";
@@ -198,24 +197,6 @@ export default function SobrePage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </section>
-
-          {/* Origem */}
-          <section>
-            <h2 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-border pb-2 mb-5">
-              De onde isto vem
-            </h2>
-            <div className="flex gap-3 text-xs leading-relaxed text-muted-foreground">
-              <FlaskConical className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <p>
-                O antecedente metodológico é o <strong className="text-foreground">Rio do Nosso
-                Bairro — Escolas Cuidando da Água</strong>, do Ecosurf, de 2010: metodologia Mapa
-                Verde, comunidade virtual e conferência metropolitana infanto-juvenil. O Oceano na
-                Escola leva aquele desenho para o litoral e para o que ele não tinha em 2010 —
-                celular com GPS no bolso do professor, mapa aberto na web e dado publicado em
-                formato reutilizável.
-              </p>
             </div>
           </section>
 
