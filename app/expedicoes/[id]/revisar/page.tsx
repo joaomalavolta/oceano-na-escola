@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowRight,
@@ -27,6 +28,8 @@ import {
   carregarRevisao,
   moverStatus,
   publicarEscola,
+  reabrirParaCorrecao,
+  custoDaCorrecao,
   proximaEtapa,
   indiceDaEtapa,
   ETAPAS,
@@ -89,11 +92,13 @@ function Regua({ status }: { status: string }) {
 }
 
 function RevisarConteudo({ id }: { id: number }) {
+  const router = useRouter();
   const [revisao, setRevisao] = useState<Revisao | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
   const [confirmandoPublicacao, setConfirmandoPublicacao] = useState(false);
+  const [confirmandoCorrecao, setConfirmandoCorrecao] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: "erro" | "ok"; texto: string } | null>(null);
 
   useEffect(() => {
@@ -137,6 +142,21 @@ function RevisarConteudo({ id }: { id: number }) {
           ? "Expedição publicada. O que passou do piso de três unidades já está no mapa."
           : `Expedição agora está em ${ETAPA_ROTULO[destino as Etapa]?.nome ?? destino}.`,
     });
+  };
+
+  /* Um passo, e não quatro. A regra do banco sempre permitiu o salto
+     para trás; o que faltava era a porta. */
+  const corrigir = async () => {
+    setProcessando(true);
+    setAviso(null);
+    const { erro: falha } = await reabrirParaCorrecao(id);
+    if (falha) {
+      setProcessando(false);
+      setConfirmandoCorrecao(false);
+      setAviso({ tipo: "erro", texto: falha });
+      return;
+    }
+    router.push(`/expedicoes/${id}/transcrever`);
   };
 
   const publicarAEscola = async () => {
@@ -539,6 +559,46 @@ function RevisarConteudo({ id }: { id: number }) {
           <span>{aviso.texto}</span>
         </div>
       )}
+
+      {/* Corrigir a ficha, de qualquer etapa, num passo.
+
+          Devolver uma etapa e corrigir a ficha são intenções
+          diferentes, e antes só a primeira tinha botão. Quem achasse um
+          número errado numa expedição publicada precisava clicar quatro
+          vezes em quatro telas para chegar ao rascunho — e nada dizia
+          que era esse o caminho. */}
+      {cabecalho.status !== "rascunho" &&
+        (confirmandoCorrecao ? (
+          <div className="flex flex-col gap-2 p-3 border border-amber-500/40 bg-amber-500/10 rounded-sm">
+            <p className="text-xs leading-relaxed">{custoDaCorrecao(cabecalho.status)}</p>
+            <div className="flex flex-col md:flex-row gap-2">
+              <button
+                onClick={() => setConfirmandoCorrecao(false)}
+                disabled={processando}
+                className="flex-1 py-2 text-xs font-semibold border border-border bg-background rounded-sm hover:bg-secondary transition-colors disabled:opacity-50"
+              >
+                Agora não
+              </button>
+              <button
+                onClick={corrigir}
+                disabled={processando}
+                className="flex-1 py-2 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <FileEdit className="w-4 h-4" />
+                {processando ? "Abrindo…" : "Abrir a ficha para corrigir"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmandoCorrecao(true)}
+            disabled={processando}
+            className="w-full py-2.5 text-xs font-semibold uppercase tracking-wider border border-border rounded-sm hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <FileEdit className="w-4 h-4" />
+            Corrigir a ficha
+          </button>
+        ))}
 
       {/* Ações */}
       <div className="flex flex-col md:flex-row gap-2">

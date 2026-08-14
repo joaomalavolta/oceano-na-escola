@@ -524,6 +524,39 @@ export async function moverStatus(
 }
 
 /**
+ * Devolve a expedição a rascunho para corrigir a ficha.
+ *
+ * Um passo, e não quatro. A regra do banco sempre permitiu o salto para
+ * trás — "voltar é livre" é a metade menos lembrada da transição —, mas
+ * a tela só oferecia um degrau por vez e a ficha só destrava em
+ * rascunho. Quem achasse um número errado numa expedição publicada
+ * tinha de clicar quatro vezes em quatro telas, sem nada dizendo que
+ * era esse o caminho.
+ *
+ * Corrigir tem preço, e ele é o correto: a expedição sai do mapa
+ * enquanto está em correção, e o carimbo de quem validou é apagado pelo
+ * gatilho. Dado corrigido depois da validação não pode continuar
+ * carregando a assinatura de quem validou o que havia antes.
+ */
+export async function reabrirParaCorrecao(
+  expedicaoId: number
+): Promise<{ erro: string | null }> {
+  return moverStatus(expedicaoId, "rascunho");
+}
+
+/** O que a correção custa, escrito para caber num aviso de confirmação. */
+export function custoDaCorrecao(status: string): string | null {
+  if (status === "rascunho") return null;
+  if (status === "publicado") {
+    return "Esta expedição está no mapa público. Corrigir tira o dado do mapa enquanto a ficha estiver aberta, e apaga o carimbo de quem validou — ele não sobrevive ao dado que validou. Publicar de novo é refazer as etapas.";
+  }
+  if (status === "validado") {
+    return "Corrigir apaga o carimbo de quem validou: ele não sobrevive ao dado que validou. A ficha volta a rascunho e refaz as etapas.";
+  }
+  return "A ficha volta a rascunho e refaz as etapas até onde estava.";
+}
+
+/**
  * Põe a escola no mapa, para que o que foi publicado apareça de fato.
  *
  * Passa pela função no banco, e não por update direto: `publicada`

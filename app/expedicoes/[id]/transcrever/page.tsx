@@ -20,6 +20,7 @@ import {
   type DefinicaoProtocolo,
   type UnidadeFicha,
 } from "@/lib/transcricao";
+import { reabrirParaCorrecao, custoDaCorrecao } from "@/lib/revisao";
 
 /** Seções que a grade de contagem consome; as demais viram formulário. */
 const SECOES_DE_CONTAGEM = ["quadrat", "contagem"];
@@ -35,6 +36,7 @@ function TranscreverConteudo({ id }: { id: number }) {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: "erro" | "ok"; texto: string } | null>(null);
+  const [confirmandoCorrecao, setConfirmandoCorrecao] = useState(false);
 
   const inputsRef = useRef<Map<string, HTMLInputElement>>(new Map());
 
@@ -113,6 +115,25 @@ function TranscreverConteudo({ id }: { id: number }) {
   }, [definicao]);
 
   const somenteLeitura = expedicao !== null && expedicao.status !== "rascunho";
+
+  /* Destrava a ficha sem sair da página: a expedição volta a rascunho e
+     esta mesma tela deixa de ser leitura. Recarregar o cabeçalho basta —
+     as contagens já estão carregadas e não mudaram. */
+  const corrigir = async () => {
+    setSalvando(true);
+    setMensagem(null);
+    const { erro } = await reabrirParaCorrecao(id);
+    if (erro) {
+      setSalvando(false);
+      setConfirmandoCorrecao(false);
+      setMensagem({ tipo: "erro", texto: erro });
+      return;
+    }
+    setExpedicao(await carregarExpedicaoFicha(id));
+    setSalvando(false);
+    setConfirmandoCorrecao(false);
+    setMensagem({ tipo: "ok", texto: "Ficha aberta para correção." });
+  };
 
   const alterarEsforco = (equipeId: number, codigo: string, valor: string) =>
     setUnidades((prev) =>
@@ -245,13 +266,55 @@ function TranscreverConteudo({ id }: { id: number }) {
         </div>
       </div>
 
+      {/* Antes esta caixa era um beco: dizia que a ficha está em leitura
+          e não dizia como sair disso. Quem chegava aqui para corrigir um
+          número tinha de descobrir sozinho que o caminho era voltar
+          etapa por etapa, do outro lado, na tela de revisão. */}
       {somenteLeitura && (
-        <div className="p-3 rounded-sm text-xs bg-secondary border border-border flex items-start gap-2">
-          <Info className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
-          <span>
-            Esta expedição já saiu do rascunho e está em{" "}
-            <strong>{expedicao.status}</strong>. A ficha fica em leitura.
-          </span>
+        <div className="p-3 rounded-sm text-xs bg-secondary border border-border space-y-2">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
+            <span>
+              Esta expedição já saiu do rascunho e está em{" "}
+              <strong>{expedicao.status}</strong>. A ficha fica em leitura até voltar ao
+              rascunho.
+            </span>
+          </div>
+
+          {confirmandoCorrecao ? (
+            <div className="space-y-2 md:pl-6">
+              <p className="leading-relaxed">{custoDaCorrecao(expedicao.status)}</p>
+              <div className="flex flex-col md:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoCorrecao(false)}
+                  disabled={salvando}
+                  className="flex-1 py-2 text-xs font-semibold border border-border bg-background rounded-sm hover:bg-secondary transition-colors disabled:opacity-50"
+                >
+                  Agora não
+                </button>
+                <button
+                  type="button"
+                  onClick={corrigir}
+                  disabled={salvando}
+                  className="flex-1 py-2 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <FileEdit className="w-4 h-4" />
+                  {salvando ? "Abrindo…" : "Abrir para corrigir"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmandoCorrecao(true)}
+              disabled={salvando}
+              className="md:ml-6 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-border bg-background rounded-sm hover:bg-background/70 transition-colors disabled:opacity-50"
+            >
+              <FileEdit className="w-3.5 h-3.5" />
+              Corrigir a ficha
+            </button>
+          )}
         </div>
       )}
 
