@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { IconeBadge, COR_ESCOLA } from "./icones";
 import { ListaOcorrencias } from "./lista-ocorrencias";
+import { AreaRolavel } from "@/components/ui/area-rolavel";
 import type { PubObservacaoPontual } from "@/lib/database.types";
 
 // ─────────────────────────────────────────────
@@ -76,6 +77,32 @@ export function PainelCamadas({
   const [expandido, setExpandido] = useState(true);
   const [aba, setAba] = useState<"camadas" | "lista">("camadas");
 
+  /* Filtros fechados por padrão.
+
+     Eram eles que faziam o painel rolar: quatro campos e um par de
+     meses empurravam a lista de camadas para fora de qualquer tela de
+     notebook. E o uso é desproporcional — ligar e desligar camada é o
+     gesto de sempre, filtrar por município é de vez em quando. Fechados
+     por padrão, o painel cabe inteiro, e a barra de rolagem deixa de
+     existir na maior parte do tempo em vez de ficar bonita. */
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+
+  const ativos = [
+    filtros.municipio,
+    filtros.escola,
+    filtros.protocolo,
+    filtros.mesInicio,
+    filtros.mesFim,
+  ].filter((v) => v !== "").length;
+
+  const limparFiltros = () => {
+    onChangeFiltro("municipio", "");
+    onChangeFiltro("escola", "");
+    onChangeFiltro("protocolo", "");
+    onChangeFiltro("mesInicio", "");
+    onChangeFiltro("mesFim", "");
+  };
+
   return (
     <div className="hidden md:block fixed top-14 left-3 z-40">
       {/* Toggle button */}
@@ -128,8 +155,8 @@ export function PainelCamadas({
             ))}
           </div>
 
-          <div
-            className={`max-h-[calc(100vh-12rem)] overflow-y-auto px-3 py-2 space-y-3 ${
+          <AreaRolavel
+            className={`max-h-[calc(100vh-12rem)] px-3 py-2 space-y-3 ${
               aba === "camadas" ? "" : "hidden"
             }`}
           >
@@ -239,10 +266,46 @@ export function PainelCamadas({
 
           {/* ── FILTROS ────────────────────────── */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
-              Filtros
-            </h3>
-            <div className="space-y-1.5">
+            {/* O cabeçalho vira botão, e leva o número de filtros ativos.
+                Fechada, a seção precisa dizer se está fazendo alguma
+                coisa — senão o professor vê o mapa com menos pontos do
+                que esperava e não tem onde procurar o porquê. */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setFiltrosAbertos((v) => !v)}
+                aria-expanded={filtrosAbertos}
+                className="flex items-center gap-1.5 flex-1 min-w-0 text-left py-1 rounded-sm hover:bg-muted/50 transition-colors"
+              >
+                <SlidersHorizontal size={13} className="shrink-0 text-muted-foreground" />
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Filtros
+                </span>
+                {ativos > 0 && (
+                  <span className="px-1.5 py-px text-[10px] font-bold tabular-nums rounded-full bg-primary text-primary-foreground shrink-0">
+                    {ativos}
+                  </span>
+                )}
+                <ChevronDown
+                  size={14}
+                  className={`ml-auto shrink-0 text-muted-foreground transition-transform ${
+                    filtrosAbertos ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {ativos > 0 && (
+                <button
+                  onClick={limparFiltros}
+                  title="Limpar todos os filtros"
+                  className="shrink-0 p-1 rounded-sm text-muted-foreground hover:text-destructive hover:bg-muted/50 transition-colors"
+                  aria-label="Limpar todos os filtros"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            <div className={`space-y-1.5 pt-1.5 ${filtrosAbertos ? "" : "hidden"}`}>
               {/* Município */}
               <div>
                 <label className="text-[11px] text-muted-foreground">Município</label>
@@ -313,12 +376,10 @@ export function PainelCamadas({
               </div>
             </div>
           </section>
-          </div>
+          </AreaRolavel>
 
-          <div
-            className={`max-h-[calc(100vh-12rem)] overflow-y-auto px-2 py-2 ${
-              aba === "lista" ? "" : "hidden"
-            }`}
+          <AreaRolavel
+            className={`max-h-[calc(100vh-12rem)] px-2 py-2 ${aba === "lista" ? "" : "hidden"}`}
           >
             <p className="text-[11px] text-muted-foreground px-2 pb-2">
               Ocorrências dentro do enquadramento. Mova o mapa para mudar a lista.
@@ -328,7 +389,7 @@ export function PainelCamadas({
               totalNoFiltro={totalDeOcorrencias}
               onIr={onIrParaOcorrencia}
             />
-          </div>
+          </AreaRolavel>
         </div>
       </div>
     </div>

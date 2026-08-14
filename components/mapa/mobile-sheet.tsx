@@ -77,7 +77,10 @@ export function MobileSheet({
           ${aberto ? "translate-y-0" : "translate-y-full"}
         `}
       >
-        <div className="bg-glass-bg backdrop-blur-xl border-t border-glass-border rounded-t-lg max-h-[70vh] overflow-y-auto">
+        {/* A mesma rolagem discreta do painel do desktop. No celular a
+            barra quase não é desenhada, mas a folha também abre em
+            tablet — e ali ela aparece. */}
+        <div className="bg-glass-bg backdrop-blur-xl border-t border-glass-border rounded-t-lg max-h-[70vh] overflow-y-auto rolagem-suave">
           {/* Handle bar */}
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />

@@ -94,6 +94,12 @@
   /* Mapa — painéis flutuantes */
   --glass-bg: oklch(0.995 0.004 106 / 0.82);
   --glass-border: oklch(0.86 0.02 252 / 0.5);
+
+  /* Barra de rolagem. Translúcida de propósito: sobre vidro, uma cor
+     chapada vira um traço mais escuro que a própria borda do painel.
+     Em repouso ela é sugestão; com o ponteiro por perto, alça. */
+  --rolagem-polegar: oklch(0.48 0.025 252 / 0.25);
+  --rolagem-polegar-forte: oklch(0.48 0.025 252 / 0.5);
 }
 
 .dark {
@@ -142,6 +148,11 @@
 
   --glass-bg: oklch(0.18 0.035 252 / 0.82);
   --glass-border: oklch(0.32 0.025 252 / 0.5);
+
+  /* No escuro o polegar clareia em vez de escurecer: translúcido preto
+     sobre painel preto não existe. */
+  --rolagem-polegar: oklch(0.85 0.02 252 / 0.22);
+  --rolagem-polegar-forte: oklch(0.9 0.02 252 / 0.45);
 }
 
 @theme inline {
@@ -203,6 +214,50 @@
 }
 .rolagem-invisivel::-webkit-scrollbar {
   display: none;
+}
+
+/* Rola com uma barra que não briga com o desenho.
+
+   A barra padrão do sistema é uma calha cinza larga, com botões nas
+   pontas, desenhada para janela de aplicativo — e o painel de camadas é
+   um vidro translúcido de 320 px sobre o mapa. Ali ela entra como um
+   retângulo opaco encostado na borda, e vira a coisa mais pesada da
+   tela inteira.
+
+   Sumir com ela seria pior: quem não vê barra não sabe que há mais
+   coisa abaixo, e o painel passaria a esconder filtros sem avisar.
+   Então ela fica — fina, arredondada, sem calha, e só ganha contraste
+   quando o ponteiro chega perto. */
+.rolagem-suave {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rolagem-polegar) transparent;
+}
+.rolagem-suave::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.rolagem-suave::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rolagem-suave::-webkit-scrollbar-thumb {
+  background-color: var(--rolagem-polegar);
+  border-radius: 999px;
+}
+.rolagem-suave:hover {
+  scrollbar-color: var(--rolagem-polegar-forte) transparent;
+}
+.rolagem-suave:hover::-webkit-scrollbar-thumb {
+  background-color: var(--rolagem-polegar-forte);
+}
+
+/* A borda de baixo dissolve em vez de cortar.
+
+   Corte reto no meio de uma linha parece defeito de renderização; o
+   mesmo corte em degradê lê-se como "continua". É o aviso de que há
+   mais, dado pelo próprio conteúdo — e a classe só é aplicada enquanto
+   há mesmo o que rolar, senão ela apagaria o último item à toa. */
+.desvanece-embaixo {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
 }
 
 body {
