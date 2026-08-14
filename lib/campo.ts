@@ -63,10 +63,20 @@ function primeiro<T>(v: T | T[] | null | undefined): T | null {
  * expedição nenhuma justamente quando ela não conseguia olhar.
  */
 export async function listarExpedicoesAbertas(): Promise<ExpedicaoAberta[] | null> {
+  // Só as escolas em que dá para escrever. A política de leitura de
+  // `expedicao` também deixa passar o pesquisador, que enxerga os
+  // rascunhos da rede inteira e não pode registrar em nenhum: sem este
+  // recorte, o seletor ofereceria expedição que o registro recusa.
+  const { data: escolas, error: erroEscolas } = await supabase.rpc("app_escolas_que_posso_usar");
+  if (erroEscolas) return null;
+  const ids = ((escolas ?? []) as { id: number }[]).map((e) => num(e.id));
+  if (ids.length === 0) return [];
+
   const { data, error } = await supabase
     .from("expedicao")
     .select("id, numero, titulo, data_campo, escola_id, escola:escola_id (nome)")
     .eq("status", "rascunho")
+    .in("escola_id", ids)
     .order("data_campo", { ascending: false });
   if (error) return null;
   return (data ?? []).map((x) => ({

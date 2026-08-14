@@ -51,13 +51,23 @@ export interface NovaExpedicao {
   observacoes: string;
 }
 
+/**
+ * As escolas em que dá para criar uma saída de campo.
+ *
+ * Não é `select` em `escola`: a política de leitura é mais larga que a
+ * de escrita, de propósito — o pesquisador lê a rede inteira e não
+ * escreve em lugar nenhum, e quem cadastrou uma escola continua
+ * enxergando o que cadastrou mesmo depois de perder o vínculo. Lendo a
+ * tabela direto, o seletor oferecia escola que o professor não consegue
+ * usar; ele escolhia, e o insert voltava com erro cru de política.
+ *
+ * A função no banco chama `app_tem_vinculo`, a mesma do `with check` da
+ * política de escrita — as duas não têm como divergir com o tempo.
+ */
 export async function listarEscolasDoProfessor(): Promise<EscolaDoProfessor[]> {
-  const { data, error } = await supabase
-    .from("escola")
-    .select("id, nome, slug, municipio_id")
-    .order("nome");
+  const { data, error } = await supabase.rpc("app_escolas_que_posso_usar");
   if (error) return [];
-  return (data ?? []).map((e) => ({
+  return ((data ?? []) as EscolaDoProfessor[]).map((e) => ({
     id: Number(e.id),
     nome: String(e.nome),
     slug: String(e.slug),
