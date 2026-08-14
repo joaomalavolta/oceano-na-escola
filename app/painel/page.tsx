@@ -395,6 +395,7 @@ function PainelConteudo() {
             // oito itens e brigou por espaço até caber. Este quadro é o
             // lugar declarado do que não coube lá.
             { href: "/manuais", titulo: "Manuais", texto: "Do professor e do aluno, para imprimir" },
+            { href: "/cartografia", titulo: "Cartografia social", texto: "Oficina em sala, antes da saída" },
             { href: "/fichas", titulo: "Fichas de campo", texto: "Imprimir antes da saída, uma por equipe" },
             { href: "/galeria", titulo: "Curadoria da galeria", texto: "Publicar e retirar fotos, pedidos de remoção" },
             { href: "/historias", titulo: "Histórias do Território", texto: "O que os dados dizem deste lugar" },
