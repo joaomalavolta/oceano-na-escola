@@ -138,9 +138,13 @@ Regras do convite, todas no banco:
 - **Validade de 1 a 90 dias**, 14 por padrão. Vence sozinho, sem ninguém mexer na linha.
 - **Cancelável** enquanto não aceito.
 
-O link **não é enviado pela plataforma** — ela não manda e-mail nesta fase. O painel mostra o
-link para o Ecosurf copiar e mandar por onde quiser. Prometer envio que não acontece seria pior
-que pedir para copiar.
+O convite **sai por e-mail** de `oceanonaescola@ecosurf.org.br` — ver
+[05-envio-de-email.md](05-envio-de-email.md). O link continua aparecendo no painel mesmo quando o
+e-mail sai: e-mail de escola cai em spam com frequência, e ter o link na mão é o que resolve a
+ligação de telefone que vem depois.
+
+**O convite é criado primeiro, o e-mail depois.** Se o envio falhar, o convite já existe e o link
+está na tela com o motivo da falha ao lado. E-mail que não sai nunca pode custar o convite.
 
 ### 5.1 Análise do cadastro de escola *(14/08/2026)*
 

@@ -78,6 +78,10 @@ function AdminConteudo() {
   // vez em que ele aparece sem precisar procurar na lista, e é agora
   // que o Ecosurf vai copiá-lo para mandar.
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
+  const [envioDoNovo, setEnvioDoNovo] = useState<{ enviado: boolean; motivo: string | null }>({
+    enviado: false,
+    motivo: null,
+  });
   const [copiado, setCopiado] = useState<string | null>(null);
 
   const recarregar = async () => {
@@ -123,23 +127,33 @@ function AdminConteudo() {
     setOcupado(true);
     setAviso(null);
     setLinkNovo(null);
-    const { token, erro } = await criarConvite(
-      novoConvite.email,
+    const destinatario = novoConvite.email.trim();
+    const { link, enviado, motivo, erro } = await criarConvite(
+      destinatario,
       novoConvite.papel,
       novoConvite.escolaId === "" ? null : novoConvite.escolaId,
       novoConvite.mensagem,
       novoConvite.dias
     );
-    if (erro || !token) {
+    if (erro || !link) {
       setOcupado(false);
       setAviso({ tipo: "erro", texto: erro ?? "Não foi possível criar o convite." });
       return;
     }
     await recarregar();
     setOcupado(false);
-    setLinkNovo(linkDoConvite(token));
     setNovoConvite((p) => ({ ...p, email: "", mensagem: "" }));
-    setAviso({ tipo: "ok", texto: "Convite criado. Copie o link e mande para a pessoa." });
+
+    // O link fica à vista sempre, e não só quando o envio falha: o
+    // e-mail pode ter saído e cair na caixa de spam da escola, e aí o
+    // link na mão é o que resolve a ligação de telefone.
+    setLinkNovo(link);
+    setEnvioDoNovo({ enviado, motivo });
+    setAviso(
+      enviado
+        ? { tipo: "ok", texto: `Convite enviado para ${destinatario}.` }
+        : { tipo: "erro", texto: motivo ?? "O convite foi criado, mas o e-mail não saiu." }
+    );
   };
 
   const agir = async (acao: () => Promise<{ erro: string | null }>, sucesso: string) => {
@@ -354,9 +368,11 @@ function AdminConteudo() {
 
         <div className="bg-card border border-border rounded-md p-4 shadow-2xs space-y-3">
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            O convite vale para <strong className="text-foreground">um e-mail só</strong>: quem
-            abrir o link com outro endereço é recusado pelo banco. Quem aceita entra já com o
-            papel e a escola definidos aqui, sem passar pela fila de análise.
+            O convite sai por e-mail de{" "}
+            <span className="font-mono text-foreground">oceanonaescola@ecosurf.org.br</span> e
+            vale para <strong className="text-foreground">um endereço só</strong>: quem abrir o
+            link com outro e-mail é recusado pelo banco. Quem aceita entra já com o papel e a
+            escola definidos aqui, sem passar pela fila de análise.
           </p>
 
           <div className="grid gap-2 md:grid-cols-2">
@@ -455,17 +471,32 @@ function AdminConteudo() {
             className="px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground rounded-sm disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             {ocupado ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-            Criar convite
+            {ocupado ? "Enviando…" : "Convidar por e-mail"}
           </button>
 
-          {/* O link não é enviado por nós: a plataforma não manda e-mail
-              ainda, e prometer envio que não acontece seria pior que
-              pedir para copiar. */}
+          {/* O link aparece mesmo quando o e-mail saiu. E-mail cai em
+              spam de escola com frequência, e ter o link na mão é o que
+              resolve a ligação de telefone que vem depois. */}
           {linkNovo && (
             <div className="p-3 rounded-sm border border-primary/40 bg-primary/5 space-y-2">
-              <p className="text-[11px] font-semibold">
-                Mande este link para a pessoa. Ele não é enviado automaticamente.
+              <p className="text-[11px] font-semibold flex items-start gap-1.5">
+                {envioDoNovo.enviado ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-px text-emerald-600" />
+                    E-mail enviado. Guarde o link também — se não chegar, costuma estar no spam.
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px text-amber-600" />
+                    O convite está criado, mas o e-mail não saiu. Mande este link para a pessoa.
+                  </>
+                )}
               </p>
+              {!envioDoNovo.enviado && envioDoNovo.motivo && (
+                <p className="text-[11px] text-muted-foreground break-words">
+                  {envioDoNovo.motivo}
+                </p>
+              )}
               <div className="flex flex-col md:flex-row gap-2">
                 <input
                   readOnly

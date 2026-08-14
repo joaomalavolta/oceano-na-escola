@@ -82,22 +82,65 @@ export async function listarConvites(): Promise<Convite[]> {
   });
 }
 
+export interface ConviteCriado {
+  link: string | null;
+  /** O e-mail saiu? Falso não é erro: o link continua valendo. */
+  enviado: boolean;
+  /** Por que não saiu, quando não saiu. */
+  motivo: string | null;
+  erro: string | null;
+}
+
+/**
+ * Cria o convite e pede o envio do e-mail.
+ *
+ * Passa por uma rota no servidor, e não direto pelo RPC, porque a
+ * credencial do remetente não pode existir no navegador. Quem decide se
+ * pode convidar continua sendo o banco: a rota chama a mesma função com
+ * o token desta sessão.
+ *
+ * O e-mail falhar não é o convite falhar. A rota devolve o link de
+ * qualquer jeito, e a tela mostra o motivo junto — assim o Ecosurf
+ * manda à mão hoje e arruma o envio quando puder.
+ */
 export async function criarConvite(
   email: string,
   papel: Papel,
   escolaId: number | null,
   mensagem: string,
   dias: number
-): Promise<{ token: string | null; erro: string | null }> {
-  const { data, error } = await supabase.rpc("admin_cria_convite", {
-    p_email: email,
-    p_papel: papel,
-    p_escola_id: escolaId,
-    p_mensagem: mensagem,
-    p_dias: dias,
-  });
-  if (error) return { token: null, erro: error.message };
-  return { token: typeof data === "string" ? data : null, erro: null };
+): Promise<ConviteCriado> {
+  const { data } = await supabase.auth.getSession();
+  const jwt = data.session?.access_token;
+  if (!jwt) {
+    return { link: null, enviado: false, motivo: null, erro: "Sessão expirada. Entre de novo." };
+  }
+
+  try {
+    const resposta = await fetch("/api/convite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ email, papel, escolaId, mensagem, dias }),
+    });
+    const corpo = await resposta.json();
+
+    if (!resposta.ok) {
+      return { link: null, enviado: false, motivo: null, erro: corpo?.erro ?? "Falha ao criar o convite." };
+    }
+    return {
+      link: typeof corpo?.link === "string" ? corpo.link : null,
+      enviado: Boolean(corpo?.enviado),
+      motivo: corpo?.motivo ?? null,
+      erro: null,
+    };
+  } catch (err) {
+    return {
+      link: null,
+      enviado: false,
+      motivo: null,
+      erro: err instanceof Error ? err.message : "Falha de rede ao criar o convite.",
+    };
+  }
 }
 
 export async function revogarConvite(conviteId: number): Promise<{ erro: string | null }> {
