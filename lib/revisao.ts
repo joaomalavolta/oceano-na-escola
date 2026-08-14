@@ -22,6 +22,8 @@ export interface EscolaDaRevisao {
   slug: string;
   publicada: boolean;
   termos_ok: boolean;
+  /** Parecer do Ecosurf sobre o cadastro: pendente, aprovada, recusada. */
+  situacao: string;
 }
 
 export interface CabecalhoRevisao {
@@ -142,7 +144,7 @@ export async function carregarRevisao(
     const expRes = await supabase
       .from("expedicao")
       .select(
-        "id, numero, titulo, data_campo, status, observacoes, n_mapeadores, extensao_m, validado_em, escola:escola_id (id, nome, slug, publicada, termos_ok), territorio:territorio_id (nome), equipe (id, identificacao), expedicao_turma (turma:turma_id (nome))"
+        "id, numero, titulo, data_campo, status, observacoes, n_mapeadores, extensao_m, validado_em, escola:escola_id (id, nome, slug, publicada, termos_ok, situacao), territorio:territorio_id (nome), equipe (id, identificacao), expedicao_turma (turma:turma_id (nome))"
       )
       .eq("id", expedicaoId)
       .maybeSingle();
@@ -183,6 +185,7 @@ export async function carregarRevisao(
         slug: String(escolaBruta.slug),
         publicada: Boolean(escolaBruta.publicada),
         termos_ok: Boolean(escolaBruta.termos_ok),
+        situacao: String(escolaBruta.situacao ?? "aprovada"),
       },
     };
 
@@ -400,18 +403,55 @@ function montarAlertas(
     });
   }
 
+  // Duas causas para o mesmo efeito, e o nível difere pelo que o
+  // professor pode fazer a respeito — não pela gravidade.
+  //
+  // Escola fora do ar por escolha dela mesma tem conserto num clique,
+  // aqui na tela: 'impede', e o botão de publicar espera o clique.
+  // Cadastro em análise no Ecosurf não tem conserto nenhum do lado do
+  // professor, e travar a publicação por isso seria contradizer o que a
+  // plataforma promete em todo lugar — que o trabalho não espera a
+  // aprovação. Fica 'atencao', o dado é publicado, e ele entra no mapa
+  // junto com a escola. É o mesmo desenho da célula abaixo do piso de
+  // três unidades: guardada, e entra quando a condição chegar.
   if (!cabecalho.escola.publicada) {
-    alertas.push({
-      nivel: "impede",
-      texto: `A escola ${cabecalho.escola.nome} ainda não está publicada. Enquanto não estiver, nada dela aparece no mapa, mesmo com a expedição publicada.`,
-    });
+    if (cabecalho.escola.situacao === "recusada") {
+      alertas.push({
+        nivel: "atencao",
+        texto: `O cadastro de ${cabecalho.escola.nome} foi recusado pelo Instituto Ecosurf, e o motivo está na ficha da escola. Publicar aqui não se perde: o dado fica guardado e entra no mapa quando o cadastro for corrigido, reenviado e aprovado.`,
+      });
+    } else if (cabecalho.escola.situacao === "pendente") {
+      alertas.push({
+        nivel: "atencao",
+        texto: `O cadastro de ${cabecalho.escola.nome} está em análise no Instituto Ecosurf. Publicar aqui não se perde: o dado fica guardado e entra no mapa junto com a escola, assim que ela for aprovada.`,
+      });
+    } else {
+      alertas.push({
+        nivel: "impede",
+        texto: `A escola ${cabecalho.escola.nome} está fora do ar. Enquanto estiver, nada dela aparece no mapa, mesmo com a expedição publicada.`,
+      });
+    }
   }
 
-  const semGeometria = blocos.flatMap((b) => b.unidades.filter((u) => !u.temGeometria));
+  // Faltar coordenada em parte das unidades não é o mesmo que faltar em
+  // todas. Antes bloqueava nos dois casos, e travava a publicação de
+  // uma expedição em que três trechos de cinco iriam ao mapa
+  // perfeitamente — o professor não tinha como concluir por causa das
+  // outras duas, que talvez nunca tenham tido GPS.
+  //
+  // Bloqueia só quando publicar não levaria nada: nenhuma unidade com
+  // geometria e nenhuma ocorrência georreferenciada. Aí o botão diz
+  // "publicar no mapa" e o mapa não recebe nada — é essa promessa vazia
+  // que o impedimento evita.
+  const unidades = blocos.flatMap((b) => b.unidades);
+  const semGeometria = unidades.filter((u) => !u.temGeometria);
   if (semGeometria.length > 0) {
+    const nadaVaiAoMapa = semGeometria.length === unidades.length && ocorrencias.length === 0;
     alertas.push({
-      nivel: "impede",
-      texto: `${semGeometria.length} unidade(s) amostral(is) sem coordenada. Sem geometria, a contagem não entra em célula nenhuma da grade.`,
+      nivel: nadaVaiAoMapa ? "impede" : "atencao",
+      texto: nadaVaiAoMapa
+        ? `Nenhuma das ${unidades.length} unidade(s) amostral(is) tem coordenada, e não há ocorrência georreferenciada. Publicar não levaria nada ao mapa: sem geometria a contagem não entra em célula nenhuma da grade. Volte à transcrição e marque onde a turma esteve.`
+        : `${semGeometria.length} de ${unidades.length} unidade(s) amostral(is) sem coordenada. Essas contagens entram no total da expedição, mas não em célula nenhuma da grade — o que tem coordenada vai ao mapa normalmente.`,
     });
   }
 
@@ -483,11 +523,23 @@ export async function moverStatus(
   return { erro: error?.message ?? null };
 }
 
-/** Publica a escola, para que o que foi publicado apareça de fato. */
+/**
+ * Põe a escola no mapa, para que o que foi publicado apareça de fato.
+ *
+ * Passa pela função no banco, e não por update direto: `publicada`
+ * deixou de ser concedida ao cliente quando o cadastro passou a ter
+ * análise do Ecosurf. O update direto aqui deixaria de funcionar em
+ * silêncio, devolvendo "permission denied for table escola" no lugar
+ * de uma frase que alguém entenda.
+ *
+ * Só funciona com o cadastro já aprovado — a função confere isso. Para
+ * escola pendente ou recusada a tela nem oferece o botão, porque não é
+ * o professor que resolve.
+ */
 export async function publicarEscola(escolaId: number): Promise<{ erro: string | null }> {
-  const { error } = await supabase
-    .from("escola")
-    .update({ publicada: true })
-    .eq("id", escolaId);
+  const { error } = await supabase.rpc("escola_define_visibilidade", {
+    p_escola_id: escolaId,
+    p_publicada: true,
+  });
   return { erro: error?.message ?? null };
 }

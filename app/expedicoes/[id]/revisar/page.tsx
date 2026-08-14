@@ -267,7 +267,11 @@ function RevisarConteudo({ id }: { id: number }) {
             </div>
           ))}
 
-          {!cabecalho.escola.publicada && (
+          {/* O atalho só aparece quando o professor de fato resolve com
+              um clique. Com o cadastro em análise no Ecosurf, oferecer
+              "publicar a escola agora" seria oferecer o que a conta dele
+              não faz — e o clique voltaria com erro de permissão. */}
+          {!cabecalho.escola.publicada && cabecalho.escola.situacao === "aprovada" && (
             <button
               onClick={publicarAEscola}
               disabled={processando}
@@ -275,6 +279,15 @@ function RevisarConteudo({ id }: { id: number }) {
             >
               Publicar a escola agora
             </button>
+          )}
+
+          {!cabecalho.escola.publicada && cabecalho.escola.situacao !== "aprovada" && (
+            <Link
+              href={`/escola/${cabecalho.escola.slug}/editar`}
+              className="inline-block text-xs font-semibold text-primary hover:underline"
+            >
+              Abrir a ficha da escola
+            </Link>
           )}
         </section>
       )}
@@ -293,8 +306,16 @@ function RevisarConteudo({ id }: { id: number }) {
               />
               {bloco.codigo} · {bloco.nome}
             </span>
+            {/* "0,00 m²" afirmava uma medição que ninguém fez: quando
+                nenhuma unidade tem área, o certo é dizer que a área não
+                foi informada, e não que ela mediu zero. */}
             <span className="text-[11px] text-muted-foreground tabular-nums">
-              {numero(bloco.totalItens)} itens em {numero(bloco.areaM2, 2)} m² ·{" "}
+              {numero(bloco.totalItens)} itens{" "}
+              {bloco.areaM2 > 0 ? (
+                <>em {numero(bloco.areaM2, 2)} m² · </>
+              ) : (
+                <>· área não informada · </>
+              )}
               {bloco.densidade === null ? (
                 <em className="not-italic text-destructive">sem densidade</em>
               ) : (
@@ -553,19 +574,29 @@ function RevisarConteudo({ id }: { id: number }) {
               {processando ? "Salvando…" : ETAPA_ROTULO[proxima].verbo}
             </button>
           ) : !confirmandoPublicacao ? (
-            <button
-              onClick={() => setConfirmandoPublicacao(true)}
-              disabled={processando || impedimentos.length > 0}
-              title={
-                impedimentos.length > 0
-                  ? "Resolva os impedimentos acima antes de publicar."
-                  : undefined
-              }
-              className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <Globe className="w-4 h-4" />
-              Publicar no mapa
-            </button>
+            /* Antes o motivo do travamento vivia só no `title`, que
+               aparece ao passar o mouse — e celular não tem mouse. O
+               professor via um botão azul que não respondia ao toque e
+               nada explicando por quê. Agora o motivo fica escrito
+               embaixo, na tela, sempre. */
+            <div className="flex-1 space-y-1.5">
+              <button
+                onClick={() => setConfirmandoPublicacao(true)}
+                disabled={processando || impedimentos.length > 0}
+                className="w-full py-2.5 text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                Publicar no mapa
+              </button>
+              {impedimentos.length > 0 && (
+                <p className="text-[11px] text-destructive flex items-start gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                  {impedimentos.length === 1
+                    ? "Publicar está travado pelo impedimento apontado acima."
+                    : `Publicar está travado pelos ${impedimentos.length} impedimentos apontados acima.`}
+                </p>
+              )}
+            </div>
           ) : (
             <div className="flex-1 flex flex-col gap-2 p-3 border border-primary/40 bg-primary/5 rounded-sm">
               <p className="text-xs">

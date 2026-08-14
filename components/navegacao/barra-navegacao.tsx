@@ -35,7 +35,7 @@ interface Props {
  */
 export function BarraNavegacao({ flutuante = false }: Props) {
   const caminho = usePathname();
-  const { session, sair } = useSessao();
+  const { session, perfil, sair } = useSessao();
 
   // O menu guarda em qual página foi aberto. Ao navegar, o caminho muda
   // e ele fecha sozinho — sem effect, que só criaria um render a mais.
@@ -47,7 +47,7 @@ export function BarraNavegacao({ flutuante = false }: Props) {
   const setMenuAberto = (aberto: boolean) => setMenu({ aberto, em: caminho });
 
   const autenticado = session !== null;
-  const itens = itensPara(autenticado);
+  const itens = itensPara(autenticado, perfil?.papel === "admin_ecosurf");
 
   const handleLogout = async () => {
     await sair();

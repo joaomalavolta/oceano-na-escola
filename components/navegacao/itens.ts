@@ -7,6 +7,7 @@ import {
   BookText,
   Image as ImageIcon,
   Info,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +32,8 @@ export interface ItemNav {
   icon: LucideIcon;
   /** Só aparece com sessão. Vem depois dos públicos, sempre. */
   privado?: boolean;
+  /** Só para a administração do Ecosurf. Vem por último de todos. */
+  soAdmin?: boolean;
 }
 
 export const ITENS_NAV: ItemNav[] = [
@@ -42,10 +45,18 @@ export const ITENS_NAV: ItemNav[] = [
   { href: "/expedicoes", label: "Expedições", icon: Compass, privado: true },
   { href: "/historias", label: "Histórias", icon: BookText, privado: true },
   { href: "/galeria", label: "Galeria", icon: ImageIcon, privado: true },
+  // Última da fila pela mesma razão que os privados vêm depois dos
+  // públicos: item que aparece quando o papel carrega não empurra os
+  // vizinhos se entrar no fim. E a fila de cadastros à espera só é
+  // trabalho de quem pode aprová-los — para o professor, "Administração"
+  // no menu seria uma porta que abre numa sala vazia.
+  { href: "/admin", label: "Administração", icon: ShieldCheck, privado: true, soAdmin: true },
 ];
 
-export function itensPara(autenticado: boolean): ItemNav[] {
-  return autenticado ? ITENS_NAV : ITENS_NAV.filter((i) => !i.privado);
+export function itensPara(autenticado: boolean, admin = false): ItemNav[] {
+  return ITENS_NAV.filter(
+    (i) => (autenticado || !i.privado) && (admin || !i.soAdmin)
+  );
 }
 
 /**
@@ -66,6 +77,9 @@ const POLEGAR_AUTENTICADO = ["/", "/escolas", "/painel", "/expedicoes"];
 
 export function itensDoPolegar(autenticado: boolean): ItemNav[] {
   const escolhidos = new Set(autenticado ? POLEGAR_AUTENTICADO : POLEGAR_VISITANTE);
+  // Sem `admin`: os quatro do polegar são escolha fixa, e "Administração"
+  // não está entre eles. Passar o papel aqui só criaria a chance de a
+  // barra do celular deixar de ser subsequência do menu do desktop.
   return itensPara(autenticado).filter((i) => escolhidos.has(i.href));
 }
 

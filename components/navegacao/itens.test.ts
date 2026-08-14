@@ -39,6 +39,53 @@ describe("ordem da navegação", () => {
 });
 
 /**
+ * "Administração" segue a mesma regra dos privados, um degrau adiante: o
+ * papel do perfil chega depois da sessão, que já chega depois da
+ * primeira pintura. Vindo por último, ele entra no vazio à direita e não
+ * empurra ninguém.
+ *
+ * E é o menu, não a permissão — quem recusa cada botão daquela tela é o
+ * banco. O item existir para o professor não abriria porta nenhuma; só
+ * o levaria a uma sala onde tudo dá erro.
+ */
+describe("item da administração", () => {
+  it("vem depois de todos os que não são de admin", () => {
+    const primeiro = ITENS_NAV.findIndex((i) => i.soAdmin);
+    if (primeiro === -1) return;
+    expect(ITENS_NAV.slice(primeiro).every((i) => i.soAdmin)).toBe(true);
+  });
+
+  it("não aparece para o professor nem para o visitante", () => {
+    expect(itensPara(true).some((i) => i.soAdmin)).toBe(false);
+    expect(itensPara(false).some((i) => i.soAdmin)).toBe(false);
+    expect(itensPara(true).map((i) => i.href)).not.toContain("/admin");
+  });
+
+  it("aparece para a administração do Ecosurf", () => {
+    expect(itensPara(true, true).map((i) => i.href)).toContain("/admin");
+  });
+
+  it("sessão sem conta não recebe o item nem quando o papel diz admin", () => {
+    // Defesa contra chamada errada: sem sessão, `privado` já barra, e a
+    // combinação impossível não pode virar um item na barra do visitante.
+    expect(itensPara(false, true).map((i) => i.href)).not.toContain("/admin");
+  });
+
+  it("nenhum item muda de lugar quando o papel de admin chega", () => {
+    const professor = itensPara(true);
+    const admin = itensPara(true, true);
+    professor.forEach((item, i) => {
+      expect(admin[i]?.href, `o item "${item.label}" mudou de lugar`).toBe(item.href);
+    });
+    expect(admin.length).toBe(professor.length + 1);
+  });
+
+  it("não entra na barra do polegar, que é escolha fixa de quatro", () => {
+    expect(itensDoPolegar(true).map((i) => i.href)).not.toContain("/admin");
+  });
+});
+
+/**
  * A barra do polegar é seleção, não recorte: ela deixa "Dados" de fora
  * para caber "Expedições", que é onde o professor trabalha. O que ela
  * não pode fazer é inventar ordem — se um item aparecer no celular

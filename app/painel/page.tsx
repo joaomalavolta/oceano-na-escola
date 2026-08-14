@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { carregarPainel, type PainelEscola } from "@/lib/dados-escola";
+import { useSessao } from "@/lib/sessao";
 
 const STATUS_ROTULO: Record<string, string> = {
   rascunho: "Rascunho",
@@ -30,6 +31,7 @@ function formatarData(iso: string): string {
 
 function PainelConteudo() {
   const [dados, setDados] = useState<PainelEscola | null>(null);
+  const { perfil } = useSessao();
 
   useEffect(() => {
     let ativo = true;
@@ -392,7 +394,19 @@ function PainelConteudo() {
             { href: "/galeria", titulo: "Curadoria da galeria", texto: "Publicar e retirar fotos, pedidos de remoção" },
             { href: "/historias", titulo: "Histórias do Território", texto: "O que os dados dizem deste lugar" },
             { href: "/dados", titulo: "Dados da rede", texto: "Indicadores por município e exportação" },
-            { href: "/admin", titulo: "Administração da rede", texto: "Papéis, vínculos e escolas" },
+            // O atalho da administração era mostrado a todo mundo, e
+            // levava o professor a uma tela em que o banco recusa cada
+            // botão. Agora ele só existe para quem o usa — e não é a
+            // permissão: essa continua no banco.
+            ...(perfil?.papel === "admin_ecosurf"
+              ? [
+                  {
+                    href: "/admin",
+                    titulo: "Administração da rede",
+                    texto: "Analisar cadastros, papéis e vínculos",
+                  },
+                ]
+              : []),
           ].map((a) => (
             <Link
               key={a.href}
