@@ -31,7 +31,11 @@ import {
   escalaDe,
   PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
-import type { PubObservacaoGrade, PubObservacaoPontual } from "@/lib/database.types";
+import type {
+  PubObservacaoGrade,
+  PubObservacaoPontual,
+  PubFotoGeorreferenciada,
+} from "@/lib/database.types";
 import { ESTILO_SEM_FUNDO, fundoPorId, fundoSalvo, salvaFundo } from "@/lib/mapa-base";
 import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
 import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
@@ -41,6 +45,7 @@ import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
 import { PopupCelula } from "./popup-celula";
+import { PopupOcorrencia } from "./popup-ocorrencia";
 import { MobileSheet } from "./mobile-sheet";
 import { NavegacaoMobile } from "./navegacao-mobile";
 
@@ -67,6 +72,16 @@ export function MapaPublico() {
   const [carregando, setCarregando] = useState(true);
   const [erroTiles, setErroTiles] = useState(false);
   const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null);
+
+  /**
+   * A ocorrência aberta no cartão.
+   *
+   * Antes o pino só tinha dica ao passar o mouse — que não existe em
+   * celular, que é onde a maior parte das pessoas abre este mapa. Quem
+   * via um pino de descarte irregular no telefone não tinha como
+   * descobrir o que era.
+   */
+  const [ocorrenciaAberta, setOcorrenciaAberta] = useState<PubObservacaoPontual | null>(null);
 
   // Mapa de fundo, lido já na inicialização do estado. Dá para fazer
   // isso aqui porque a página carrega este componente com ssr: false —
@@ -116,6 +131,9 @@ export function MapaPublico() {
     indicadoresGerais: mockIndicadoresGerais,
     protocolos: PROTOCOLOS_INICIAIS,
     pontuais: mockPontuais,
+    // A demonstração não tem foto: elas exigem curadoria e termo de
+    // imagem, que só existem com escola de verdade.
+    fotos: [],
     origem: "mock",
     erro: null,
   });
@@ -169,6 +187,7 @@ export function MapaPublico() {
     (campo: keyof FiltrosState, valor: string) => {
       setFiltros((prev) => ({ ...prev, [campo]: valor }));
       setPopupInfo(null);
+      setOcorrenciaAberta(null);
     },
     []
   );
@@ -246,6 +265,13 @@ export function MapaPublico() {
 
   const escalaPadrao = useMemo(() => escalaDe(PROTOCOLO_PADRAO), []);
 
+  /** A foto de cada ocorrência, por identidade da ocorrência. */
+  const fotoPorOcorrencia = useMemo(() => {
+    const mapa = new Map<number, PubFotoGeorreferenciada>();
+    for (const f of dados.fotos) mapa.set(f.pontual_id, f);
+    return mapa;
+  }, [dados.fotos]);
+
   /** Ocorrências agrupadas por proximidade, no zoom atual. */
   const gruposDeOcorrencia = useMemo(
     () => agruparPorProximidade(pontuaisFiltrados, (o) => pontoDe(o.ponto_geojson), zoom),
@@ -291,6 +317,11 @@ export function MapaPublico() {
     const xy = pontoDe(o.ponto_geojson);
     if (!xy) return;
     mapRef.current?.easeTo({ center: xy, zoom: Math.max(mapRef.current.getZoom() ?? 16, 17) });
+    // Abre o cartão junto: quem escolheu o item na lista já disse o que
+    // quer ver, e obrigar a achar o pino e clicar de novo seria pedir o
+    // mesmo duas vezes.
+    setPopupInfo(null);
+    setOcorrenciaAberta(o);
   }, []);
 
   // ── GeoJSON para as células ────────────────────────────────────
@@ -527,9 +558,14 @@ export function MapaPublico() {
               longitude={grupo.lng}
               anchor="bottom"
               style={{ zIndex: 1 }}
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setPopupInfo(null);
+                setOcorrenciaAberta(o);
+              }}
             >
               <div
-                className="group relative flex flex-col items-center"
+                className="group relative flex flex-col items-center cursor-pointer"
                 title={`${o.item_nome ?? o.descricao}${magnitude ? ` — ${magnitude}` : ""} · ${o.escola_nome}`}
               >
                 {/* O glifo do item; sem ele, o do protocolo. A cauda da
@@ -584,6 +620,30 @@ export function MapaPublico() {
               </Link>
             </Marker>
           ))}
+
+        {/* Cartão da ocorrência: foto primeiro, quando há */}
+        {ocorrenciaAberta &&
+          (() => {
+            const xy = pontoDe(ocorrenciaAberta.ponto_geojson);
+            if (!xy) return null;
+            return (
+              <Popup
+                latitude={xy[1]}
+                longitude={xy[0]}
+                anchor="bottom"
+                onClose={() => setOcorrenciaAberta(null)}
+                closeButton
+                closeOnClick={false}
+                maxWidth="270px"
+              >
+                <PopupOcorrencia
+                  ocorrencia={ocorrenciaAberta}
+                  foto={fotoPorOcorrencia.get(ocorrenciaAberta.id)}
+                  comLinkParaEscola
+                />
+              </Popup>
+            );
+          })()}
 
         {/* Popup da célula */}
         {popupInfo && (

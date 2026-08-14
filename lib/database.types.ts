@@ -93,9 +93,12 @@ export interface PubExpedicao {
   percurso_geojson: string | null;
 }
 
-/** Foto de ocorrência, com posição. */
+/** Foto de ocorrência, na coordenada exata da ocorrência que documenta. */
 export interface PubFotoGeorreferenciada {
   id: number;
+  /** A ocorrência documentada. Ligue por aqui, nunca pela coordenada em
+   *  texto: as duas views já divergiram uma vez, e ninguém percebeu. */
+  pontual_id: number;
   storage_path: string;
   legenda: string | null;
   publicada_em: string | null;

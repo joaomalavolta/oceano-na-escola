@@ -17,6 +17,7 @@ import type {
   PubIndicadorEscola,
   PubProtocolo,
   PubObservacaoPontual,
+  PubFotoGeorreferenciada,
   IndicadoresGerais,
 } from "./database.types";
 import {
@@ -38,6 +39,15 @@ export interface DadosPublicos {
   protocolos: PubProtocolo[];
   /** Ocorrências ambientais, desenhadas como pin. */
   pontuais: PubObservacaoPontual[];
+  /**
+   * Fotos publicadas de ocorrência, para o popup do pin.
+   *
+   * São bem menos que as ocorrências: a foto exige curadoria do
+   * professor, escola publicada e termo de imagem confirmado. Vêm junto
+   * na carga inicial mesmo assim porque o conjunto é pequeno e porque
+   * buscar no clique deixaria o popup abrir vazio e preencher depois.
+   */
+  fotos: PubFotoGeorreferenciada[];
   origem: OrigemDados;
   /** Preenchido quando houve tentativa de ler o banco e ela falhou. */
   erro: string | null;
@@ -140,6 +150,9 @@ const DADOS_MOCK: DadosPublicos = {
   indicadoresGerais: mockIndicadoresGerais,
   protocolos: PROTOCOLOS_INICIAIS,
   pontuais: mockPontuais,
+  // A demonstração não tem foto: elas exigem curadoria e termo de
+  // imagem, que só existem com escola de verdade.
+  fotos: [],
   origem: "mock",
   erro: null,
 };
@@ -148,14 +161,19 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
   if (!supabaseConfigurado) return DADOS_MOCK;
 
   try {
-    const [escolasRes, gradeRes, indicadoresRes, protocolosRes, pontuaisRes] = await Promise.all([
+    const [escolasRes, gradeRes, indicadoresRes, protocolosRes, pontuaisRes, fotosRes] =
+      await Promise.all([
       supabase.from("pub_escola").select("*").order("nome"),
       supabase.from("pub_observacao_grade").select("*"),
       supabase.from("pub_indicador_escola").select("*"),
       supabase.from("pub_protocolo").select("*").order("codigo"),
       supabase.from("pub_observacao_pontual").select("*"),
+      supabase.from("pub_foto_georreferenciada").select("*"),
     ]);
 
+    // A foto fica de fora desta soma de propósito: o mapa sem foto é o
+    // mapa de sempre, e derrubar tudo para o mock por causa dela seria
+    // trocar dado real por fictício por causa de um detalhe.
     const falha =
       escolasRes.error ?? gradeRes.error ?? indicadoresRes.error ??
       protocolosRes.error ?? pontuaisRes.error;
@@ -225,6 +243,28 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       ponto_geojson: String(o.ponto_geojson),
     }));
 
+    const fotos: PubFotoGeorreferenciada[] = (fotosRes.data ?? []).map((f) => ({
+      id: num(f.id),
+      pontual_id: num(f.pontual_id),
+      storage_path: String(f.storage_path),
+      legenda: f.legenda ?? null,
+      publicada_em: f.publicada_em ?? null,
+      escola_slug: String(f.escola_slug),
+      escola_nome: String(f.escola_nome),
+      protocolo: String(f.protocolo),
+      protocolo_icone: f.protocolo_icone ?? null,
+      protocolo_cor: f.protocolo_cor ?? null,
+      item_nome: null,
+      item_icone: null,
+      item_unidade: null,
+      valor: null,
+      ocorrencia: String(f.ocorrencia),
+      origem_provavel: f.origem_provavel ?? null,
+      expedicao_numero: num(f.expedicao_numero),
+      data_campo: String(f.mes),
+      ponto_geojson: String(f.ponto_geojson),
+    }));
+
     // Banco alcançável mas ainda sem piloto publicado: o mock é a
     // demonstração, e uma tela vazia não diria isso a ninguém.
     if (escolas.length === 0) return DADOS_MOCK;
@@ -236,6 +276,7 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       indicadoresGerais: agregarGerais(escolas, grade, indicadoresEscola),
       protocolos: protocolos.length > 0 ? protocolos : PROTOCOLOS_INICIAIS,
       pontuais,
+      fotos,
       origem: "supabase",
       erro: null,
     };

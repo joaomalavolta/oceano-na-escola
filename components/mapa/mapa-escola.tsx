@@ -15,6 +15,7 @@ import MapGL, {
 import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
+import { PopupOcorrencia } from "./popup-ocorrencia";
 import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
 import { ESTILO_SEM_FUNDO, fundoPorId, fundoSalvo, salvaFundo } from "@/lib/mapa-base";
 
@@ -23,7 +24,6 @@ import type {
   PubObservacaoPontual,
   PubFotoGeorreferenciada,
 } from "@/lib/database.types";
-import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 
 interface MapaEscolaProps {
   escola: PubEscola;
@@ -43,11 +43,18 @@ const ZOOM_INICIAL = 14;
 export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
   const [aberta, setAberta] = useState<PubObservacaoPontual | null>(null);
 
-  // Foto da ocorrência, quando existe, indexada pela posição — é o que
-  // amarra o pin à imagem que o documenta.
-  const fotoPorPonto = useMemo(() => {
-    const mapa = new Map<string, PubFotoGeorreferenciada>();
-    for (const f of fotos) mapa.set(f.ponto_geojson, f);
+  /**
+   * A foto da ocorrência, indexada pela ocorrência que ela documenta.
+   *
+   * Era indexada pela coordenada em texto, e não casava nunca: a view da
+   * foto arredondava a posição em 100 m enquanto a da ocorrência dava a
+   * exata — de 21 a 42 metros de diferença nos dados do piloto. O popup
+   * tinha suporte a foto que jamais podia disparar. Por identidade, não
+   * há formatação de float no meio.
+   */
+  const fotoPorOcorrencia = useMemo(() => {
+    const mapa = new Map<number, PubFotoGeorreferenciada>();
+    for (const f of fotos) mapa.set(f.pontual_id, f);
     return mapa;
   }, [fotos]);
 
@@ -75,7 +82,7 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
   );
 
   const abertaXY = aberta ? coordenadas(aberta.ponto_geojson) : null;
-  const fotoAberta = aberta ? fotoPorPonto.get(aberta.ponto_geojson) : undefined;
+  const fotoAberta = aberta ? fotoPorOcorrencia.get(aberta.id) : undefined;
 
   return (
     <div className="relative w-full h-full">
@@ -180,35 +187,9 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
             onClose={() => setAberta(null)}
             closeButton
             closeOnClick={false}
-            maxWidth="260px"
+            maxWidth="270px"
           >
-            <div className="space-y-1.5 p-0.5">
-              {fotoAberta && (
-                <FotoEvidencia
-                  storagePath={fotoAberta.storage_path}
-                  alt={fotoAberta.legenda ?? aberta.descricao}
-                  className="w-full h-28 object-cover rounded-sm"
-                />
-              )}
-              <p className="text-xs font-bold text-foreground">
-                {aberta.item_nome ?? aberta.descricao}
-              </p>
-              {aberta.valor !== null && aberta.item_unidade && (
-                <p className="text-xs tabular-nums text-accent font-semibold">
-                  {aberta.valor.toLocaleString("pt-BR")} {aberta.item_unidade}
-                </p>
-              )}
-              <p className="text-[11px] text-muted-foreground">{aberta.protocolo_nome}</p>
-              {aberta.origem_provavel && (
-                <p className="text-[11px] text-muted-foreground">
-                  Origem provável: {aberta.origem_provavel}
-                </p>
-              )}
-              <p className="text-[10px] text-muted-foreground">
-                Expedição #{aberta.expedicao_numero} ·{" "}
-                {new Date(aberta.data_campo + "T00:00:00").toLocaleDateString("pt-BR")}
-              </p>
-            </div>
+            <PopupOcorrencia ocorrencia={aberta} foto={fotoAberta} />
           </Popup>
         )}
       </MapGL>

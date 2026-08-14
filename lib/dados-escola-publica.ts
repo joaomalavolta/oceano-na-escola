@@ -135,6 +135,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
 
     const fotos: PubFotoGeorreferenciada[] = (fotosRes.data ?? []).map((f) => ({
       id: num(f.id),
+      pontual_id: num(f.pontual_id),
       storage_path: String(f.storage_path),
       legenda: f.legenda ?? null,
       publicada_em: f.publicada_em ?? null,
