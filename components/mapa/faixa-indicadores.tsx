@@ -18,17 +18,27 @@ const INDICADORES = [
 export function FaixaIndicadores({ dados }: FaixaIndicadoresProps) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 px-4 pb-18 md:pb-4 pointer-events-none">
-      <div className="pointer-events-auto bg-glass-bg backdrop-blur-xl border border-glass-border rounded-sm shadow-lg">
+      {/* Rótulos a 85% e não a 70%: a faixa é translúcida, o mapa
+          clareia o azul por baixo dela, e a 70% eles mediam 4,43 —
+          logo abaixo do mínimo de 4,5. O número escapa da regra por
+          outro caminho: a 20 px em negrito ele conta como texto
+          grande, onde 3:1 basta, e o âmbar dá 3,55.
+
+          Azul da marca, e não mais vidro creme. A faixa fecha o mapa
+          por baixo como a barra o fecha por cima: as duas viraram a
+          moldura do território, e o creme era a única superfície da
+          tela que não pertencia a lugar nenhum. */}
+      <div className="pointer-events-auto bg-marca/95 backdrop-blur-xl border-t-2 border-marca-forte rounded-sm shadow-lg">
         {/* Desktop: row */}
         <div className="hidden md:flex items-center justify-around px-4 py-2.5">
           {INDICADORES.map(({ chave, label, Icon }) => (
             <div key={chave} className="flex items-center gap-2">
-              <Icon size={16} className="text-muted-foreground shrink-0" />
+              <Icon size={16} className="text-white/85 shrink-0" />
               <div className="flex flex-col">
-                <span className="text-lg font-bold tabular-nums text-acento-texto">
+                <span className="text-xl font-bold tabular-nums text-accent">
                   {dados[chave].toLocaleString("pt-BR")}
                 </span>
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="text-[11px] uppercase tracking-wider text-white/85">
                   {label}
                 </span>
               </div>
@@ -43,12 +53,12 @@ export function FaixaIndicadores({ dados }: FaixaIndicadoresProps) {
               key={chave}
               className="flex-none min-w-[120px] snap-start flex items-center gap-2 px-2"
             >
-              <Icon size={14} className="text-muted-foreground shrink-0" />
+              <Icon size={14} className="text-white/85 shrink-0" />
               <div className="flex flex-col">
-                <span className="text-base font-bold tabular-nums text-acento-texto">
+                <span className="text-xl font-bold tabular-nums text-accent">
                   {dados[chave].toLocaleString("pt-BR")}
                 </span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+                <span className="text-[10px] uppercase tracking-wider text-white/85 whitespace-nowrap">
                   {label}
                 </span>
               </div>

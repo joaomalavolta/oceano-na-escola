@@ -137,7 +137,13 @@ export function BarraNavegacao({ flutuante = false }: Props) {
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white/80 hover:text-white border border-white/30 rounded-sm hover:bg-white/10 transition-colors"
+                /* Branco cheio, e preenchimento leve em vez de contorno
+                   fraco. O contorno a 30% dava 1,8:1 contra a faixa —
+                   invisível — e o texto a 80% dava 4,39, abaixo do
+                   mínimo. Contraintuitivo: engrossar o preenchimento
+                   piora, porque ele clareia o fundo sob a própria letra;
+                   a 18% já cai para 4,17. A 12% fica em 4,73. */
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white bg-white/12 hover:bg-white/20 border border-white/25 rounded-sm transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5 shrink-0" />
                 <span>Sair</span>
