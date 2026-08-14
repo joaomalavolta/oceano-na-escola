@@ -34,10 +34,23 @@ export interface ProtocoloCamada {
   forma_agregacao: string;
 }
 
+/**
+ * Não há filtro de protocolo aqui, e a ausência é deliberada.
+ *
+ * Havia, e ele duplicava o liga-desliga das camadas: os dois recortam
+ * os mesmos dados em memória, e escolher um protocolo no filtro é o
+ * mesmo que desligar as camadas dos outros. Pior, os dois podiam se
+ * contradizer — filtrar por RES com a camada RES desligada mostrava
+ * mapa vazio, e nenhum dos dois controles explicava por quê.
+ *
+ * E ele desfazia o propósito dos números ao lado de cada camada, que
+ * existem justamente para contar o que está desligado: filtrando por
+ * um protocolo, todos os outros zeravam, e o número parava de servir
+ * para decidir se vale a pena ligar a camada.
+ */
 export interface FiltrosState {
   municipio: string;
   escola: string;
-  protocolo: string;
   mesInicio: string;
   mesFim: string;
 }
@@ -90,7 +103,6 @@ export function PainelCamadas({
   const ativos = [
     filtros.municipio,
     filtros.escola,
-    filtros.protocolo,
     filtros.mesInicio,
     filtros.mesFim,
   ].filter((v) => v !== "").length;
@@ -98,7 +110,6 @@ export function PainelCamadas({
   const limparFiltros = () => {
     onChangeFiltro("municipio", "");
     onChangeFiltro("escola", "");
-    onChangeFiltro("protocolo", "");
     onChangeFiltro("mesInicio", "");
     onChangeFiltro("mesFim", "");
   };
@@ -156,15 +167,16 @@ export function PainelCamadas({
           </div>
 
           <AreaRolavel
-            className={`max-h-[calc(100vh-12rem)] px-3 py-2 space-y-3 ${
+            className={`max-h-[calc(100vh-11.5rem)] px-3 py-2 space-y-3 ${
               aba === "camadas" ? "" : "hidden"
             }`}
           >
-          {/* ── CAMADAS ────────────────────────── */}
+          {/* ── CAMADAS ──────────────────────────
+
+              Sem título de seção: a aba logo acima já diz "Camadas", e
+              repetir a palavra duas vezes em vinte pixels custava uma
+              linha de altura que faltava embaixo. */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
-              Camadas
-            </h3>
             <div className="space-y-0.5">
               {protocolos.map((p) => {
                 const ligada = camadas.protocolos[p.codigo] ?? false;
@@ -336,24 +348,14 @@ export function PainelCamadas({
                 </select>
               </div>
 
-              {/* Protocolo */}
-              <div>
-                <label className="text-[11px] text-muted-foreground">Protocolo</label>
-                <select
-                  value={filtros.protocolo}
-                  onChange={(e) => onChangeFiltro("protocolo", e.target.value)}
-                  className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
-                >
-                  <option value="">Todos</option>
-                  {protocolos.map((p) => (
-                    <option key={p.codigo} value={p.codigo}>
-                      {p.codigo} — {p.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Não há filtro de protocolo: quem faz esse recorte são
+                  os liga-desliga acima, que já estão à mão e mostram
+                  quantas feições cada um traz. */}
 
-              {/* Período */}
+              {/* Período. "De" e "Até" ficam lado a lado dentro da
+                  grade, então os dois rótulos dividem uma linha só —
+                  juntá-los sob um "Período" não economizaria altura
+                  nenhuma, e custaria a clareza de dizer qual é qual. */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[11px] text-muted-foreground">De</label>
@@ -379,7 +381,7 @@ export function PainelCamadas({
           </AreaRolavel>
 
           <AreaRolavel
-            className={`max-h-[calc(100vh-12rem)] px-2 py-2 ${aba === "lista" ? "" : "hidden"}`}
+            className={`max-h-[calc(100vh-11.5rem)] px-2 py-2 ${aba === "lista" ? "" : "hidden"}`}
           >
             <p className="text-[11px] text-muted-foreground px-2 pb-2">
               Ocorrências dentro do enquadramento. Mova o mapa para mudar a lista.

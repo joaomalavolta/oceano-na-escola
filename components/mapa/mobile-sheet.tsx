@@ -250,21 +250,10 @@ export function MobileSheet({
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Protocolo</label>
-                  <select
-                    value={filtros.protocolo}
-                    onChange={(e) => onChangeFiltro("protocolo", e.target.value)}
-                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
-                  >
-                    <option value="">Todos</option>
-                    {protocolos.map((p) => (
-                      <option key={p.codigo} value={p.codigo}>
-                        {p.codigo} — {p.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Sem filtro de protocolo, pela mesma razão do painel
+                    do desktop: os liga-desliga acima já fazem esse
+                    recorte, e ter os dois deixava o mapa vazio sem que
+                    nenhum dos controles explicasse por quê. */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-muted-foreground">De</label>

@@ -168,7 +168,6 @@ export function MapaPublico() {
   const [filtros, setFiltros] = useState<FiltrosState>({
     municipio: "",
     escola: "",
-    protocolo: "",
     mesInicio: "",
     mesFim: "",
   });
@@ -211,7 +210,6 @@ export function MapaPublico() {
     return dados.grade.filter((g) => {
       if (filtros.municipio && municipioDaEscola(g.escola_slug) !== filtros.municipio) return false;
       if (filtros.escola && g.escola_slug !== filtros.escola) return false;
-      if (filtros.protocolo && g.protocolo !== filtros.protocolo) return false;
       if (filtros.mesInicio && g.mes < filtros.mesInicio) return false;
       if (filtros.mesFim && g.mes > filtros.mesFim + "-31") return false;
       return true;
@@ -222,7 +220,6 @@ export function MapaPublico() {
     return dados.pontuais.filter((o) => {
       if (filtros.municipio && municipioDaEscola(o.escola_slug) !== filtros.municipio) return false;
       if (filtros.escola && o.escola_slug !== filtros.escola) return false;
-      if (filtros.protocolo && o.protocolo !== filtros.protocolo) return false;
       if (filtros.mesInicio && o.data_campo < filtros.mesInicio + "-01") return false;
       if (filtros.mesFim && o.data_campo > filtros.mesFim + "-31") return false;
       return true;
@@ -448,7 +445,7 @@ export function MapaPublico() {
 
   // Verifica se filtro ativo não tem resultados
   const filtroAtivo =
-    filtros.municipio || filtros.escola || filtros.protocolo || filtros.mesInicio || filtros.mesFim;
+    filtros.municipio || filtros.escola || filtros.mesInicio || filtros.mesFim;
   const semResultado = filtroAtivo && gradeFiltrada.length === 0;
 
   return (
@@ -768,7 +765,6 @@ export function MapaPublico() {
                 setFiltros({
                   municipio: "",
                   escola: "",
-                  protocolo: "",
                   mesInicio: "",
                   mesFim: "",
                 })
