@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -21,6 +21,8 @@ import { IconeBadge } from "@/components/mapa/icones";
 import {
   listarExpedicoesAbertas,
   listarProtocolosDeCampo,
+  guardarCatalogo,
+  catalogoGuardado,
   reduzirFoto,
   enviarRegistro,
   type ExpedicaoAberta,
@@ -71,21 +73,124 @@ function CampoConteudo() {
     null
   );
 
+  /**
+   * De quando é a lista na tela, quando ela veio do aparelho e não do
+   * banco. `null` significa que veio do banco agora.
+   */
+  const [catalogoDe, setCatalogoDe] = useState<string | null>(null);
+  /** Nem rede nem cópia local: não há como montar o formulário. */
+  const [semCatalogo, setSemCatalogo] = useState(false);
+
+  /** Trava contra duas descargas ao mesmo tempo, que duplicariam envio. */
+  const descarregando = useRef(false);
+
+  const reenviarPendentes = useCallback(async (automatico = false) => {
+    if (descarregando.current) return;
+    const fila = await listarPendentes();
+    // No automático, silêncio quando não há nada: o aviso serviria só
+    // para dizer que zero registros foram enviados.
+    if (fila.length === 0 && automatico) return;
+
+    descarregando.current = true;
+    setReenviando(true);
+    if (!automatico) setMensagem(null);
+
+    let enviados = 0;
+    let recusados = 0;
+    for (const p of fila) {
+      const { erro } = await enviarRegistro(p.registro, p.foto);
+      if (erro) {
+        // Rede caindo de novo: parar e tentar tudo mais tarde, na ordem.
+        if (pareceRede(erro)) break;
+        // Recusa do banco — a expedição já foi enviada, por exemplo, o
+        // que fica provável agora que dá para registrar com a lista
+        // guardada de dias atrás. Segue para o próximo em vez de parar:
+        // um registro impossível não pode prender os outros vinte na
+        // fila para sempre, como prendia.
+        recusados += 1;
+        continue;
+      }
+      await removerPendente(p.id);
+      enviados += 1;
+    }
+
+    const restam = await listarPendentes();
+    setPendentes(restam);
+    setReenviando(false);
+    descarregando.current = false;
+
+    if (automatico && enviados === 0 && recusados === 0) return;
+    if (recusados > 0) {
+      setMensagem({
+        tipo: "erro",
+        texto: `${enviados} enviado(s). ${recusados} recusado(s) pelo sistema — confira se a expedição ainda está aberta.`,
+      });
+      return;
+    }
+    setMensagem(
+      restam.length === 0
+        ? { tipo: "ok", texto: `${enviados} registro(s) pendente(s) enviados.` }
+        : { tipo: "erro", texto: `${enviados} enviado(s); ${restam.length} ainda na fila.` }
+    );
+  }, []);
+
+  /**
+   * O sinal voltou: a fila esvazia sozinha.
+   *
+   * Antes isso dependia de o professor voltar a esta página e apertar o
+   * botão. Numa saída com vinte registros offline, é a diferença entre
+   * o dado chegar ao banco e ficar parado no aparelho até alguém
+   * lembrar — e quem esteve na praia o dia inteiro não lembra.
+   */
+  useEffect(() => {
+    const aoVoltarARede = () => {
+      void reenviarPendentes(true);
+    };
+    window.addEventListener("online", aoVoltarARede);
+    return () => window.removeEventListener("online", aoVoltarARede);
+  }, [reenviarPendentes]);
+
   useEffect(() => {
     let ativo = true;
     Promise.all([listarExpedicoesAbertas(), listarProtocolosDeCampo(), listarPendentes()]).then(
       ([exps, protos, fila]) => {
         if (!ativo) return;
-        setExpedicoes(exps);
-        setProtocolos(protos);
         setPendentes(fila);
-        if (exps.length === 1) setExpedicaoId(exps[0].id);
+
+        // O aparelho pode ter reconectado com o app fechado, e aí o
+        // evento `online` aconteceu sem ninguém para ouvir. Esta é a
+        // segunda chance da fila.
+        if (fila.length > 0 && navigator.onLine) void reenviarPendentes(true);
+
+        // Veio do banco: vale, e fica guardado para a próxima ida a
+        // campo — inclusive uma sem sinal nenhum.
+        if (exps && protos) {
+          guardarCatalogo(exps, protos);
+          setExpedicoes(exps);
+          setProtocolos(protos);
+          if (exps.length === 1) setExpedicaoId(exps[0].id);
+          return;
+        }
+
+        // Não deu para perguntar. A cópia da última vez serve: o que
+        // importa é o formulário existir para o registro entrar na fila.
+        const memo = catalogoGuardado();
+        if (memo) {
+          setExpedicoes(memo.expedicoes);
+          setProtocolos(memo.protocolos);
+          setCatalogoDe(memo.em);
+          if (memo.expedicoes.length === 1) setExpedicaoId(memo.expedicoes[0].id);
+          return;
+        }
+
+        setExpedicoes([]);
+        setSemCatalogo(true);
       }
     );
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [reenviarPendentes]);
 
   const capturarGps = () => {
     if (!("geolocation" in navigator)) {
@@ -208,25 +313,6 @@ function CampoConteudo() {
     setMensagem({ tipo: "erro", texto: erro });
   };
 
-  const reenviarPendentes = async () => {
-    setReenviando(true);
-    setMensagem(null);
-    let enviados = 0;
-    for (const p of await listarPendentes()) {
-      const { erro } = await enviarRegistro(p.registro, p.foto);
-      if (erro) break;
-      await removerPendente(p.id);
-      enviados += 1;
-    }
-    const restam = await listarPendentes();
-    setPendentes(restam);
-    setReenviando(false);
-    setMensagem(
-      restam.length === 0
-        ? { tipo: "ok", texto: `${enviados} registro(s) pendente(s) enviados.` }
-        : { tipo: "erro", texto: `${enviados} enviado(s); ${restam.length} ainda na fila.` }
-    );
-  };
 
   if (expedicoes === null) {
     return (
@@ -257,7 +343,7 @@ function CampoConteudo() {
             {pendentes.length} registro(s) aguardando rede
           </p>
           <button
-            onClick={reenviarPendentes}
+            onClick={() => reenviarPendentes()}
             disabled={reenviando}
             className="w-full py-2 text-xs font-semibold uppercase tracking-wider bg-amber-600 text-white rounded-sm hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
           >
@@ -267,16 +353,47 @@ function CampoConteudo() {
         </div>
       )}
 
+      {/* Sem rede, mas com a cópia da última vez: dá para registrar, e o
+          que for registrado vai para a fila. */}
+      {catalogoDe && (
+        <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/40 bg-amber-500/10 text-xs">
+          <CloudUpload className="w-4 h-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" />
+          <p className="text-amber-800 dark:text-amber-300">
+            Sem conexão. Usando as expedições e protocolos guardados em{" "}
+            {new Date(catalogoDe).toLocaleDateString("pt-BR")}. Pode registrar normalmente
+            — tudo fica na fila e sobe quando o sinal voltar.
+          </p>
+        </div>
+      )}
+
+      {/* Nem rede nem cópia local: não há como montar o formulário. */}
+      {semCatalogo && (
+        <div className="flex items-start gap-2 p-3 rounded-md border border-destructive/40 bg-destructive/10 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-destructive" />
+          <p>
+            Não foi possível carregar as expedições, e este aparelho ainda não tem
+            uma cópia guardada. Abra esta página uma vez com internet — de
+            preferência na escola, antes da saída — e ela passa a funcionar sem sinal.
+          </p>
+        </div>
+      )}
+
       {/* 1. Expedição */}
       <section className="bg-card border border-border rounded-md p-4 space-y-2 shadow-2xs">
         <h2 className="text-xs font-bold uppercase tracking-wider text-primary">1 · Expedição</h2>
         {expedicoes.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Nenhuma expedição aberta.{" "}
-            <Link href="/expedicoes/nova" className="text-primary hover:underline">
-              Abra uma saída de campo
-            </Link>{" "}
-            antes de registrar.
+            {semCatalogo ? (
+              "Sem lista de expedições neste aparelho."
+            ) : (
+              <>
+                Nenhuma expedição aberta.{" "}
+                <Link href="/expedicoes/nova" className="text-primary hover:underline">
+                  Abra uma saída de campo
+                </Link>{" "}
+                antes de registrar.
+              </>
+            )}
           </p>
         ) : (
           <select

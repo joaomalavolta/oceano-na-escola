@@ -53,14 +53,22 @@ function primeiro<T>(v: T | T[] | null | undefined): T | null {
   return v ?? null;
 }
 
-/** Expedições em rascunho: são as que ainda recebem registro de campo. */
-export async function listarExpedicoesAbertas(): Promise<ExpedicaoAberta[]> {
+/**
+ * Expedições em rascunho: são as que ainda recebem registro de campo.
+ *
+ * Devolve `null` quando não deu para perguntar, e `[]` só quando a
+ * resposta veio e estava vazia. A diferença decide a tela: lista vazia é
+ * "abra uma saída antes"; falha é "estamos sem rede" — e antes as duas
+ * viravam a mesma coisa, o que fazia a página anunciar que não havia
+ * expedição nenhuma justamente quando ela não conseguia olhar.
+ */
+export async function listarExpedicoesAbertas(): Promise<ExpedicaoAberta[] | null> {
   const { data, error } = await supabase
     .from("expedicao")
     .select("id, numero, titulo, data_campo, escola_id, escola:escola_id (nome)")
     .eq("status", "rascunho")
     .order("data_campo", { ascending: false });
-  if (error) return [];
+  if (error) return null;
   return (data ?? []).map((x) => ({
     id: num(x.id),
     numero: num(x.numero),
@@ -78,14 +86,14 @@ export async function listarExpedicoesAbertas(): Promise<ExpedicaoAberta[]> {
  * área amostrada na ficha — um registro avulso sem esforço amostral
  * não vira densidade e só sujaria o dado.
  */
-export async function listarProtocolosDeCampo(): Promise<ProtocoloDeCampo[]> {
+export async function listarProtocolosDeCampo(): Promise<ProtocoloDeCampo[] | null> {
   const { data, error } = await supabase
     .from("protocolo_versao")
     .select(
       "id, ativa, metodo, protocolo:protocolo_id (codigo, nome, cor, icone, forma_agregacao), protocolo_item (id, codigo, nome, icone, unidade, ordem)"
     )
     .eq("ativa", true);
-  if (error) return [];
+  if (error) return null;
 
   type P = { codigo: string; nome: string; cor: string | null; icone: string | null; forma_agregacao: string };
   type I = { id: number; codigo: string; nome: string; icone: string | null; unidade: string | null; ordem: number };
@@ -114,6 +122,48 @@ export async function listarProtocolosDeCampo(): Promise<ProtocoloDeCampo[]> {
     })
     .filter((p): p is ProtocoloDeCampo => p !== null)
     .sort((a, b) => a.codigo.localeCompare(b.codigo));
+}
+
+/**
+ * O catálogo guardado no aparelho: expedições abertas e protocolos.
+ *
+ * Sem isto, o modo offline não existia de fato. A fila em IndexedDB
+ * guarda o que foi registrado, mas para registrar é preciso antes
+ * escolher expedição, protocolo e item — e essas listas vêm do banco.
+ * Sem rede, a página abria sem nenhuma delas e o formulário nem
+ * chegava a aparecer: a fila ficava inalcançável exatamente na praia,
+ * que é o lugar para o qual foi construída.
+ *
+ * Fica em localStorage, e não em IndexedDB como a fila: é texto pequeno
+ * e a fila só está lá porque precisa guardar a foto.
+ */
+const CHAVE_CATALOGO = "oceano.campo.catalogo";
+
+export interface CatalogoDeCampo {
+  expedicoes: ExpedicaoAberta[];
+  protocolos: ProtocoloDeCampo[];
+  /** Quando foi guardado, para a tela poder dizer de quando é a lista. */
+  em: string;
+}
+
+export function guardarCatalogo(expedicoes: ExpedicaoAberta[], protocolos: ProtocoloDeCampo[]): void {
+  try {
+    const c: CatalogoDeCampo = { expedicoes, protocolos, em: new Date().toISOString() };
+    window.localStorage.setItem(CHAVE_CATALOGO, JSON.stringify(c));
+  } catch {
+    // Cota cheia ou modo privado: seguir sem cache é pior, não fatal.
+  }
+}
+
+export function catalogoGuardado(): CatalogoDeCampo | null {
+  try {
+    const bruto = window.localStorage.getItem(CHAVE_CATALOGO);
+    if (!bruto) return null;
+    const c = JSON.parse(bruto) as CatalogoDeCampo;
+    return Array.isArray(c.expedicoes) && Array.isArray(c.protocolos) ? c : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
