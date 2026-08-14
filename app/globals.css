@@ -260,6 +260,62 @@
   mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent 100%);
 }
 
+/* ── Fichas de campo ─────────────────────────────────────────────────
+
+   Papel de verdade: a ficha vai para a prancheta de uma equipe na
+   praia, e depois para a mesa do professor. Duas coisas que a tela não
+   precisa e o papel exige — cada ficha começando numa folha nova, e
+   preto no branco em vez do tema do site.
+
+   Na tela a ficha aparece sobre um retângulo branco com sombra, para
+   quem está conferindo enxergar onde a folha termina antes de gastar
+   toner descobrindo. */
+.ficha-papel {
+  background: #fff;
+  color: #000;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.18);
+  padding: 14mm 12mm;
+  /* 210 mm menos as margens da impressora doméstica, que raramente
+     imprime até menos de 10 mm da borda. */
+  max-width: 190mm;
+  margin-inline: auto;
+}
+
+@media print {
+  .ficha-papel {
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
+    /* A folha da equipe 3 não pode começar no rodapé da folha da
+       equipe 2: cada ficha se separa na mesa e precisa ser inteira. */
+    break-after: page;
+  }
+  .ficha-papel:last-child {
+    break-after: auto;
+  }
+  .ficha-folha {
+    /* A impressora resolve a cor; o navegador só precisa não inventar
+       fundo. Fundo chapado aqui gastaria tinta que a escola paga. */
+    background: #fff;
+    color: #000;
+  }
+  /* Tabela de contagem partida ao meio perde o cabeçalho do grupo, e a
+     equipe passa a riscar na linha errada. */
+  table {
+    break-inside: auto;
+  }
+  tr,
+  th,
+  td {
+    break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
