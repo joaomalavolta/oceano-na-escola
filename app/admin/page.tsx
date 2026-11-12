@@ -15,6 +15,7 @@ import {
   Pencil,
   Plus,
   Send,
+  ShieldAlert,
   ShieldCheck,
   Trash2,
   UserX,
@@ -29,6 +30,7 @@ import { EstadoContainer } from "@/components/ui/estado-container";
 import { PedidosDeEntrada } from "@/components/admin/pedidos-de-entrada";
 import { useSessao } from "@/lib/sessao";
 import { listarPedidos, type PedidoDeEntrada } from "@/lib/pedidos";
+import { souSuper } from "@/lib/super";
 import {
   listarPerfisDaRede,
   listarEscolasAdministraveis,
@@ -67,6 +69,7 @@ function AdminConteudo() {
   const { session } = useSessao();
   const [perfis, setPerfis] = useState<PerfilDaRede[] | null>(null);
   const [pedidos, setPedidos] = useState<PedidoDeEntrada[]>([]);
+  const [eSuper, setESuper] = useState(false);
   // A remoção de conta pede confirmação na própria linha: apagar conta é
   // definitivo, e um clique só não pode bastar.
   const [removendo, setRemovendo] = useState<string | null>(null);
@@ -124,6 +127,7 @@ function AdminConteudo() {
       setConvites(cs);
       setPedidos(pe.pedidos);
     });
+    souSuper().then((s) => ativo && setESuper(s));
     return () => {
       ativo = false;
     };
@@ -217,6 +221,22 @@ function AdminConteudo() {
           banco recusa de quem não é, mesmo que a tela mostre os botões.
         </p>
       </header>
+
+      {/* A entrada da central só aparece para a super administração; o
+          banco confere de novo em cada exclusão grande. */}
+      {eSuper && (
+        <Link
+          href="/admin/conteudo"
+          className="flex items-center gap-3 p-3 rounded-md border border-destructive/30 bg-destructive/5 hover:bg-destructive/10 transition-colors"
+        >
+          <ShieldAlert className="w-5 h-5 text-destructive shrink-0" />
+          <span className="text-xs">
+            <strong className="block text-sm text-foreground">Central de conteúdo</strong>
+            Editar e excluir qualquer conteúdo da rede: escolas, pessoas, saídas, pinos, mural,
+            histórias e itens dos protocolos.
+          </span>
+        </Link>
+      )}
 
       {aviso && (
         <div

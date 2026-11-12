@@ -424,3 +424,26 @@ espécies.
 
 Antes de qualquer escola real entrar: revisão técnica dos métodos e das listas de itens dos
 protocolos de ocorrência por quem conhece a restinga e a avifauna de Itanhaém.
+
+### 5.4 Super administração *(12/11/2026)*
+
+A administração do Ecosurf já edita tudo pela regra de vínculo. O que não se fazia por ela era
+**excluir a escola inteira** e **remover conta com trabalho registrado** — e esse poder não vai para
+todo administrador: vai para quem tem `perfil.super_admin`.
+
+- **Quem é super não se escolhe pela plataforma.** A coluna não tem permissão de escrita e nenhuma
+  função a altera; marca-se direto no banco, pelo dono do projeto. Uma conta administradora
+  comprometida não se promove nem promove ninguém. O super é sempre também administrador, e o papel
+  dele não pode ser rebaixado por outro administrador.
+- **Central de conteúdo** (`/admin/conteudo`, só para o super): escolas, pessoas, saídas, pinos,
+  mural e histórias, e itens dos protocolos — para editar e excluir.
+- **Excluir é definitivo**, sem lixeira. Escola e pessoa pedem o nome digitado de novo.
+- **Escola excluída leva tudo**: turmas, saídas, ocorrências, contagens, fotos, mural, histórias,
+  coordenação, vínculos e convites.
+- **Pessoa excluída deixa o trabalho**, sem autor: toda coluna de autoria que aponta para ela é
+  anulada antes — procurada no catálogo do banco, para uma tabela nova com autoria não travar a
+  remoção. Não se remove a própria conta nem a de outro super.
+- **Fotos**: excluir no banco não apaga o arquivo. A tela pega a lista de arquivos, exclui no banco e,
+  confirmado, apaga os arquivos. Se o banco recusar, nenhuma foto some.
+- **Itens de protocolo**: renomear muda o nome em todos os registros já feitos — serve para corrigir,
+  não para mudar o sentido. Item já usado não se exclui.

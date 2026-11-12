@@ -354,6 +354,9 @@ const GLIFOS: Record<string, Tracos> = {
   ),
 };
 
+/** Os nomes de glifo que existem, para a tela que edita itens de protocolo. */
+export const GLIFOS_DISPONIVEIS: string[] = Object.keys(GLIFOS).sort();
+
 /** Item sem glifo próprio herda o do protocolo; sem nenhum, ponto pleno. */
 const GENERICO: Tracos = <circle cx="12" cy="12" r="5" fill="currentColor" stroke="none" />;
 
