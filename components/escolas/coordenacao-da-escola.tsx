@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -19,6 +19,8 @@ import {
   criarCoordenador,
   listarCoordenadores,
   moverCoordenador,
+  normalizarCoordenador,
+  problemasDoCoordenador,
   salvarCoordenador,
   tirarFotoDoCoordenador,
   trocarFotoDoCoordenador,
@@ -28,6 +30,11 @@ import {
 
 const campo =
   "w-full px-2.5 py-1.5 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring";
+
+/** O que conta para saber se há algo por gravar: os dados já normalizados. */
+function chaveDe(d: DadosDoCoordenador): string {
+  return JSON.stringify(normalizarCoordenador(d));
+}
 
 const NOVO: DadosDoCoordenador = {
   nome: "",
@@ -164,8 +171,81 @@ function CartaoCoordenador({
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
 
+  /*
+    Grava sozinho, sem botão.
+
+    Havia um "Guardar esta pessoa" dentro do cartão, e a foto, ao lado,
+    gravava na hora. Quem preenchia o contato e descia até o "Guardar
+    alterações" do fim da ficha — que é da escola, não da coordenação —
+    perdia o que tinha digitado: a foto ia ao ar, o contato não. Agora o
+    cartão grava um instante depois de a pessoa parar de digitar, e na
+    hora em que o foco sai dele.
+  */
+  const [gravacao, setGravacao] = useState<"guardado" | "pendente" | "salvando" | "erro">("guardado");
+  const [erroGravacao, setErroGravacao] = useState<string | null>(null);
+  const ultimoGuardado = useRef(chaveDe(d));
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A versão mais recente do formulário, para o `gravar` comparar depois
+  // de voltar do banco.
+  const dadosAtuais = useRef(d);
+
+  const gravar = useCallback(
+    async (dados: DadosDoCoordenador) => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+      const chave = chaveDe(dados);
+      if (chave === ultimoGuardado.current) {
+        setGravacao("guardado");
+        return;
+      }
+      const problemas = problemasDoCoordenador(normalizarCoordenador(dados));
+      if (problemas.length > 0) {
+        setGravacao("erro");
+        setErroGravacao(problemas.join(" "));
+        return;
+      }
+      setGravacao("salvando");
+      const { erro } = await salvarCoordenador(c.id, dados);
+      if (erro) {
+        setGravacao("erro");
+        setErroGravacao(erro);
+        return;
+      }
+      ultimoGuardado.current = chave;
+      setErroGravacao(null);
+      // Só confirma se ninguém digitou de novo enquanto gravava.
+      setGravacao(chaveDe(dadosAtuais.current) === chave ? "guardado" : "pendente");
+    },
+    [c.id]
+  );
+
+  useEffect(() => {
+    dadosAtuais.current = d;
+    if (chaveDe(d) === ultimoGuardado.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      gravar(d);
+    }, 900);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [d, gravar]);
+
+  // Fechar a aba com alteração ainda não gravada pede confirmação.
+  useEffect(() => {
+    const aviso = (e: BeforeUnloadEvent) => {
+      if (chaveDe(dadosAtuais.current) !== ultimoGuardado.current) e.preventDefault();
+    };
+    window.addEventListener("beforeunload", aviso);
+    return () => window.removeEventListener("beforeunload", aviso);
+  }, []);
+
   const alterar = <K extends keyof DadosDoCoordenador>(k: K, v: DadosDoCoordenador[K]) => {
     setD((p) => ({ ...p, [k]: v }));
+    setGravacao("pendente");
     setAviso(null);
   };
 
@@ -179,7 +259,14 @@ function CartaoCoordenador({
   };
 
   return (
-    <div className="border border-border rounded-sm p-3 space-y-2.5">
+    <div
+      className="border border-border rounded-sm p-3 space-y-2.5"
+      // Saiu do cartão — para o botão do fim da página, por exemplo —,
+      // grava na hora em vez de esperar o intervalo.
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) gravar(dadosAtuais.current);
+      }}
+    >
       <div className="flex gap-3">
         <div className="shrink-0 space-y-1 text-center">
           {c.foto_path ? (
@@ -288,15 +375,27 @@ function CartaoCoordenador({
       </label>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={ocupado}
-          onClick={() => executar(() => salvarCoordenador(c.id, d), "Guardado.")}
-          className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-sm hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
+        <span
+          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${
+            gravacao === "erro"
+              ? "text-destructive"
+              : gravacao === "guardado"
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-muted-foreground"
+          }`}
+          aria-live="polite"
         >
-          {ocupado && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          Guardar esta pessoa
-        </button>
+          {gravacao === "salvando" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          {gravacao === "guardado" && <CheckCircle2 className="w-3.5 h-3.5" />}
+          {gravacao === "erro" && <AlertTriangle className="w-3.5 h-3.5" />}
+          {gravacao === "salvando"
+            ? "Gravando…"
+            : gravacao === "pendente"
+              ? "Alterações por gravar…"
+              : gravacao === "erro"
+                ? `Não gravado: ${erroGravacao}`
+                : "Tudo gravado"}
+        </span>
         <button
           type="button"
           disabled={ocupado || primeiro}
