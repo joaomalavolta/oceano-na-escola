@@ -93,7 +93,7 @@ export function MapaDoTerritorio({ onCapturar, capturado }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="relative h-[380px] rounded-md overflow-hidden border border-border">
+      <div className="mapa-em-caixa relative h-[380px] rounded-md overflow-hidden border border-border">
         <MapGL
           ref={mapRef}
           initialViewState={CENTRO}

@@ -368,3 +368,15 @@ body {
 .maplibregl-ctrl-bottom-right {
   bottom: 5.5rem;
 }
+
+/* Os dois recuos acima são do mapa de tela cheia, que tem barra em cima
+   e faixa de indicadores embaixo. Mapa dentro de caixa não tem nenhuma
+   das duas, e herdando o recuo ficava com o zoom e o crédito boiando no
+   meio do quadro — num mapa de 300 px de altura, quase no centro. */
+.mapa-em-caixa .maplibregl-ctrl-top-right {
+  top: 0;
+}
+
+.mapa-em-caixa .maplibregl-ctrl-bottom-right {
+  bottom: 0;
+}

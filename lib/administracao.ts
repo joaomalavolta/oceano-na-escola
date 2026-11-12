@@ -18,6 +18,7 @@
 
 import { supabase } from "./supabase";
 import { tipoDe, type TipoOrganizacao } from "./organizacao";
+import { posicaoValida } from "./posicao";
 
 export type Papel =
   | "professor"
@@ -137,6 +138,16 @@ export async function salvarEscola(
   id: number,
   d: Omit<EscolaEditavel, "id" | "slug" | "tipo" | "publicada" | "situacao" | "motivo_recusa">
 ): Promise<{ erro: string | null }> {
+  // Meia coordenada, ou uma fora do globo, não vai ao banco. A primeira
+  // apagaria a posição em silêncio — e com ela a escola do mapa —, e a
+  // segunda voltaria como erro cru do PostGIS.
+  const temAlguma = d.lat !== null || d.lng !== null;
+  if (temAlguma && !posicaoValida(d.lat, d.lng)) {
+    return {
+      erro: "A posição no mapa está incompleta ou fora do intervalo. Marque o ponto no mapa, ou apague latitude e longitude para salvar sem posição.",
+    };
+  }
+
   const { error } = await supabase
     .from("escola")
     .update({

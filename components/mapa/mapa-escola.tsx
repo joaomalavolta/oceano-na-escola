@@ -85,7 +85,7 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
   const fotoAberta = aberta ? fotoPorOcorrencia.get(aberta.id) : undefined;
 
   return (
-    <div className="relative w-full h-full">
+    <div className="mapa-em-caixa relative w-full h-full">
       <MapGL
         ref={mapRef}
         initialViewState={{

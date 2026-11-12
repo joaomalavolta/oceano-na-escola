@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { School, Users, FileCheck2, Check, AlertTriangle, Plus, Trash2, Waves } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
@@ -21,8 +22,22 @@ import {
   esquecerTipo,
   type TipoOrganizacao,
 } from "@/lib/organizacao";
+import { lerCoordenada, posicaoValida } from "@/lib/posicao";
 
 const ANO_ATUAL = new Date().getFullYear();
+
+// MapLibre exige o DOM: o seletor entra sem SSR.
+const SeletorDePosicao = dynamic(
+  () => import("@/components/mapa/seletor-de-posicao").then((m) => m.SeletorDePosicao),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-72 sm:h-80 rounded-sm border border-input bg-muted/40 flex items-center justify-center text-xs text-muted-foreground">
+        Carregando o mapa…
+      </div>
+    ),
+  }
+);
 
 /** Fora do componente de propósito: definido dentro, seria um tipo novo
  *  a cada render, e o React remontaria o indicador a cada tecla. */
@@ -82,8 +97,12 @@ function OnboardingConteudo() {
   const [municipioId, setMunicipioId] = useState<number | "">("");
   const [redeEnsino, setRedeEnsino] = useState("Municipal");
   const [endereco, setEndereco] = useState("");
-  const [lat, setLat] = useState(-24.1875);
-  const [lng, setLng] = useState(-46.8015);
+  // Sem valor de partida. Os dois campos nasciam preenchidos com um
+  // ponto fixo, e quem não reparasse neles cadastrava a escola ali — a
+  // mesma coordenada para todas. Vazio, o lugar só existe quando alguém
+  // o marca no mapa.
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
   const [apresentacao, setApresentacao] = useState("");
 
   // Várias turmas desde o cadastro: uma expedição pode reunir mais de uma,
@@ -122,6 +141,7 @@ function OnboardingConteudo() {
     setTurmas((prev) => prev.map((t, j) => (j === i ? { ...t, [campo]: valor } : t)));
 
   const podeAvancar1 = nomeEscola.trim() !== "" && municipioId !== "";
+  const posicaoMarcada = posicaoValida(lat, lng);
 
   const handleFinalizar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,8 +164,10 @@ function OnboardingConteudo() {
       rede_ensino: v.temRedeDeEnsino ? redeEnsino : null,
       endereco: endereco.trim(),
       apresentacao: apresentacao.trim(),
-      lat,
-      lng,
+      // Par incompleto ou fora do globo vai como "sem posição": o banco
+      // recusaria um ponto inválido com o texto cru do PostGIS.
+      lat: posicaoMarcada ? lat : null,
+      lng: posicaoMarcada ? lng : null,
       termosOk,
       turmas,
     });
@@ -306,6 +328,21 @@ function OnboardingConteudo() {
               />
             </div>
 
+            <div>
+              <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                Onde fica
+              </span>
+              <SeletorDePosicao
+                lat={lat}
+                lng={lng}
+                tipo={tipo}
+                onMudar={(la, lo) => {
+                  setLat(la);
+                  setLng(lo);
+                }}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
@@ -313,9 +350,10 @@ function OnboardingConteudo() {
                 </label>
                 <input
                   type="number"
-                  step="0.0001"
-                  value={lat}
-                  onChange={(e) => setLat(Number(e.target.value))}
+                  step="0.000001"
+                  value={lat ?? ""}
+                  onChange={(e) => setLat(lerCoordenada(e.target.value))}
+                  placeholder="marque no mapa"
                   className="w-full px-3 py-2 text-sm tabular-nums bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
@@ -325,13 +363,28 @@ function OnboardingConteudo() {
                 </label>
                 <input
                   type="number"
-                  step="0.0001"
-                  value={lng}
-                  onChange={(e) => setLng(Number(e.target.value))}
+                  step="0.000001"
+                  value={lng ?? ""}
+                  onChange={(e) => setLng(lerCoordenada(e.target.value))}
+                  placeholder="marque no mapa"
                   className="w-full px-3 py-2 text-sm tabular-nums bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
             </div>
+
+            {/* Não trava o cadastro: quem está sem sinal ou não achou o
+                lugar segue adiante. Mas diz o preço, porque ele só
+                apareceria semanas depois, como um cadastro que não anda. */}
+            {!posicaoMarcada && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5 -mt-1">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>
+                  Sem a posição marcada, o Instituto Ecosurf não consegue aprovar o cadastro, e{" "}
+                  {v.aOrganizacao} não entra no mapa. Dá para marcar depois, na ficha d
+                  {v.aOrganizacao}.
+                </span>
+              </p>
+            )}
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">

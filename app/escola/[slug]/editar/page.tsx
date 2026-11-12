@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -24,6 +25,7 @@ import { EstadoContainer } from "@/components/ui/estado-container";
 import { listarMunicipios, type Municipio } from "@/lib/cadastro-escola";
 import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { vocabulario } from "@/lib/organizacao";
+import { ehPosicaoPadraoAntiga, lerCoordenada } from "@/lib/posicao";
 import { criarTurma } from "@/lib/cadastro-expedicao";
 import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
@@ -37,6 +39,19 @@ import {
   type EscolaEditavel,
   type TurmaEditavel,
 } from "@/lib/administracao";
+
+// MapLibre exige o DOM: o seletor entra sem SSR.
+const SeletorDePosicao = dynamic(
+  () => import("@/components/mapa/seletor-de-posicao").then((m) => m.SeletorDePosicao),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-72 sm:h-80 rounded-sm border border-input bg-muted/40 flex items-center justify-center text-xs text-muted-foreground">
+        Carregando o mapa…
+      </div>
+    ),
+  }
+);
 
 const rotulo = "block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1";
 const campo =
@@ -308,6 +323,27 @@ function EditarConteudo({ slug }: { slug: string }) {
           Posição no mapa
         </h2>
 
+        {/* O aviso vem antes do mapa: é ele que diz por que mexer no
+            pino. Escola parada exatamente no ponto que o cadastro antigo
+            preenchia sozinho quase certamente nunca teve a posição
+            marcada — e o pino no mapa, sozinho, pareceria estar certo. */}
+        {ehPosicaoPadraoAntiga(escola.lat, escola.lng) && (
+          <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            Esta é a posição que o cadastro preenchia sozinho, e não a d{v.aOrganizacao}. Arraste
+            o pino até o lugar certo e salve.
+          </p>
+        )}
+
+        <SeletorDePosicao
+          lat={escola.lat}
+          lng={escola.lng}
+          tipo={escola.tipo}
+          onMudar={(lat, lng) =>
+            setEscola((prev) => (prev ? { ...prev, lat, lng } : prev))
+          }
+        />
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={rotulo}>Latitude</label>
@@ -315,7 +351,7 @@ function EditarConteudo({ slug }: { slug: string }) {
               type="number"
               step="0.000001"
               value={escola.lat ?? ""}
-              onChange={(e) => alterar("lat", e.target.value === "" ? null : Number(e.target.value))}
+              onChange={(e) => alterar("lat", lerCoordenada(e.target.value))}
               placeholder="-24.1875"
               className={`${campo} tabular-nums`}
             />
@@ -326,7 +362,7 @@ function EditarConteudo({ slug }: { slug: string }) {
               type="number"
               step="0.000001"
               value={escola.lng ?? ""}
-              onChange={(e) => alterar("lng", e.target.value === "" ? null : Number(e.target.value))}
+              onChange={(e) => alterar("lng", lerCoordenada(e.target.value))}
               placeholder="-46.8015"
               className={`${campo} tabular-nums`}
             />
@@ -336,7 +372,7 @@ function EditarConteudo({ slug }: { slug: string }) {
         {semCoordenada && (
           <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            Sem coordenada, a escola não aparece no mapa público mesmo publicada.
+            Sem posição marcada, {v.aOrganizacao} não aparece no mapa público mesmo publicada.
           </p>
         )}
       </section>

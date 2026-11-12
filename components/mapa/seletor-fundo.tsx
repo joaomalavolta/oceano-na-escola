@@ -33,7 +33,10 @@ export function SeletorFundo({ atual, onEscolher, alinhamento = "direita" }: Pro
 
   return (
     <div className="relative">
+      {/* `type="button"` nos dois: este seletor também vive dentro do
+          formulário de cadastro, e botão sem tipo ali envia o formulário. */}
       <button
+        type="button"
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
         className="flex items-center gap-2 px-3 h-9 rounded-sm bg-glass-bg backdrop-blur-xl border border-glass-border shadow-sm text-xs font-semibold text-foreground hover:bg-secondary/60 transition-colors"
@@ -58,6 +61,7 @@ export function SeletorFundo({ atual, onEscolher, alinhamento = "direita" }: Pro
               return (
                 <button
                   key={m.id}
+                  type="button"
                   onClick={() => {
                     onEscolher(m.id);
                     setAberto(false);
