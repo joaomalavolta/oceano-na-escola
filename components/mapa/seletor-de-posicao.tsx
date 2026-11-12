@@ -217,7 +217,9 @@ export function SeletorDePosicao({ lat, lng, onMudar, tipo, pino, semBotaoDeLoca
         </div>
 
         {!temPosicao && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
+          // No alto, abaixo dos botões: embaixo ele cobria os créditos do
+          // mapa nas telas estreitas.
+          <div className="pointer-events-none absolute inset-x-0 top-14 flex justify-center px-3">
             <span className="inline-flex items-center gap-1.5 bg-glass-bg backdrop-blur-xl border border-glass-border rounded-sm shadow-sm px-3 py-1.5 text-xs font-medium">
               <MousePointerClick className="w-3.5 h-3.5 text-primary" />
               Toque no mapa para marcar onde fica

@@ -326,7 +326,10 @@ export async function carregarRevisao(
       const item = primeiro(
         o.item as { nome: string; unidade: string | null } | { nome: string; unidade: string | null }[]
       );
-      const evidencias = (o.evidencia ?? []) as EvidenciaEmbed[];
+      // Foto removida (pedido de remoção atendido) não conta: ela não
+      // volta, e contá-la como "aguardando curadoria" prometeria o
+      // contrário.
+      const evidencias = ((o.evidencia ?? []) as EvidenciaEmbed[]).filter((e) => e.status !== "removida");
       return {
         id: num(o.id),
         protocolo: p?.codigo ?? "—",

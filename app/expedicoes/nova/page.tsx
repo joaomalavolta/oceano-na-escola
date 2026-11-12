@@ -169,7 +169,7 @@ function NovaExpedicaoConteudo() {
     setSalvando(false);
 
     if (falha || !id) return setErro(falha ?? "Não foi possível abrir a expedição.");
-    router.push(`/expedicoes/${id}/transcrever`);
+    router.push(`/expedicoes/${id}`);
   };
 
   return (

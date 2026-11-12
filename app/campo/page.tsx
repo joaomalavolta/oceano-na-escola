@@ -8,9 +8,11 @@ import {
   Camera,
   CheckCircle2,
   CloudUpload,
+  Image as ImageIcon,
   Crosshair,
   Loader2,
   MapPin,
+  RotateCcw,
   Send,
   X,
 } from "lucide-react";
@@ -37,6 +39,24 @@ import {
   type RegistroDeCampo,
   type RegistroPendente,
 } from "@/lib/fila-campo";
+import { listarSaidasEncerradasRecentes, type SaidaEncerrada } from "@/lib/saida-de-campo";
+import { reabrirParaCorrecao } from "@/lib/revisao";
+import { NOME_DA_ETAPA } from "@/components/expedicoes/regua-de-etapas";
+import type { Etapa } from "@/lib/revisao";
+
+/** A saída pedida no endereço (`/campo?expedicao=20`), vinda da página da saída. */
+function saidaPedida(): number | null {
+  if (typeof window === "undefined") return null;
+  const n = Number(new URLSearchParams(window.location.search).get("expedicao"));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Qual saída já vem escolhida: a pedida, se estiver aberta; a única, se só houver uma. */
+function escolhaInicial(lista: ExpedicaoAberta[]): number | null {
+  const pedida = saidaPedida();
+  if (pedida !== null && lista.some((x) => x.id === pedida)) return pedida;
+  return lista.length === 1 ? lista[0].id : null;
+}
 
 interface Gps {
   lat: number;
@@ -81,6 +101,11 @@ function CampoConteudo() {
   const [pendentes, setPendentes] = useState<RegistroPendente[]>([]);
 
   const [expedicaoId, setExpedicaoId] = useState<number | null>(null);
+  // Saídas recentes já enviadas: o que a tela oferece reabrir quando não
+  // há saída aberta, em vez de só dizer "nenhuma expedição aberta".
+  const [encerradas, setEncerradas] = useState<SaidaEncerrada[]>([]);
+  const [reabrindo, setReabrindo] = useState<{ id: number; processando: boolean } | null>(null);
+  const [erroReabrir, setErroReabrir] = useState<string | null>(null);
   const [protocolo, setProtocolo] = useState<ProtocoloDeCampo | null>(null);
   const [itemId, setItemId] = useState<number | null>(null);
   const [valor, setValor] = useState("");
@@ -93,7 +118,11 @@ function CampoConteudo() {
   const [erroGps, setErroGps] = useState<string | null>(null);
 
   const [foto, setFoto] = useState<{ blob: Blob; url: string } | null>(null);
+  // Dois campos de arquivo: com `capture`, o Android abre só a câmera e
+  // não deixa escolher foto já tirada; sem ele, abre a galeria. O botão
+  // dizia "tirar ou escolher" e só fazia a primeira coisa.
   const fotoInputRef = useRef<HTMLInputElement>(null);
+  const galeriaInputRef = useRef<HTMLInputElement>(null);
 
   const [enviando, setEnviando] = useState(false);
   const [reenviando, setReenviando] = useState(false);
@@ -198,7 +227,11 @@ function CampoConteudo() {
           guardarCatalogo(exps, protos);
           setExpedicoes(exps);
           setProtocolos(protos);
-          if (exps.length === 1) setExpedicaoId(exps[0].id);
+          setExpedicaoId(escolhaInicial(exps));
+          const pedida = saidaPedida();
+          if (exps.length === 0 || (pedida !== null && !exps.some((x) => x.id === pedida))) {
+            void listarSaidasEncerradasRecentes().then((l) => ativo && setEncerradas(l));
+          }
           return;
         }
 
@@ -209,7 +242,7 @@ function CampoConteudo() {
           setExpedicoes(memo.expedicoes);
           setProtocolos(memo.protocolos);
           setCatalogoDe(memo.em);
-          if (memo.expedicoes.length === 1) setExpedicaoId(memo.expedicoes[0].id);
+          setExpedicaoId(escolhaInicial(memo.expedicoes));
           return;
         }
 
@@ -221,6 +254,31 @@ function CampoConteudo() {
       ativo = false;
     };
   }, [reenviarPendentes]);
+
+  /** Devolve a saída a rascunho e já a deixa escolhida para registrar. */
+  const reabrir = async (id: number) => {
+    setReabrindo({ id, processando: true });
+    setErroReabrir(null);
+    const { erro } = await reabrirParaCorrecao(id);
+    if (erro) {
+      setReabrindo(null);
+      setErroReabrir(erro);
+      return;
+    }
+    const [exps, protos, fechadas] = await Promise.all([
+      listarExpedicoesAbertas(),
+      listarProtocolosDeCampo(),
+      listarSaidasEncerradasRecentes(),
+    ]);
+    if (exps && protos) {
+      guardarCatalogo(exps, protos);
+      setExpedicoes(exps);
+      setProtocolos(protos);
+    }
+    setEncerradas(fechadas);
+    setExpedicaoId(id);
+    setReabrindo(null);
+  };
 
   const capturarGps = () => {
     if (!("geolocation" in navigator)) {
@@ -252,6 +310,9 @@ function CampoConteudo() {
 
   const escolherFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const arquivo = e.target.files?.[0];
+    // Limpa o campo: escolher a mesma foto de novo, depois de removê-la,
+    // não dispararia mudança nenhuma.
+    e.target.value = "";
     if (!arquivo) return;
     const blob = await reduzirFoto(arquivo);
     if (foto) URL.revokeObjectURL(foto.url);
@@ -325,7 +386,7 @@ function CampoConteudo() {
       setMensagem({
         tipo: "ok",
         texto: `Registro guardado na expedição #${x?.numero ?? ""}${x ? ` da ${x.escola_nome}` : ""}. Ele vai ao mapa e à linha do tempo quando a expedição for revisada e publicada; a foto, quando for publicada na galeria. Marque o próximo ponto.`,
-        link: { href: `/expedicoes/${registro.expedicaoId}/revisar`, rotulo: "Revisar esta expedição" },
+        link: { href: `/expedicoes/${registro.expedicaoId}`, rotulo: "Ver a saída" },
       });
       return;
     }
@@ -427,15 +488,74 @@ function CampoConteudo() {
               "Sem lista de expedições neste aparelho."
             ) : (
               <>
-                Nenhuma expedição aberta.{" "}
-                <Link href="/expedicoes/nova" className="text-primary hover:underline">
-                  Abra uma saída de campo
-                </Link>{" "}
-                antes de registrar.
+                Nenhuma saída aberta para registro.{" "}
+                {encerradas.length === 0 ? (
+                  <>
+                    <Link href="/expedicoes/nova" className="text-primary hover:underline">
+                      Abra uma saída de campo
+                    </Link>{" "}
+                    antes de registrar.
+                  </>
+                ) : (
+                  "O registro em campo só aceita saída aberta (em rascunho). Estas foram enviadas para revisão — se ainda falta registrar, reabra:"
+                )}
               </>
             )}
           </p>
-        ) : (
+        ) : null}
+
+        {/* Saídas já enviadas, com o caminho de volta. Aparece quando
+            não há saída aberta, ou quando a saída pedida no endereço já
+            foi enviada. */}
+        {encerradas.length > 0 && (
+          <ul className="space-y-2">
+            {encerradas.map((x) => (
+              <li key={x.id} className="border border-border rounded-sm p-2.5 text-xs space-y-1.5">
+                <p>
+                  <strong>#{x.numero}</strong> · {x.data_campo.split("-").reverse().join("/")} ·{" "}
+                  {x.titulo ?? "Sem título"} · {x.escola_nome}{" "}
+                  <span className="text-muted-foreground">
+                    ({NOME_DA_ETAPA[x.status as Etapa] ?? x.status})
+                  </span>
+                </p>
+                {reabrindo?.id === x.id && !reabrindo.processando ? (
+                  <div className="space-y-1.5">
+                    <p className="text-muted-foreground">
+                      A saída volta a rascunho e refaz as etapas da revisão
+                      {x.status === "validado" && "; a validação é desfeita"}. Reabrir?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setReabrindo(null)}
+                        className="px-3 py-1.5 font-semibold border border-border rounded-sm hover:bg-secondary"
+                      >
+                        Não
+                      </button>
+                      <button
+                        onClick={() => reabrir(x.id)}
+                        className="px-3 py-1.5 font-semibold bg-accent text-accent-foreground rounded-sm hover:opacity-90"
+                      >
+                        Reabrir e registrar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setReabrindo({ id: x.id, processando: false })}
+                    disabled={reabrindo?.processando}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 font-semibold border border-border rounded-sm hover:bg-secondary disabled:opacity-50"
+                  >
+                    {reabrindo?.id === x.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                    Reabrir para registrar
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {erroReabrir && <p className="text-xs text-destructive">{erroReabrir}</p>}
+
+        {expedicoes.length > 0 && (
           <select
             value={expedicaoId ?? ""}
             onChange={(e) => setExpedicaoId(e.target.value ? Number(e.target.value) : null)}
@@ -623,6 +743,7 @@ function CampoConteudo() {
           onChange={escolherFoto}
           className="hidden"
         />
+        <input ref={galeriaInputRef} type="file" accept="image/*" onChange={escolherFoto} className="hidden" />
         {foto ? (
           <div className="space-y-2">
             <div className="relative">
@@ -648,13 +769,22 @@ function CampoConteudo() {
             />
           </div>
         ) : (
-          <button
-            onClick={() => fotoInputRef.current?.click()}
-            className="w-full py-2.5 text-xs font-semibold uppercase tracking-wider border border-dashed border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-2"
-          >
-            <Camera className="w-4 h-4" />
-            Tirar ou escolher foto
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => fotoInputRef.current?.click()}
+              className="py-2.5 text-xs font-semibold uppercase tracking-wider border border-dashed border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-2"
+            >
+              <Camera className="w-4 h-4" />
+              Tirar foto
+            </button>
+            <button
+              onClick={() => galeriaInputRef.current?.click()}
+              className="py-2.5 text-xs font-semibold uppercase tracking-wider border border-dashed border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-2"
+            >
+              <ImageIcon className="w-4 h-4" />
+              Da galeria
+            </button>
+          </div>
         )}
       </section>
 

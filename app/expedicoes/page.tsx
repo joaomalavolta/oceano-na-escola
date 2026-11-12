@@ -218,11 +218,11 @@ function ExpedicoesConteudo() {
               <div className="flex items-center gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-border">
                 {emEdicao(exp) ? (
                   <Link
-                    href={`/expedicoes/${exp.id}/transcrever`}
+                    href={`/expedicoes/${exp.id}`}
                     className="w-full md:w-auto px-3 py-1.5 text-xs font-semibold bg-accent text-accent-foreground hover:opacity-90 rounded-sm transition-opacity flex items-center justify-center gap-1"
                   >
                     <FileEdit className="w-3.5 h-3.5" />
-                    <span>Transcrever</span>
+                    <span>Abrir a saída</span>
                   </Link>
                 ) : (
                   <Link

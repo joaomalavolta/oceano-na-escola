@@ -27,6 +27,10 @@ import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
+import { ReguaDeEtapas } from "@/components/expedicoes/regua-de-etapas";
+import { FotosNoMapa, DECLARACAO_DAS_FOTOS } from "@/components/expedicoes/fotos-no-mapa";
+import { situacaoDasFotos } from "@/lib/pino-com-foto";
+import { publicarFotosDaSaida } from "@/lib/saida-de-campo";
 import {
   carregarRevisao,
   moverStatus,
@@ -64,36 +68,6 @@ function numero(v: number, casas = 0): string {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
 }
 
-/** A régua das cinco etapas, com a atual em destaque. */
-function Regua({ status }: { status: string }) {
-  const atual = indiceDaEtapa(status);
-  return (
-    <ol className="flex items-center gap-1 overflow-x-auto pb-1">
-      {ETAPAS.map((etapa, i) => {
-        const passou = i <= atual;
-        return (
-          <li key={etapa} className="flex items-center gap-1 shrink-0">
-            <span
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-sm border ${
-                i === atual
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : passou
-                  ? "bg-primary/10 text-primary border-primary/30"
-                  : "bg-secondary text-muted-foreground border-border"
-              }`}
-            >
-              {ETAPA_ROTULO[etapa].nome}
-            </span>
-            {i < ETAPAS.length - 1 && (
-              <span className={`w-4 h-px ${passou ? "bg-primary/40" : "bg-border"}`} />
-            )}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
 function RevisarConteudo({ id }: { id: number }) {
   const router = useRouter();
   const [revisao, setRevisao] = useState<Revisao | null>(null);
@@ -104,6 +78,10 @@ function RevisarConteudo({ id }: { id: number }) {
   const [processando, setProcessando] = useState(false);
   const [confirmandoPublicacao, setConfirmandoPublicacao] = useState(false);
   const [confirmandoCorrecao, setConfirmandoCorrecao] = useState(false);
+  // Publicar as fotos da saída junto com ela. Desmarcado de início: é
+  // um ato de curadoria, e vem com a declaração de que as fotos foram
+  // conferidas.
+  const [fotosJunto, setFotosJunto] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: "erro" | "ok"; texto: string } | null>(null);
 
   useEffect(() => {
@@ -130,6 +108,17 @@ function RevisarConteudo({ id }: { id: number }) {
   const mover = async (destino: string) => {
     setProcessando(true);
     setAviso(null);
+    let fotosPublicadas = 0;
+    if (destino === "publicado" && fotosJunto) {
+      const r = await publicarFotosDaSaida(id);
+      if (r.erro) {
+        setProcessando(false);
+        setConfirmandoPublicacao(false);
+        setAviso({ tipo: "erro", texto: `As fotos não puderam ser publicadas, e a saída não foi publicada: ${r.erro}` });
+        return;
+      }
+      fotosPublicadas = r.publicadas;
+    }
     const { erro: falha } = await moverStatus(id, destino);
     if (falha) {
       setProcessando(false);
@@ -144,7 +133,9 @@ function RevisarConteudo({ id }: { id: number }) {
       tipo: "ok",
       texto:
         destino === "publicado"
-          ? "Expedição publicada. O que passou do piso de três unidades já está no mapa."
+          ? `Expedição publicada. O que passou do piso de três unidades já está no mapa.${
+              fotosPublicadas > 0 ? ` ${fotosPublicadas} foto(s) publicada(s) junto.` : ""
+            }`
           : `Expedição agora está em ${ETAPA_ROTULO[destino as Etapa]?.nome ?? destino}.`,
     });
   };
@@ -162,6 +153,17 @@ function RevisarConteudo({ id }: { id: number }) {
       return;
     }
     router.push(`/expedicoes/${id}/transcrever`);
+  };
+
+  const publicarFotos = async () => {
+    setAviso(null);
+    const r = await publicarFotosDaSaida(id);
+    await recarregar();
+    setAviso(
+      r.erro
+        ? { tipo: "erro", texto: r.erro }
+        : { tipo: "ok", texto: `${r.publicadas} foto(s) publicada(s). Os pinos já aparecem com foto no mapa.` }
+    );
   };
 
   const publicarAEscola = async () => {
@@ -204,6 +206,7 @@ function RevisarConteudo({ id }: { id: number }) {
   const anterior =
     indiceDaEtapa(cabecalho.status) > 0 ? ETAPAS[indiceDaEtapa(cabecalho.status) - 1] : null;
   const impedimentos = alertas.filter((a) => a.nivel === "impede");
+  const fotos = situacaoDasFotos(cabecalho.escola, ocorrencias);
 
   return (
     <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-5">
@@ -269,7 +272,7 @@ function RevisarConteudo({ id }: { id: number }) {
           </div>
         </div>
 
-        <Regua status={cabecalho.status} />
+        <ReguaDeEtapas status={cabecalho.status} />
       </div>
 
       {/* Alertas */}
@@ -566,6 +569,12 @@ function RevisarConteudo({ id }: { id: number }) {
         </section>
       )}
 
+      <FotosNoMapa
+        situacao={fotos}
+        saidaPublicada={cabecalho.status === "publicado"}
+        aoPublicarFotos={publicarFotos}
+      />
+
       {aviso && (
         <div
           className={`p-3 rounded-sm text-xs flex items-start gap-2 border ${
@@ -641,7 +650,9 @@ function RevisarConteudo({ id }: { id: number }) {
               className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider border border-border rounded-sm hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
-              {ETAPA_ROTULO[anterior].verbo}
+              {/* Voltar uma etapa, dito como volta: o verbo da etapa
+                  ("Marcar como revisada") soava como avançar. */}
+              {anterior === "rascunho" ? ETAPA_ROTULO.rascunho.verbo : `Voltar para ${ETAPA_ROTULO[anterior].nome}`}
             </button>
           )
         )}
@@ -686,6 +697,20 @@ function RevisarConteudo({ id }: { id: number }) {
                 Publicar torna este dado visível para qualquer visitante do mapa, sem login.
                 Confere?
               </p>
+              {fotos.fotosAguardando > 0 && fotos.bloqueios.length === 0 && (
+                <label className="flex items-start gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={fotosJunto}
+                    onChange={(e) => setFotosJunto(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Publicar também as {fotos.fotosAguardando} foto(s) de campo que aguardam
+                    curadoria (foto com pedido de remoção fica de fora). {DECLARACAO_DAS_FOTOS}
+                  </span>
+                </label>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmandoPublicacao(false)}

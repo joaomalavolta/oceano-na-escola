@@ -186,6 +186,8 @@ function TranscreverConteudo({ id }: { id: number }) {
     alvo?.select();
   };
 
+  const [confirmandoEnvio, setConfirmandoEnvio] = useState(false);
+
   const handleSalvar = async (enviar: boolean) => {
     if (!expedicao || !definicao) return;
     setSalvando(true);
@@ -203,7 +205,10 @@ function TranscreverConteudo({ id }: { id: number }) {
     if (enviar) {
       const { erro: erroEnvio } = await enviarParaRevisao(expedicao.id);
       setSalvando(false);
-      if (erroEnvio) return setMensagem({ tipo: "erro", texto: erroEnvio });
+      if (erroEnvio) {
+        setConfirmandoEnvio(false);
+        return setMensagem({ tipo: "erro", texto: erroEnvio });
+      }
       router.push(`/expedicoes/${expedicao.id}/revisar`);
       return;
     }
@@ -550,16 +555,53 @@ function TranscreverConteudo({ id }: { id: number }) {
                 <Save className="w-4 h-4" />
                 {salvando ? "Salvando…" : "Salvar rascunho"}
               </button>
+              {/* Enviar para revisão encerra a saída: o registro em campo
+                  só aceita rascunho. Por isso o envio pede confirmação e
+                  não é mais o botão em destaque — antes era, e a escola
+                  que acabara de abrir a saída a encerrava sem querer. */}
               <button
-                onClick={() => handleSalvar(true)}
+                onClick={() => setConfirmandoEnvio(true)}
                 disabled={salvando}
-                className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider border border-border rounded-sm hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                Salvar e enviar para revisão
+                Terminei a saída: enviar
               </button>
             </div>
           )}
+
+          {!somenteLeitura && confirmandoEnvio && (
+            <div className="p-3 border border-amber-500/40 bg-amber-500/10 rounded-sm space-y-2">
+              <p className="text-xs leading-relaxed">
+                Enviar para revisão <strong>encerra o registro em campo</strong> desta saída e fecha
+                a ficha. Use quando a turma já voltou e tudo foi transcrito. Enviar agora?
+              </p>
+              <div className="flex flex-col md:flex-row gap-2">
+                <button
+                  onClick={() => setConfirmandoEnvio(false)}
+                  disabled={salvando}
+                  className="flex-1 py-2 text-xs font-semibold border border-border bg-background rounded-sm hover:bg-secondary"
+                >
+                  Ainda não
+                </button>
+                <button
+                  onClick={() => handleSalvar(true)}
+                  disabled={salvando}
+                  className="flex-1 py-2 text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground rounded-sm hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {salvando ? "Enviando…" : "Salvar e enviar para revisão"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <Link
+            href={expedicao ? `/expedicoes/${expedicao.id}` : "/expedicoes"}
+            className="block text-center text-xs font-semibold text-primary hover:underline"
+          >
+            Voltar para a saída
+          </Link>
 
           <Link
             href="/expedicoes"

@@ -392,10 +392,10 @@ function PainelConteudo() {
 
                 <div className="flex items-center gap-2">
                   <Link
-                    href={`/expedicoes/${exp.id}/transcrever`}
+                    href={`/expedicoes/${exp.id}`}
                     className="px-2.5 py-1 text-[11px] font-semibold bg-secondary hover:bg-secondary/80 border border-border rounded-sm"
                   >
-                    Abrir Ficha
+                    Abrir a saída
                   </Link>
                   <Link
                     href={`/expedicoes/${exp.id}/revisar`}
