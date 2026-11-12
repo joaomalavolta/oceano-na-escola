@@ -31,6 +31,8 @@ interface MobileSheetProps {
   contagens: Record<string, number>;
   ocorrenciasNaVista: PubObservacaoPontual[];
   totalDeOcorrencias: number;
+  /** Ocorrências que têm foto publicada, para marcar na lista. */
+  comFoto?: Map<number, unknown>;
   onIrParaOcorrencia: (o: PubObservacaoPontual) => void;
 }
 
@@ -47,6 +49,7 @@ export function MobileSheet({
   contagens,
   ocorrenciasNaVista,
   totalDeOcorrencias,
+  comFoto,
   onIrParaOcorrencia,
 }: MobileSheetProps) {
   const [aberto, setAberto] = useState(false);
@@ -130,6 +133,7 @@ export function MobileSheet({
             <ListaOcorrencias
               ocorrencias={ocorrenciasNaVista}
               totalNoFiltro={totalDeOcorrencias}
+              comFoto={comFoto}
               onIr={(o) => {
                 // Fecha junto: a folha cobre a metade de baixo da tela,
                 // e o ponto para onde o mapa acabou de ir ficaria embaixo

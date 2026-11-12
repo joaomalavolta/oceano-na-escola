@@ -44,6 +44,7 @@ import { redeDaUrl, rotuloDoPino } from "@/lib/organizacao";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BalaoEscola } from "./balao-escola";
+import { SeloDeFoto } from "./selo-de-foto";
 import { enquadrarBalao, offsetDoBalao, useBalao } from "./use-balao";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import {
@@ -642,10 +643,14 @@ export function MapaPublico() {
                   tamanho={28}
                   className="drop-shadow-md transition-transform group-hover:scale-110 origin-bottom"
                 />
+                {fotoPorOcorrencia.has(o.id) && <SeloDeFoto />}
                 <div className="pointer-events-none absolute bottom-full mb-1 hidden group-hover:block whitespace-nowrap px-2 py-1 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground shadow-lg z-10">
                   <strong>{o.item_nome ?? o.descricao}</strong>
                   {magnitude && <span className="ml-1 tabular-nums">{magnitude}</span>}
-                  <span className="block text-muted-foreground">{o.protocolo_nome}</span>
+                  <span className="block text-muted-foreground">
+                    {o.protocolo_nome}
+                    {fotoPorOcorrencia.has(o.id) && " · com foto — clique para ver"}
+                  </span>
                 </div>
               </div>
             </Marker>
@@ -736,10 +741,15 @@ export function MapaPublico() {
                 latitude={xy[1]}
                 longitude={xy[0]}
                 anchor="bottom"
+                // A ponta do balão encosta no topo do pino (28 px de largura, 35 de
+                // altura), e não na coordenada: senão o balão cobria o próprio pino.
+                offset={[0, -36] as [number, number]}
                 onClose={() => setOcorrenciaAberta(null)}
                 closeButton
                 closeOnClick={false}
                 maxWidth="270px"
+                style={{ zIndex: 10 }}
+                focusAfterOpen={false}
               >
                 <PopupOcorrencia
                   ocorrencia={ocorrenciaAberta}
@@ -759,6 +769,9 @@ export function MapaPublico() {
             onClose={() => setPopupInfo(null)}
             maxWidth="280px"
             anchor="bottom"
+            /* Acima dos pinos: sem isto, o pino vizinho cortava o balão. */
+            style={{ zIndex: 10 }}
+            focusAfterOpen={false}
           >
             <PopupCelula
               densidade={popupInfo.celula.densidade_itens_m2}
@@ -797,6 +810,7 @@ export function MapaPublico() {
           contagens={contagens}
           ocorrenciasNaVista={ocorrenciasNaVista}
           totalDeOcorrencias={pontuaisFiltrados.length}
+          comFoto={fotoPorOcorrencia}
           onIrParaOcorrencia={irParaOcorrencia}
         />
       </div>
@@ -818,6 +832,7 @@ export function MapaPublico() {
         contagens={contagens}
         ocorrenciasNaVista={ocorrenciasNaVista}
         totalDeOcorrencias={pontuaisFiltrados.length}
+          comFoto={fotoPorOcorrencia}
         onIrParaOcorrencia={irParaOcorrencia}
       />
       <NavegacaoMobile />

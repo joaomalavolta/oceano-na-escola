@@ -110,6 +110,8 @@ interface PainelCamadasProps {
   ocorrenciasNaVista: PubObservacaoPontual[];
   /** Ocorrências sob os filtros, incluindo as que estão fora da vista. */
   totalDeOcorrencias: number;
+  /** Ocorrências que têm foto publicada, para marcar na lista. */
+  comFoto?: Map<number, unknown>;
   onIrParaOcorrencia: (o: PubObservacaoPontual) => void;
 }
 
@@ -126,6 +128,7 @@ export function PainelCamadas({
   contagens,
   ocorrenciasNaVista,
   totalDeOcorrencias,
+  comFoto,
   onIrParaOcorrencia,
 }: PainelCamadasProps) {
   const [expandido, setExpandido] = useState(true);
@@ -445,6 +448,7 @@ export function PainelCamadas({
             <ListaOcorrencias
               ocorrencias={ocorrenciasNaVista}
               totalNoFiltro={totalDeOcorrencias}
+              comFoto={comFoto}
               onIr={onIrParaOcorrencia}
             />
           </AreaRolavel>

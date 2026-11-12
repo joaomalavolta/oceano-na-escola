@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState, use } from "react";
+import React, { Fragment, useCallback, useEffect, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -19,8 +19,10 @@ import {
   RotateCcw,
   Ruler,
   Users,
+  Camera,
 } from "lucide-react";
 
+import { FotosDaOcorrencia } from "@/components/fotos/fotos-da-ocorrencia";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
@@ -95,6 +97,8 @@ function Regua({ status }: { status: string }) {
 function RevisarConteudo({ id }: { id: number }) {
   const router = useRouter();
   const [revisao, setRevisao] = useState<Revisao | null>(null);
+  // A ocorrência cujas fotos estão abertas na tabela. Uma por vez.
+  const [fotosAbertas, setFotosAbertas] = useState<number | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
@@ -442,7 +446,8 @@ function RevisarConteudo({ id }: { id: number }) {
               </thead>
               <tbody>
                 {ocorrencias.map((o) => (
-                  <tr key={o.id} className="border-b border-border/50">
+                  <Fragment key={o.id}>
+                  <tr className="border-b border-border/50">
                     <td className="py-1.5 px-3">
                       <span className="inline-flex items-center gap-1.5">
                         <span
@@ -465,19 +470,35 @@ function RevisarConteudo({ id }: { id: number }) {
                     </td>
                     <td className="py-1.5 px-3 text-muted-foreground">{o.origem ?? "—"}</td>
                     <td className="py-1.5 px-3 text-right tabular-nums">
-                      {o.fotos === 0 ? (
-                        <span className="text-muted-foreground">—</span>
-                      ) : (
-                        <span
-                          className={
-                            o.fotosPublicadas === 0 ? "text-amber-600 dark:text-amber-400" : ""
-                          }
-                        >
-                          {o.fotosPublicadas}/{o.fotos}
-                        </span>
-                      )}
+                      {/* Abre a linha das fotos desta ocorrência: ver, pôr
+                          e publicar, sem sair da revisão. */}
+                      <button
+                        type="button"
+                        onClick={() => setFotosAbertas((a) => (a === o.id ? null : o.id))}
+                        aria-expanded={fotosAbertas === o.id}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-border hover:bg-secondary ${
+                          o.fotos > 0 && o.fotosPublicadas === 0 ? "text-amber-600 dark:text-amber-400" : ""
+                        }`}
+                      >
+                        <Camera className="w-3 h-3" />
+                        {o.fotos === 0 ? "Pôr foto" : `${o.fotosPublicadas}/${o.fotos}`}
+                      </button>
                     </td>
                   </tr>
+                  {fotosAbertas === o.id && (
+                    <tr className="border-b border-border/50 bg-muted/20">
+                      <td colSpan={5} className="px-3 py-3">
+                        <FotosDaOcorrencia
+                          escolaId={cabecalho.escola.id}
+                          expedicaoId={cabecalho.id}
+                          pontualId={o.id}
+                          termosOk={cabecalho.escola.termos_ok}
+                          onMudou={recarregar}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

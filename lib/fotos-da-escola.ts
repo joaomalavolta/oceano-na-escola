@@ -211,3 +211,59 @@ export async function escolaTemTermo(escolaId: number): Promise<boolean> {
   const { data } = await supabase.from("escola").select("termos_ok").eq("id", escolaId).maybeSingle();
   return Boolean(data?.termos_ok);
 }
+
+// ── Foto de uma ocorrência já registrada ──────────────────────────────
+
+/**
+ * Põe foto numa ocorrência que já existe: a que foi registrada sem foto,
+ * a transcrita da ficha de papel, a que pede um segundo ângulo.
+ *
+ * Vai para a mesma pasta da saída e para a mesma tabela que a foto
+ * tirada no registro de campo — é a mesma coisa, chegando depois. Nasce
+ * despublicada, como toda foto.
+ */
+export async function enviarFotoDaOcorrencia(
+  escolaId: number,
+  expedicaoId: number,
+  pontualId: number,
+  arquivo: File
+): Promise<{ erro: string | null }> {
+  const caminho = caminhoDaFoto(escolaId, { tipo: "foto_campo", expedicaoId }, Date.now()).replace(
+    /\.jpg$/,
+    `-oc${pontualId}.jpg`
+  );
+  const erroEnvio = await enviarArquivo(caminho, arquivo);
+  if (erroEnvio) return { erro: erroEnvio };
+
+  const { error } = await supabase.from("evidencia").insert({
+    escola_id: escolaId,
+    expedicao_id: expedicaoId,
+    pontual_id: pontualId,
+    tipo: "foto_campo",
+    storage_path: caminho,
+    criado_por: await quemSou(),
+  });
+  if (error) {
+    await supabase.storage.from("evidencias").remove([caminho]);
+    return { erro: error.message };
+  }
+  return { erro: null };
+}
+
+export async function listarFotosDaOcorrencia(pontualId: number): Promise<FotoEnviada[]> {
+  const { data, error } = await supabase
+    .from("evidencia")
+    .select("id, storage_path, legenda, status, criado_em")
+    .eq("pontual_id", pontualId)
+    .neq("status", "removida")
+    .order("criado_em");
+  if (error) return [];
+  return (data ?? []).map((f) => ({
+    id: num(f.id),
+    storage_path: String(f.storage_path),
+    legenda: f.legenda ?? null,
+    status: f.status as StatusEvidencia,
+    criado_em: String(f.criado_em),
+    turma_nome: null,
+  }));
+}

@@ -16,6 +16,7 @@ import { PinMapa, slugDe, pinoDaOrganizacao } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BalaoEscola } from "./balao-escola";
+import { SeloDeFoto } from "./selo-de-foto";
 import { enquadrarBalao, offsetDoBalao, useBalao } from "./use-balao";
 import { PopupOcorrencia } from "./popup-ocorrencia";
 import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
@@ -232,13 +233,17 @@ export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }
                 setAberta(o);
               }}
             >
-              <div title={o.item_nome ?? o.descricao} className="cursor-pointer">
+              <div
+                title={`${o.item_nome ?? o.descricao}${fotoPorOcorrencia.has(o.id) ? " · com foto" : ""}`}
+                className="relative cursor-pointer"
+              >
                 <PinMapa
                   slug={slugDe(o.item_icone, o.protocolo_icone)}
                   cor={o.protocolo_cor ?? "#c51d28"}
                   tamanho={28}
                   className="drop-shadow-md hover:scale-110 transition-transform origin-bottom"
                 />
+                {fotoPorOcorrencia.has(o.id) && <SeloDeFoto />}
               </div>
             </Marker>
           );
@@ -249,10 +254,16 @@ export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }
             latitude={abertaXY[1]}
             longitude={abertaXY[0]}
             anchor="bottom"
+            // A ponta do balão encosta no topo do pino (28 px de largura, 35 de
+            // altura), e não na coordenada: senão o balão cobria o próprio pino.
+            offset={[0, -36] as [number, number]}
             onClose={() => setAberta(null)}
             closeButton
             closeOnClick={false}
             maxWidth="270px"
+            /* Acima dos pinos: sem isto, o pino vizinho cortava o balão. */
+            style={{ zIndex: 10 }}
+            focusAfterOpen={false}
           >
             <PopupOcorrencia ocorrencia={aberta} foto={fotoAberta} />
           </Popup>

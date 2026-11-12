@@ -1,10 +1,12 @@
 "use client";
 
-import { MapPinned } from "lucide-react";
+import { Camera, MapPinned } from "lucide-react";
 import { IconeBadge, slugDe } from "./icones";
 import type { PubObservacaoPontual } from "@/lib/database.types";
 
 interface Props {
+  /** Ocorrências com foto publicada: ganham a câmera no lugar do alfinete. */
+  comFoto?: Map<number, unknown>;
   ocorrencias: PubObservacaoPontual[];
   /** Total antes do recorte pela área visível, para dizer o que ficou fora. */
   totalNoFiltro: number;
@@ -26,7 +28,7 @@ function data(iso: string): string {
  * É a resposta em texto para a pergunta que o documento de concepção
  * coloca como central — o que está acontecendo neste território.
  */
-export function ListaOcorrencias({ ocorrencias, totalNoFiltro, onIr }: Props) {
+export function ListaOcorrencias({ ocorrencias, totalNoFiltro, onIr, comFoto }: Props) {
   if (ocorrencias.length === 0) {
     return (
       <p className="text-xs text-muted-foreground px-2 py-6 text-center">
@@ -72,7 +74,11 @@ export function ListaOcorrencias({ ocorrencias, totalNoFiltro, onIr }: Props) {
                 {o.escola_nome} · {data(o.data_campo)}
               </span>
             </span>
-            <MapPinned className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1" />
+            {comFoto?.has(o.id) ? (
+              <Camera className="w-3.5 h-3.5 text-primary shrink-0 mt-1" aria-label="Tem foto" />
+            ) : (
+              <MapPinned className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1" />
+            )}
           </button>
         );
       })}
