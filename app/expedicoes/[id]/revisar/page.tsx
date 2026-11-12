@@ -467,6 +467,12 @@ function RevisarConteudo({ id }: { id: number }) {
                           {o.descricao}
                         </span>
                       )}
+                      {o.lixo && <span className="block text-[10px] text-foreground/80">{o.lixo}</span>}
+                      {o.marcas.length > 0 && (
+                        <span className="block text-[10px] text-muted-foreground">
+                          Marcas: {o.marcas.map((m) => `${m.marca} (${m.quantidade})`).join(", ")}
+                        </span>
+                      )}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums">
                       {o.valor === null ? "—" : `${numero(o.valor)} ${o.unidade ?? ""}`.trim()}

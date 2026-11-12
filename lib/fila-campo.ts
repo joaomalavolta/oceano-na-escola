@@ -9,6 +9,8 @@
  * antes de o envio confirmar.
  */
 
+import type { LixoNoPonto } from "./lixo-no-mar";
+
 export interface RegistroDeCampo {
   expedicaoId: number;
   escolaId: number;
@@ -20,6 +22,12 @@ export interface RegistroDeCampo {
   lat: number;
   lng: number;
   legenda: string | null;
+  /**
+   * Quantidade, contagem por tipo, material e marcas — só no protocolo
+   * Lixo no mar. Opcional: registros guardados antes de existir o campo
+   * continuam válidos na fila.
+   */
+  lixo?: LixoNoPonto | null;
 }
 
 export interface RegistroPendente {

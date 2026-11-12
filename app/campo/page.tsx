@@ -25,6 +25,9 @@ import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
   listarExpedicoesAbertas,
   listarProtocolosDeCampo,
+  listarItensDeResiduo,
+  listarMarcasConhecidas,
+  type ItemDeResiduo,
   guardarCatalogo,
   catalogoGuardado,
   reduzirFoto,
@@ -39,6 +42,8 @@ import {
   type RegistroDeCampo,
   type RegistroPendente,
 } from "@/lib/fila-campo";
+import { QuantoLixo } from "@/components/campo/quanto-lixo";
+import { LIXO_VAZIO, problemasDoLixo, quantidadeDoPonto, temAlgumDado, type LixoNoPonto } from "@/lib/lixo-no-mar";
 import { listarSaidasEncerradasRecentes, type SaidaEncerrada } from "@/lib/saida-de-campo";
 import { reabrirParaCorrecao } from "@/lib/revisao";
 import { NOME_DA_ETAPA } from "@/components/expedicoes/regua-de-etapas";
@@ -109,6 +114,10 @@ function CampoConteudo() {
   const [protocolo, setProtocolo] = useState<ProtocoloDeCampo | null>(null);
   const [itemId, setItemId] = useState<number | null>(null);
   const [valor, setValor] = useState("");
+  // Lixo no mar: quantidade, contagem por tipo, material e marcas.
+  const [lixo, setLixo] = useState<LixoNoPonto>(LIXO_VAZIO);
+  const [itensDeResiduo, setItensDeResiduo] = useState<ItemDeResiduo[]>([]);
+  const [marcasConhecidas, setMarcasConhecidas] = useState<string[]>([]);
   const [descricao, setDescricao] = useState("");
   const [origem, setOrigem] = useState("");
   const [legenda, setLegenda] = useState("");
@@ -211,8 +220,14 @@ function CampoConteudo() {
 
   useEffect(() => {
     let ativo = true;
-    Promise.all([listarExpedicoesAbertas(), listarProtocolosDeCampo(), listarPendentes()]).then(
-      ([exps, protos, fila]) => {
+    Promise.all([
+      listarExpedicoesAbertas(),
+      listarProtocolosDeCampo(),
+      listarPendentes(),
+      listarItensDeResiduo(),
+      listarMarcasConhecidas(),
+    ]).then(
+      ([exps, protos, fila, itensRes, marcas]) => {
         if (!ativo) return;
         setPendentes(fila);
 
@@ -224,9 +239,15 @@ function CampoConteudo() {
         // Veio do banco: vale, e fica guardado para a próxima ida a
         // campo — inclusive uma sem sinal nenhum.
         if (exps && protos) {
-          guardarCatalogo(exps, protos);
+          guardarCatalogo(exps, protos, {
+            itensDeResiduo: itensRes ?? undefined,
+            marcas: marcas.length > 0 ? marcas : undefined,
+          });
+          const guardado = catalogoGuardado();
           setExpedicoes(exps);
           setProtocolos(protos);
+          setItensDeResiduo(itensRes ?? guardado?.itensDeResiduo ?? []);
+          setMarcasConhecidas(marcas.length > 0 ? marcas : guardado?.marcas ?? []);
           setExpedicaoId(escolhaInicial(exps));
           const pedida = saidaPedida();
           if (exps.length === 0 || (pedida !== null && !exps.some((x) => x.id === pedida))) {
@@ -241,6 +262,8 @@ function CampoConteudo() {
         if (memo) {
           setExpedicoes(memo.expedicoes);
           setProtocolos(memo.protocolos);
+          setItensDeResiduo(memo.itensDeResiduo ?? []);
+          setMarcasConhecidas(memo.marcas ?? []);
           setCatalogoDe(memo.em);
           setExpedicaoId(escolhaInicial(memo.expedicoes));
           return;
@@ -321,7 +344,11 @@ function CampoConteudo() {
 
   const itemEscolhido = protocolo?.itens.find((i) => i.id === itemId) ?? null;
 
+  const ehLixo = protocolo?.codigo === "LIM";
+  const problemasLixo = ehLixo ? problemasDoLixo(lixo) : [];
+
   const pronto =
+    problemasLixo.length === 0 &&
     expedicaoId !== null &&
     gps !== null &&
     protocolo !== null &&
@@ -336,7 +363,14 @@ function CampoConteudo() {
       escolaId: expedicao.escola_id,
       versaoId: protocolo.versao_id,
       itemId,
-      valor: valor !== "" && Number.isFinite(valorNumerico) ? valorNumerico : null,
+      // No Lixo no mar, a magnitude é a quantidade de itens do bloco
+      // próprio; nos outros protocolos, o campo de magnitude.
+      valor: ehLixo
+        ? quantidadeDoPonto(lixo)
+        : valor !== "" && Number.isFinite(valorNumerico)
+          ? valorNumerico
+          : null,
+      lixo: ehLixo && temAlgumDado(lixo) ? lixo : null,
       // A descrição é obrigatória no banco; sem texto, vale o item.
       descricao: descricao.trim() || itemEscolhido?.nome || "Registro de campo",
       origemProvavel: origem.trim() || null,
@@ -349,6 +383,7 @@ function CampoConteudo() {
   const limparParaProximo = () => {
     setItemId(null);
     setValor("");
+    setLixo(LIXO_VAZIO);
     setDescricao("");
     setOrigem("");
     setLegenda("");
@@ -698,7 +733,21 @@ function CampoConteudo() {
           </div>
         )}
 
-        {itemEscolhido && (
+        {ehLixo && (
+          <>
+            <QuantoLixo
+              valor={lixo}
+              onMudar={setLixo}
+              itensDeResiduo={itensDeResiduo}
+              marcasConhecidas={marcasConhecidas}
+            />
+            {problemasLixo.map((t) => (
+              <p key={t} className="text-[11px] text-destructive">{t}</p>
+            ))}
+          </>
+        )}
+
+        {itemEscolhido && !ehLixo && (
           <div>
             <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
               Magnitude{itemEscolhido.unidade ? ` (${itemEscolhido.unidade})` : ""}

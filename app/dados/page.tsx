@@ -6,6 +6,7 @@ import { Database, Download, Loader2, AlertTriangle, MapPin, Lock } from "lucide
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
+import { RankingDeMarcas } from "@/components/dados/ranking-de-marcas";
 import { useSessao } from "@/lib/sessao";
 import {
   CONJUNTOS,
@@ -110,6 +111,8 @@ export default function DadosPage() {
             </div>
           )}
         </section>
+
+        <RankingDeMarcas />
 
         {/* Conjuntos para download.
             As premissas separam as duas coisas: indicador agregado por

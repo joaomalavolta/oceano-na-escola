@@ -327,7 +327,7 @@ isso nascem direto no celular, em `/campo`.
 | DES | Entulho, volumoso, queima, acúmulo em terreno | pontos, m² |
 | AVI | Espécie avistada, ninho, fauna com resíduo, encalhe | indivíduos, pontos |
 | AGU | pH, turbidez, temperatura, salinidade | valor medido |
-| LIM | Lixo no mar: flutuante, linha de maré, petrecho de pesca, foz, pellets *(12/11/2026)* | em definição |
+| LIM | Lixo no mar: flutuante, linha de maré, petrecho de pesca, foz, pellets *(12/11/2026)* | itens (quantidade estimada) |
 
 **O que o método destes cinco tem de diferente.** Em RES e MIC, o cuidado central é o esforço
 amostral — sem ele o dado não existe. Aqui o cuidado central é **observar sem interferir e sem se
@@ -350,10 +350,32 @@ entulho e lixo urbano. LIM é o lixo no mar e na beira dele, registrado por pont
 a escola de surf vê de dentro d'água e a escola vê da areia e da foz. Não substitui RES: RES mede
 quanto há por metro quadrado; LIM diz onde está o que foi visto. Itens: lixo flutuante na água,
 acúmulo na linha de maré, petrecho de pesca abandonado, lixo na foz de rio ou canal, concentração de
-pellets ou microplástico visível. Fauna presa em lixo continua em AVI. **Em definição:** a magnitude
-(quantidade, volume ou presença com material predominante) — até lá o registro é de presença — e o
-método de campo com as regras de segurança. O registro em campo avisa que o método está em
-definição.
+pellets ou microplástico visível. Fauna presa em lixo continua em AVI.
+
+**Quanto, de quê e de que marca** *(decidido em 12/11/2026)*. Cada ponto de LIM pode levar, tudo
+opcional (sem nada, o ponto vale como presença):
+
+- **quantidade estimada de itens** — é a magnitude do pino; sem ela, vale a soma da contagem por tipo;
+- **contagem por tipo**, com a lista de itens de RES (garrafa PET, copo, embalagem de alimento,
+  fragmento de plástico…): os mesmos nomes nos dois protocolos deixam comparar o que se conta por
+  área com o que se marca por ponto;
+- **volume em sacos**, com o **tamanho do saco em litros** quando se sabe. Nenhum tamanho foi
+  escolhido como padrão: sem o tamanho, "2 sacos" de uma escola não se compara com "2 sacos" de
+  outra, e por isso ele é registrado junto em vez de suposto;
+- **material predominante**, entre os grupos de material de RES, mais "misto";
+- **marcas identificadas**, com quantos itens de cada.
+
+As marcas formam o **ranking de marcas** da rede (página Dados, e CSV), somando só pontos de saída
+publicada de escola publicada. Grafias que diferem só em maiúscula, acento ou espaço contam como uma
+marca; o ranking mostra a grafia mais usada. O texto do ranking diz o que ele é: contagem do que as
+escolas encontraram e leram na embalagem — não mede participação de mercado, não diz de onde o item
+veio e não atribui responsabilidade. O formulário pede para registrar só a marca legível no item.
+
+Tabelas: `lixo_no_ponto`, `lixo_no_ponto_item`, `lixo_no_ponto_marca`, com o mesmo acesso da
+ocorrência; em público, `pub_lixo_no_ponto` (balão do pino) e `pub_ranking_marcas`.
+
+**Em definição:** o método de campo com as regras de segurança. O registro em campo avisa que o
+método está em definição.
 
 As listas de itens abrem com quatro entradas cada. Item novo entra por cadastro, sem migration, e o
 dado antigo continua amarrado à versão que o gerou.

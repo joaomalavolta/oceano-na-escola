@@ -15,6 +15,7 @@
  */
 
 import { supabase } from "./supabase";
+import { resumoDoLixo } from "./lixo-no-mar";
 
 export interface EscolaDaRevisao {
   id: number;
@@ -80,6 +81,9 @@ export interface OcorrenciaRevisada {
   origem: string | null;
   fotos: number;
   fotosPublicadas: number;
+  /** Lixo no mar: resumo de quantidade, volume e material, e as marcas. */
+  lixo: string | null;
+  marcas: { marca: string; quantidade: number }[];
 }
 
 export interface CelulaPrevista {
@@ -120,6 +124,28 @@ function numOuNulo(v: unknown): number | null {
 function primeiro<T>(v: T | T[] | null | undefined): T | null {
   if (Array.isArray(v)) return v[0] ?? null;
   return v ?? null;
+}
+
+type LixoEmbed = { quantidade_estimada: number | null; sacos: number | string | null; litros_por_saco: number | null; material: string | null };
+
+/** O resumo de Lixo no mar de uma ocorrência, a partir do embed. */
+function lixoDaOcorrencia(
+  bruto: unknown,
+  marcasBrutas: unknown
+): { lixo: string | null; marcas: { marca: string; quantidade: number }[] } {
+  const l = primeiro(bruto as LixoEmbed | LixoEmbed[] | null);
+  const marcas = ((marcasBrutas ?? []) as { marca: string; quantidade: number }[])
+    .map((m) => ({ marca: String(m.marca), quantidade: num(m.quantidade) }))
+    .sort((a, b) => b.quantidade - a.quantidade);
+  const lixo = l
+    ? resumoDoLixo({
+        quantidade_estimada: l.quantidade_estimada === null ? null : num(l.quantidade_estimada),
+        sacos: numOuNulo(l.sacos),
+        litros_por_saco: l.litros_por_saco === null ? null : num(l.litros_por_saco),
+        material: l.material,
+      }) || null
+    : null;
+  return { lixo, marcas };
 }
 
 /** A ordem do enum status_dado. Índice -1 para status desconhecido. */
@@ -204,7 +230,7 @@ export async function carregarRevisao(
       supabase
         .from("observacao_pontual")
         .select(
-          "id, descricao, valor, origem_provavel, item:item_id (nome, unidade), versao:versao_id (protocolo:protocolo_id (codigo, nome, cor)), evidencia (id, status)"
+          "id, descricao, valor, origem_provavel, item:item_id (nome, unidade), versao:versao_id (protocolo:protocolo_id (codigo, nome, cor)), evidencia (id, status), lixo_no_ponto (quantidade_estimada, sacos, litros_por_saco, material), lixo_no_ponto_marca (marca, quantidade)"
         )
         .eq("expedicao_id", expedicaoId)
         .order("id"),
@@ -341,6 +367,7 @@ export async function carregarRevisao(
         origem: o.origem_provavel ?? null,
         fotos: evidencias.length,
         fotosPublicadas: evidencias.filter((e) => e.status === "publicada").length,
+        ...lixoDaOcorrencia(o.lixo_no_ponto, o.lixo_no_ponto_marca),
       };
     });
 

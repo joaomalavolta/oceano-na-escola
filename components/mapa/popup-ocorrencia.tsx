@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 import { IconeBadge, slugDe } from "./icones";
+import { DetalheDoLixo } from "./detalhe-do-lixo";
 import type { PubObservacaoPontual, PubFotoGeorreferenciada } from "@/lib/database.types";
 
 interface Props {
@@ -60,8 +61,10 @@ export function PopupOcorrencia({ ocorrencia: o, foto, comLinkParaEscola }: Prop
         </div>
       </div>
 
-      {magnitude && (
-        <p className="text-xs tabular-nums text-acento-texto font-semibold">{magnitude}</p>
+      {o.protocolo === "LIM" ? (
+        <DetalheDoLixo pontualId={o.id} />
+      ) : (
+        magnitude && <p className="text-xs tabular-nums text-acento-texto font-semibold">{magnitude}</p>
       )}
 
       {o.origem_provavel && (

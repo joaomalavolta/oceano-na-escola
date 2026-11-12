@@ -54,6 +54,14 @@ export const CONJUNTOS: ConjuntoAberto[] = [
     ],
   },
   {
+    id: "marcas",
+    nome: "Ranking de marcas (Lixo no mar)",
+    descricao:
+      "Itens com marca identificada nos pontos de Lixo no mar publicados, somados por marca. Conta o que as escolas encontraram; não mede participação de mercado nem responsabilidade.",
+    view: "pub_ranking_marcas",
+    colunas: ["marca", "itens", "pontos", "escolas"],
+  },
+  {
     id: "escolas",
     nome: "Escolas da rede",
     descricao: "Escolas publicadas, com município e posição.",

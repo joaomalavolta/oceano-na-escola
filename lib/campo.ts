@@ -13,6 +13,7 @@
 
 import { supabase } from "./supabase";
 import type { RegistroDeCampo } from "./fila-campo";
+import { juntarMarcas, somaDosItens, type LixoNoPonto } from "./lixo-no-mar";
 
 export interface ExpedicaoAberta {
   id: number;
@@ -134,6 +135,46 @@ export async function listarProtocolosDeCampo(): Promise<ProtocoloDeCampo[] | nu
     .sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
+/** Um item da lista de RES, usado na contagem por tipo do Lixo no mar. */
+export interface ItemDeResiduo {
+  id: number;
+  nome: string;
+  grupo: string;
+}
+
+/**
+ * A lista de itens de RES, na ordem da ficha. É a lista aprovada de
+ * resíduos; o Lixo no mar a usa para contar por tipo, e assim os dois
+ * protocolos falam a mesma língua.
+ */
+export async function listarItensDeResiduo(): Promise<ItemDeResiduo[] | null> {
+  const { data, error } = await supabase
+    .from("protocolo_versao")
+    .select("id, protocolo:protocolo_id!inner (codigo), protocolo_item (id, nome, grupo, ordem)")
+    .eq("ativa", true)
+    .eq("protocolo.codigo", "RES");
+  if (error) return null;
+  type I = { id: number; nome: string; grupo: string; ordem: number };
+  const itens = ((data ?? [])[0]?.protocolo_item ?? []) as I[];
+  return itens
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((i) => ({ id: num(i.id), nome: String(i.nome), grupo: String(i.grupo) }));
+}
+
+/**
+ * Marcas já registradas na rede, para sugerir ao digitar. Vem do ranking
+ * público: escrever igual ao que já existe é o que faz a contagem somar.
+ */
+export async function listarMarcasConhecidas(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("pub_ranking_marcas")
+    .select("marca")
+    .order("itens", { ascending: false })
+    .limit(300);
+  if (error) return [];
+  return (data ?? []).map((m) => String(m.marca));
+}
+
 /**
  * O catálogo guardado no aparelho: expedições abertas e protocolos.
  *
@@ -152,13 +193,29 @@ const CHAVE_CATALOGO = "oceano.campo.catalogo";
 export interface CatalogoDeCampo {
   expedicoes: ExpedicaoAberta[];
   protocolos: ProtocoloDeCampo[];
+  /** Ausente em cópias guardadas antes do Lixo no mar. */
+  itensDeResiduo?: ItemDeResiduo[];
+  marcas?: string[];
   /** Quando foi guardado, para a tela poder dizer de quando é a lista. */
   em: string;
 }
 
-export function guardarCatalogo(expedicoes: ExpedicaoAberta[], protocolos: ProtocoloDeCampo[]): void {
+export function guardarCatalogo(
+  expedicoes: ExpedicaoAberta[],
+  protocolos: ProtocoloDeCampo[],
+  extras: { itensDeResiduo?: ItemDeResiduo[]; marcas?: string[] } = {}
+): void {
   try {
-    const c: CatalogoDeCampo = { expedicoes, protocolos, em: new Date().toISOString() };
+    // O que não veio agora fica como estava: uma falha na lista de marcas
+    // não pode apagar a cópia que o aparelho já tinha.
+    const antes = catalogoGuardado();
+    const c: CatalogoDeCampo = {
+      expedicoes,
+      protocolos,
+      itensDeResiduo: extras.itensDeResiduo ?? antes?.itensDeResiduo ?? [],
+      marcas: extras.marcas ?? antes?.marcas ?? [],
+      em: new Date().toISOString(),
+    };
     window.localStorage.setItem(CHAVE_CATALOGO, JSON.stringify(c));
   } catch {
     // Cota cheia ou modo privado: seguir sem cache é pior, não fatal.
@@ -229,6 +286,16 @@ export async function enviarRegistro(
 
   if (erroPontual) return { erro: erroPontual.message, soFotoFalhou: false };
 
+  // O detalhe do lixo vai junto com a ocorrência, ou nenhum dos dois:
+  // se falhar, a ocorrência sai, para o reenvio da fila não duplicá-la.
+  if (r.lixo) {
+    const erroLixo = await gravarLixo(num(pontual.id), r.lixo);
+    if (erroLixo) {
+      await supabase.from("observacao_pontual").delete().eq("id", num(pontual.id));
+      return { erro: erroLixo, soFotoFalhou: false };
+    }
+  }
+
   if (!foto) return { erro: null, soFotoFalhou: false };
 
   const caminho = `escola-${r.escolaId}/exp-${r.expedicaoId}/${Date.now()}.jpg`;
@@ -250,4 +317,35 @@ export async function enviarRegistro(
   if (erroEvidencia) return { erro: erroEvidencia.message, soFotoFalhou: true };
 
   return { erro: null, soFotoFalhou: false };
+}
+
+/** Grava quantidade, contagem por tipo e marcas de um ponto de Lixo no mar. */
+async function gravarLixo(pontualId: number, l: LixoNoPonto): Promise<string | null> {
+  if (l.quantidadeEstimada !== null || l.sacos !== null || l.material !== null) {
+    const { error } = await supabase.from("lixo_no_ponto").insert({
+      pontual_id: pontualId,
+      quantidade_estimada: l.quantidadeEstimada,
+      sacos: l.sacos,
+      litros_por_saco: l.sacos !== null ? l.litrosPorSaco : null,
+      material: l.material,
+    });
+    if (error) return error.message;
+  }
+
+  if (somaDosItens(l) > 0) {
+    const linhas = Object.entries(l.itens)
+      .filter(([, n]) => n > 0)
+      .map(([itemId, n]) => ({ pontual_id: pontualId, item_id: Number(itemId), quantidade: n }));
+    const { error } = await supabase.from("lixo_no_ponto_item").insert(linhas);
+    if (error) return error.message;
+  }
+
+  const marcas = juntarMarcas(l.marcas);
+  if (marcas.length > 0) {
+    const { error } = await supabase
+      .from("lixo_no_ponto_marca")
+      .insert(marcas.map((m) => ({ pontual_id: pontualId, marca: m.marca, quantidade: m.quantidade })));
+    if (error) return error.message;
+  }
+  return null;
 }
