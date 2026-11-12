@@ -44,7 +44,7 @@ import { redeDaUrl, rotuloDoPino } from "@/lib/organizacao";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BalaoEscola } from "./balao-escola";
-import { useBalao } from "./use-balao";
+import { enquadrarBalao, offsetDoBalao, useBalao } from "./use-balao";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import {
   PainelCamadas,
@@ -92,6 +92,23 @@ export function MapaPublico() {
    */
   const [ocorrenciaAberta, setOcorrenciaAberta] = useState<PubObservacaoPontual | null>(null);
   const balao = useBalao<PubEscola>();
+
+  // Tocado ou clicado, o balão aparece inteiro. As folgas são o que cobre
+  // o mapa: a barra do topo, a faixa de indicadores embaixo e o painel de
+  // camadas à esquerda (só no desktop).
+  useEffect(() => {
+    if (!balao.aberto || balao.origem !== "clique") return;
+    const t = setTimeout(() => {
+      const largo = window.innerWidth >= 768;
+      enquadrarBalao(mapRef.current, {
+        topo: 72,
+        base: largo ? 100 : 150,
+        esquerda: largo ? 344 : 12,
+        direita: 60,
+      });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [balao.aberto, balao.origem, balao.vez]);
 
   // Mapa de fundo, lido já na inicialização do estado. Dá para fazer
   // isso aqui porque a página carrega este componente com ssr: false —
@@ -659,7 +676,7 @@ export function MapaPublico() {
                 href={`/escola/${escola.slug}`}
                 aria-label={`${escola.nome} — abrir resumo da escola`}
                 className="group flex flex-col items-center"
-                onPointerEnter={(e) => e.pointerType === "mouse" && balao.abrir(escola)}
+                onPointerEnter={(e) => e.pointerType === "mouse" && balao.abrir(escola, "mouse")}
                 onPointerLeave={(e) => e.pointerType === "mouse" && balao.fecharDepois()}
                 onFocus={() => balao.abrir(escola)}
                 onClick={(e) => {
@@ -687,8 +704,7 @@ export function MapaPublico() {
           <Popup
             latitude={balao.aberto.lat}
             longitude={balao.aberto.lng}
-            anchor="bottom"
-            offset={[0, -64] as [number, number]}
+            offset={offsetDoBalao(64)}
             closeButton
             closeOnClick={false}
             onClose={balao.fechar}

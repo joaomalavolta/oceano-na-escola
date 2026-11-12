@@ -18,6 +18,11 @@ interface Props {
    * o balão abre a aba Sobre.
    */
   acao: { tipo: "link"; href: string; rotulo: string } | { tipo: "botao"; onClick: () => void; rotulo: string };
+  /**
+   * Sem a capa. Na página da própria escola ela já está no topo, e no
+   * balão só o deixaria mais alto que o quadro do mapa.
+   */
+  semCapa?: boolean;
 }
 
 /**
@@ -27,7 +32,7 @@ interface Props {
  * escola é essa, desde quando, quando dá aula, o que já fez. Os fatos
  * que a escola não preencheu simplesmente não aparecem.
  */
-export function BalaoEscola({ escola, indicador, acao }: Props) {
+export function BalaoEscola({ escola, indicador, acao, semCapa = false }: Props) {
   const v = vocabulario(escola.tipo);
   const pino = pinoDaOrganizacao(escola.tipo);
   const ano = anoDe(escola.fundada_em);
@@ -37,7 +42,7 @@ export function BalaoEscola({ escola, indicador, acao }: Props) {
 
   return (
     <div className="w-64 overflow-hidden rounded-[inherit]">
-      {escola.capa_path && (
+      {escola.capa_path && !semCapa && (
         <FotoEvidencia
           storagePath={escola.capa_path}
           alt={`Foto de ${escola.nome}`}
@@ -46,7 +51,7 @@ export function BalaoEscola({ escola, indicador, acao }: Props) {
       )}
       <div className="p-3 space-y-2">
         {/* pr-5: o "×" do balão fica no canto de cima, por cima do nome. */}
-        <div className={`flex items-start gap-2 ${escola.capa_path ? "" : "pr-5"}`}>
+        <div className={`flex items-start gap-2 ${escola.capa_path && !semCapa ? "" : "pr-5"}`}>
           <IconeBadge slug={pino.slug} cor={pino.cor} tamanho={24} className="mt-0.5" />
           <div className="min-w-0">
             <p className="text-sm font-bold leading-tight">{escola.nome}</p>

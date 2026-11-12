@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapGL, {
   Source,
   Layer,
@@ -16,7 +16,7 @@ import { PinMapa, slugDe, pinoDaOrganizacao } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BalaoEscola } from "./balao-escola";
-import { useBalao } from "./use-balao";
+import { enquadrarBalao, offsetDoBalao, useBalao } from "./use-balao";
 import { PopupOcorrencia } from "./popup-ocorrencia";
 import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
 import { ESTILO_SEM_FUNDO, fundoPorId, fundoSalvo, salvaFundo } from "@/lib/mapa-base";
@@ -69,6 +69,17 @@ export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }
   // as ocorrências num trecho curto, e sobrepostas elas se escondem.
   const [zoom, setZoom] = useState(ZOOM_INICIAL);
   const mapRef = useRef<MapRef>(null);
+
+  // Clicado, o balão aparece inteiro: o mapa se desloca até ele caber.
+  // Espera um quadro para o balão existir no DOM antes de medi-lo.
+  useEffect(() => {
+    if (!balao.aberto || balao.origem !== "clique") return;
+    const t = setTimeout(
+      () => enquadrarBalao(mapRef.current, { topo: 12, base: 12, esquerda: 12, direita: 56 }),
+      60
+    );
+    return () => clearTimeout(t);
+  }, [balao.aberto, balao.origem, balao.vez]);
 
   // A escolha do fundo é a mesma do mapa da rede: quem pediu satélite lá
   // pediu satélite, e não "satélite naquela página". Lido já na
@@ -137,10 +148,10 @@ export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }
             type="button"
             aria-label={`${escola.nome} — abrir resumo da escola`}
             className="block cursor-pointer transition-transform hover:scale-110 origin-bottom"
-            onPointerEnter={(e) => e.pointerType === "mouse" && balao.abrir(true)}
+            onPointerEnter={(e) => e.pointerType === "mouse" && balao.abrir(true, "mouse")}
             onPointerLeave={(e) => e.pointerType === "mouse" && balao.fecharDepois()}
             onFocus={() => balao.abrir(true)}
-            onClick={() => balao.abrir(true)}
+            onClick={() => balao.abrir(true, "clique")}
           >
             <PinMapa {...pinoDaOrganizacao(escola.tipo)} tamanho={34} className="drop-shadow-md" />
           </button>
@@ -150,8 +161,7 @@ export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }
           <Popup
             latitude={escola.lat}
             longitude={escola.lng}
-            anchor="bottom"
-            offset={[0, -44] as [number, number]}
+            offset={offsetDoBalao(44)}
             closeButton
             closeOnClick={false}
             onClose={balao.fechar}
@@ -167,6 +177,7 @@ export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }
               <BalaoEscola
                 escola={escola}
                 indicador={indicador}
+                semCapa={Boolean(onVerSobre)}
                 acao={
                   onVerSobre
                     ? {
