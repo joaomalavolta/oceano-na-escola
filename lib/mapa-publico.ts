@@ -50,6 +50,7 @@ export const mockEscolas: PubEscola[] = [
     uf: "SP",
     lat: -24.1875,
     lng: -46.8015,
+    tipo: "regular",
   },
   {
     id: 2,
@@ -60,6 +61,7 @@ export const mockEscolas: PubEscola[] = [
     uf: "SP",
     lat: -24.1735,
     lng: -46.7645,
+    tipo: "regular",
   },
   {
     id: 3,
@@ -70,6 +72,7 @@ export const mockEscolas: PubEscola[] = [
     uf: "SP",
     lat: -24.1830,
     lng: -46.7885,
+    tipo: "regular",
   },
   {
     id: 4,
@@ -80,6 +83,21 @@ export const mockEscolas: PubEscola[] = [
     uf: "SP",
     lat: -24.2005,
     lng: -46.8220,
+    tipo: "regular",
+  },
+  // Escola de surf fictícia, para a demonstração mostrar o pino e a aba
+  // dos Guardiões. Nome e coordenada são inventados: não é levantamento.
+  {
+    id: 5,
+    slug: "escola-de-surf-arrebentacao",
+    nome: "Escola de Surf Arrebentação",
+    apresentacao:
+      "Escola de surf fictícia de demonstração. Participa pelo programa Guardiões Ecosurf.",
+    municipio: "Itanhaém",
+    uf: "SP",
+    lat: -24.1792,
+    lng: -46.7772,
+    tipo: "surf",
   },
 ];
 

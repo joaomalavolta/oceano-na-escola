@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
-import { IconeBadge, COR_ESCOLA } from "./icones";
+import { IconeBadge, COR_ESCOLA, COR_GUARDIAO } from "./icones";
 import { ListaOcorrencias } from "./lista-ocorrencias";
 import { AreaRolavel } from "@/components/ui/area-rolavel";
 import type { PubObservacaoPontual } from "@/lib/database.types";
@@ -20,7 +20,39 @@ import type { PubObservacaoPontual } from "@/lib/database.types";
 export interface CamadasState {
   protocolos: Record<string, boolean>;
   escolas: boolean;
+  /** Os pinos das escolas de surf — o programa Guardiões Ecosurf. */
+  guardioes: boolean;
   ocorrencias: boolean;
+}
+
+export type CamadaDeRede = "escolas" | "guardioes" | "ocorrencias";
+
+/**
+ * As linhas de baixo da lista de camadas, as que não são protocolo.
+ *
+ * Num lugar só porque o painel do desktop e a folha do celular desenham
+ * a mesma legenda, e duas listas escritas à mão já tinham começado a
+ * divergir na ordem.
+ *
+ * A linha das escolas de surf só existe quando há escola de surf nos
+ * dados. Antes disso ela seria um interruptor que não liga nada — e a
+ * legenda de um pino que não está no mapa.
+ */
+export function linhasDeRede(
+  temSurf: boolean
+): [CamadaDeRede, string, string | null, string | null][] {
+  return [
+    ["escolas", "Escolas", "escola", COR_ESCOLA],
+    ...(temSurf
+      ? ([["guardioes", "Escolas de surf", "escola_surf", COR_GUARDIAO]] as [
+          CamadaDeRede,
+          string,
+          string,
+          string,
+        ][])
+      : []),
+    ["ocorrencias", "Ocorrências", null, null],
+  ];
 }
 
 /** O que o painel precisa saber de um protocolo para desenhá-lo. */
@@ -50,6 +82,12 @@ export interface ProtocoloCamada {
  */
 export interface FiltrosState {
   municipio: string;
+  /**
+   * "regular", "surf" ou vazio. Diferente do liga-desliga dos pinos,
+   * que só esconde o pino: este recorta também as ocorrências e a
+   * grade, e responde "o que os Guardiões registraram?".
+   */
+  rede: string;
   escola: string;
   mesInicio: string;
   mesFim: string;
@@ -58,11 +96,13 @@ export interface FiltrosState {
 interface PainelCamadasProps {
   camadas: CamadasState;
   onToggleProtocolo: (codigo: string) => void;
-  onToggleCamada: (camada: "escolas" | "ocorrencias") => void;
+  onToggleCamada: (camada: CamadaDeRede) => void;
   filtros: FiltrosState;
   onChangeFiltro: (campo: keyof FiltrosState, valor: string) => void;
   municipios: string[];
   escolas: { slug: string; nome: string }[];
+  /** Há escola de surf publicada: mostra a legenda e o filtro dela. */
+  temSurf: boolean;
   protocolos: ProtocoloCamada[];
   /** Feições de cada protocolo sob os filtros, com a camada ligada ou não. */
   contagens: Record<string, number>;
@@ -81,6 +121,7 @@ export function PainelCamadas({
   onChangeFiltro,
   municipios,
   escolas,
+  temSurf,
   protocolos,
   contagens,
   ocorrenciasNaVista,
@@ -102,6 +143,7 @@ export function PainelCamadas({
 
   const ativos = [
     filtros.municipio,
+    filtros.rede,
     filtros.escola,
     filtros.mesInicio,
     filtros.mesFim,
@@ -109,6 +151,7 @@ export function PainelCamadas({
 
   const limparFiltros = () => {
     onChangeFiltro("municipio", "");
+    onChangeFiltro("rede", "");
     onChangeFiltro("escola", "");
     onChangeFiltro("mesInicio", "");
     onChangeFiltro("mesFim", "");
@@ -235,12 +278,7 @@ export function PainelCamadas({
               <div className="pt-1 mt-1 border-t border-glass-border space-y-0.5">
                 {/* A cor acompanha o pino do mapa: o painel é a legenda
                     dele, e um disco de cor diferente do pino mentiria. */}
-                {(
-                  [
-                    ["escolas", "Escolas", "escola", COR_ESCOLA],
-                    ["ocorrencias", "Ocorrências", null, null],
-                  ] as const
-                ).map(([key, label, slug, cor]) => (
+                {linhasDeRede(temSurf).map(([key, label, slug, cor]) => (
                   <button
                     key={key}
                     onClick={() => onToggleCamada(key)}
@@ -332,6 +370,24 @@ export function PainelCamadas({
                   ))}
                 </select>
               </div>
+
+              {/* Rede. Só aparece com escola de surf publicada — ou com
+                  o filtro já ligado pela URL, para que quem chegou por
+                  um link recortado tenha onde desfazer o recorte. */}
+              {(temSurf || filtros.rede !== "") && (
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Rede</label>
+                  <select
+                    value={filtros.rede}
+                    onChange={(e) => onChangeFiltro("rede", e.target.value)}
+                    className="mt-0.5 w-full bg-card border border-border rounded-sm text-[13px] px-2 py-1"
+                  >
+                    <option value="">Todas</option>
+                    <option value="regular">Escolas</option>
+                    <option value="surf">Escolas de surf</option>
+                  </select>
+                </div>
+              )}
 
               {/* Escola */}
               <div>

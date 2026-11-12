@@ -276,6 +276,19 @@ const GLIFOS: Record<string, Tracos> = {
       <path d="M22 9v5" />
     </>
   ),
+  /**
+   * Escola de surf (Guardiões Ecosurf): onda quebrando.
+   *
+   * A primeira versão era uma prancha, e no tamanho de um pino a prancha
+   * se lia como folha — bem ao lado do broto da restinga. A onda com a
+   * crista dobrando é a que continua sendo "surf" a 16 pixels.
+   */
+  escola_surf: (
+    <>
+      <path d="M2 17c2.5 0 4.5-2 4.5-5.5C6.5 7.5 9.5 5 13 5c3.5 0 6 2.3 6 5-1.3-1.3-3.6-1.2-4.5.3-.9 1.5.1 3.7 2.5 3.7" />
+      <path d="M2 21c2-1 4-1 6 0s4 1 6 0 4-1 6 0" />
+    </>
+  ),
 };
 
 /** Item sem glifo próprio herda o do protocolo; sem nenhum, ponto pleno. */
@@ -334,6 +347,24 @@ export function Glifo({ slug, tamanho = 16, className }: GlifoProps) {
  * tamanho de um pino. Este é o mesmo azul, bem mais fundo.
  */
 export const COR_ESCOLA = "var(--color-escola)";
+
+/**
+ * A cor da escola de surf — o pino dos Guardiões Ecosurf.
+ *
+ * Precisa se separar de duas coisas ao mesmo tempo: do azul fundo da
+ * escola regular, senão os dois tipos viram um só no mapa, e de todos
+ * os protocolos, senão um Guardião se lê como ocorrência. Os protocolos
+ * já ocupam verde, azul, ciano, laranja, vermelho, marrom e roxo; o
+ * magenta é a faixa de matiz que sobrou.
+ */
+export const COR_GUARDIAO = "var(--color-guardiao)";
+
+/** Glifo e cor do pino de uma organização, pelo tipo. */
+export function pinoDaOrganizacao(tipo: "regular" | "surf"): { slug: string; cor: string } {
+  return tipo === "surf"
+    ? { slug: "escola_surf", cor: COR_GUARDIAO }
+    : { slug: "escola", cor: COR_ESCOLA };
+}
 
 interface IconeBadgeProps {
   slug: string | null | undefined;

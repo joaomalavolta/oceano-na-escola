@@ -200,10 +200,11 @@ export default function SobrePage() {
           </section>
 
           {/* Saídas */}
-          <section className="grid sm:grid-cols-3 gap-3">
+          <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { href: "/", titulo: "Ver o mapa", texto: "O território como está hoje" },
               { href: "/escolas", titulo: "As escolas da rede", texto: "Quem monitora o quê" },
+              { href: "/guardioes", titulo: "Guardiões Ecosurf", texto: "O programa para escolas de surf" },
               { href: "/dados", titulo: "Dados abertos", texto: "Indicadores por município" },
             ].map(({ href, titulo, texto }) => (
               <Link

@@ -15,6 +15,7 @@ import type {
   PubFotoGeorreferenciada,
   PubGaleria,
 } from "./database.types";
+import { tipoDe } from "./organizacao";
 
 export interface EscolaPublica {
   escola: PubEscola | null;
@@ -84,6 +85,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
           uf: String(e.uf),
           lat: num(e.lat),
           lng: num(e.lng),
+          tipo: tipoDe(e.tipo),
         }
       : null;
 

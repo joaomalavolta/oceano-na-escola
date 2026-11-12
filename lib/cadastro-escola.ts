@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "./supabase";
+import type { TipoOrganizacao } from "./organizacao";
 
 export interface Municipio {
   id: number;
@@ -19,7 +20,15 @@ export interface Municipio {
 export interface DadosCadastro {
   nome: string;
   municipio_id: number;
-  rede_ensino: string;
+  /**
+   * Escola regular ou escola de surf. Vai no insert e não muda depois:
+   * a coluna só é concedida em insert, porque trocar o tipo de quem já
+   * tem dado publicado mudaria o sentido do que está no mapa. Ausente,
+   * o banco grava 'regular'.
+   */
+  tipo?: TipoOrganizacao;
+  /** Nula para a escola de surf, que não pertence a rede de ensino. */
+  rede_ensino: string | null;
   endereco: string;
   apresentacao: string;
   /** Nulos quando a escola é aberta no meio de outra tarefa. A escola
@@ -90,7 +99,8 @@ export async function cadastrarEscola(d: DadosCadastro): Promise<ResultadoCadast
         municipio_id: d.municipio_id,
         nome: d.nome,
         slug,
-        rede_ensino: d.rede_ensino,
+        tipo: d.tipo ?? "regular",
+        rede_ensino: d.tipo === "surf" ? null : d.rede_ensino,
         endereco: d.endereco,
         apresentacao: d.apresentacao,
         geom:

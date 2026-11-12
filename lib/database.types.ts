@@ -6,6 +6,8 @@
  * bater com Database["public"]["Views"]["pub_*"].
  */
 
+import type { TipoOrganizacao } from "./organizacao";
+
 export interface PubEscola {
   id: number;
   slug: string;
@@ -15,6 +17,8 @@ export interface PubEscola {
   uf: string;
   lat: number;
   lng: number;
+  /** Escola regular ou escola de surf (Guardiões Ecosurf). */
+  tipo: TipoOrganizacao;
 }
 
 export interface PubObservacaoGrade {

@@ -27,6 +27,7 @@ import {
   mockIndicadoresEscola,
   mockIndicadoresGerais,
 } from "./mapa-publico";
+import { tipoDe } from "./organizacao";
 
 export type OrigemDados = "supabase" | "mock";
 
@@ -188,6 +189,7 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       uf: String(e.uf),
       lat: num(e.lat),
       lng: num(e.lng),
+      tipo: tipoDe(e.tipo),
     }));
 
     const grade: PubObservacaoGrade[] = (gradeRes.data ?? []).map((g) => ({

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { carregarPainel, type PainelEscola } from "@/lib/dados-escola";
+import { PROGRAMA, vocabulario } from "@/lib/organizacao";
 import { useSessao } from "@/lib/sessao";
 
 const STATUS_ROTULO: Record<string, string> = {
@@ -102,10 +103,13 @@ function PainelConteudo() {
         <div>
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-bold tracking-tight">Painel Analítico da Escola</h1>
+            <h1 className="text-xl font-bold tracking-tight">
+              Painel Analítico da {vocabulario(escola.tipo).organizacao}
+            </h1>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {escola.nome}
+            {escola.tipo === "surf" && ` · ${PROGRAMA.surf}`}
             {escola.municipio && ` · ${escola.municipio}`}
             {dados.escolas.length > 1 && ` · e mais ${dados.escolas.length - 1} escola(s)`}
           </p>

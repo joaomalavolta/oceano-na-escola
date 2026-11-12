@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { School, Users, FileCheck2, Check, AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { School, Users, FileCheck2, Check, AlertTriangle, Plus, Trash2, Waves } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
@@ -12,6 +12,15 @@ import {
   cadastrarEscola,
   type Municipio,
 } from "@/lib/cadastro-escola";
+import {
+  TIPOS,
+  PROGRAMA,
+  vocabulario,
+  maiuscula,
+  tipoLembrado,
+  esquecerTipo,
+  type TipoOrganizacao,
+} from "@/lib/organizacao";
 
 const ANO_ATUAL = new Date().getFullYear();
 
@@ -61,6 +70,14 @@ function OnboardingConteudo() {
   const [passo, setPasso] = useState<1 | 2 | 3>(1);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
 
+  // Quem vem da página dos Guardiões já chega com "escola de surf"
+  // marcado. Lido no inicializador, e não num effect: este componente só
+  // monta no navegador, depois que a sessão carregou.
+  const [tipo, setTipo] = useState<TipoOrganizacao>(() =>
+    typeof window === "undefined" ? "regular" : tipoLembrado() ?? "regular"
+  );
+  const v = vocabulario(tipo);
+
   const [nomeEscola, setNomeEscola] = useState("");
   const [municipioId, setMunicipioId] = useState<number | "">("");
   const [redeEnsino, setRedeEnsino] = useState("Municipal");
@@ -71,9 +88,23 @@ function OnboardingConteudo() {
 
   // Várias turmas desde o cadastro: uma expedição pode reunir mais de uma,
   // e obrigar a criar uma por vez tornaria isso trabalho manual repetido.
-  const [turmas, setTurmas] = useState<TurmaForm[]>([
-    { nome: "", ano_letivo: ANO_ATUAL, nivel: "Fundamental II" },
+  const [turmas, setTurmas] = useState<TurmaForm[]>(() => [
+    { nome: "", ano_letivo: ANO_ATUAL, nivel: v.nivelPadrao },
   ]);
+
+  /* Trocar o tipo troca também as faixas oferecidas. Uma turma que já
+     estava marcada "Fundamental II" não pode seguir assim numa escola de
+     surf: o select não teria essa opção e gravaria um valor que a tela
+     não mostra. */
+  const escolherTipo = (novo: TipoOrganizacao) => {
+    const destino = vocabulario(novo);
+    setTipo(novo);
+    setTurmas((prev) =>
+      prev.map((t) =>
+        destino.niveis.includes(t.nivel) ? t : { ...t, nivel: destino.nivelPadrao }
+      )
+    );
+  };
 
   const [termosOk, setTermosOk] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -101,7 +132,7 @@ function OnboardingConteudo() {
       return;
     }
     if (municipioId === "") {
-      setErro("Escolha o município da escola.");
+      setErro(`Escolha o município d${v.aOrganizacao}.`);
       return;
     }
 
@@ -109,7 +140,8 @@ function OnboardingConteudo() {
     const { slug, erro: falha } = await cadastrarEscola({
       nome: nomeEscola.trim(),
       municipio_id: Number(municipioId),
-      rede_ensino: redeEnsino,
+      tipo,
+      rede_ensino: v.temRedeDeEnsino ? redeEnsino : null,
       endereco: endereco.trim(),
       apresentacao: apresentacao.trim(),
       lat,
@@ -124,6 +156,7 @@ function OnboardingConteudo() {
       return;
     }
 
+    esquecerTipo();
     await recarregarPerfil();
     router.push("/painel");
   };
@@ -131,14 +164,17 @@ function OnboardingConteudo() {
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
       <div className="mb-8">
-        <h1 className="text-xl font-bold tracking-tight">Cadastro da escola e das turmas</h1>
+        <h1 className="text-xl font-bold tracking-tight">
+          Cadastro d{v.aOrganizacao} e das {v.grupos.toLowerCase()}
+        </h1>
         <p className="text-xs text-muted-foreground mt-1">
-          A escola é cadastrada em seu nome, e você fica vinculado a ela automaticamente.
+          {maiuscula(v.aOrganizacao)} é cadastrada em seu nome, e você fica vinculado a ela
+          automaticamente.
         </p>
 
         <div className="grid grid-cols-3 gap-2 mt-6">
-          <Passo atual={passo} n={1} label="Escola" Icone={School} />
-          <Passo atual={passo} n={2} label="Turmas" Icone={Users} />
+          <Passo atual={passo} n={1} label={v.organizacao} Icone={tipo === "surf" ? Waves : School} />
+          <Passo atual={passo} n={2} label={v.grupos} Icone={Users} />
           <Passo atual={passo} n={3} label="Termos" Icone={FileCheck2} />
         </div>
       </div>
@@ -147,21 +183,74 @@ function OnboardingConteudo() {
         {/* ── Passo 1 ─────────────────────────────────────────────── */}
         {passo === 1 && (
           <section className="bg-card border border-border rounded-md p-5 space-y-4 shadow-2xs">
+            {/* A primeira pergunta do cadastro, porque as seguintes
+                dependem dela: é o tipo que decide se há rede de ensino,
+                como se chama o grupo e que faixas ele pode ter. E não
+                dá para corrigir depois — o tipo só é aceito no insert. */}
+            <fieldset>
+              <legend className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Quem está se cadastrando
+              </legend>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {TIPOS.map((t) => {
+                  const vt = vocabulario(t);
+                  const marcado = tipo === t;
+                  const Icone = t === "surf" ? Waves : School;
+                  return (
+                    <label
+                      key={t}
+                      className={`flex items-start gap-2.5 p-3 border rounded-sm cursor-pointer transition-colors ${
+                        marcado
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="tipo"
+                        value={t}
+                        checked={marcado}
+                        onChange={() => escolherTipo(t)}
+                        className="sr-only"
+                      />
+                      <Icone
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${
+                          marcado ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{vt.organizacao}</span>
+                        <span className="block text-[11px] text-muted-foreground leading-snug mt-0.5">
+                          {vt.descricao}
+                        </span>
+                        <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-1">
+                          {PROGRAMA[t]}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Esta escolha não muda depois do cadastro.
+              </p>
+            </fieldset>
+
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                Nome da escola
+                Nome d{v.aOrganizacao}
               </label>
               <input
                 type="text"
                 required
                 value={nomeEscola}
                 onChange={(e) => setNomeEscola(e.target.value)}
-                placeholder="E.M. Professora Maria da Silva"
+                placeholder={v.exemploDeNome}
                 className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className={v.temRedeDeEnsino ? "grid grid-cols-2 gap-3" : ""}>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                   Município
@@ -185,21 +274,23 @@ function OnboardingConteudo() {
                 </p>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                  Rede de ensino
-                </label>
-                <select
-                  value={redeEnsino}
-                  onChange={(e) => setRedeEnsino(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option>Municipal</option>
-                  <option>Estadual</option>
-                  <option>Federal</option>
-                  <option>Privada</option>
-                </select>
-              </div>
+              {v.temRedeDeEnsino && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    Rede de ensino
+                  </label>
+                  <select
+                    value={redeEnsino}
+                    onChange={(e) => setRedeEnsino(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option>Municipal</option>
+                    <option>Estadual</option>
+                    <option>Federal</option>
+                    <option>Privada</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div>
@@ -250,7 +341,7 @@ function OnboardingConteudo() {
                 rows={3}
                 value={apresentacao}
                 onChange={(e) => setApresentacao(e.target.value)}
-                placeholder="O que a escola monitora e desde quando."
+                placeholder={`O que ${v.aOrganizacao} monitora e desde quando.`}
                 className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
@@ -261,7 +352,7 @@ function OnboardingConteudo() {
               onClick={() => setPasso(2)}
               className="w-full py-2.5 text-xs font-semibold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              Continuar para as turmas
+              Continuar para as {v.grupos.toLowerCase()}
             </button>
           </section>
         )}
@@ -270,26 +361,28 @@ function OnboardingConteudo() {
         {passo === 2 && (
           <section className="bg-card border border-border rounded-md p-5 space-y-4 shadow-2xs">
             <p className="text-xs text-muted-foreground">
-              Cadastre quantas turmas forem a campo. Uma expedição pode reunir mais de uma.
+              {tipo === "surf"
+                ? "Cadastre as turmas de aula que vão participar do monitoramento. Pode ser uma só, e dá para acrescentar outras depois."
+                : "Cadastre quantas turmas forem a campo. Uma expedição pode reunir mais de uma."}
             </p>
 
             {turmas.map((t, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-5">
                   <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                    Turma
+                    {v.grupo}
                   </label>
                   <input
                     type="text"
                     value={t.nome}
                     onChange={(e) => alterarTurma(i, "nome", e.target.value)}
-                    placeholder="7º ano A"
+                    placeholder={v.exemploDeGrupo}
                     className="w-full px-2.5 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
                 <div className="col-span-3">
                   <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                    Ano letivo
+                    {v.rotuloAno}
                   </label>
                   <input
                     type="number"
@@ -300,17 +393,16 @@ function OnboardingConteudo() {
                 </div>
                 <div className="col-span-3">
                   <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                    Nível
+                    {v.rotuloNivel}
                   </label>
                   <select
                     value={t.nivel}
                     onChange={(e) => alterarTurma(i, "nivel", e.target.value)}
                     className="w-full px-2.5 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   >
-                    <option>Fundamental I</option>
-                    <option>Fundamental II</option>
-                    <option>Médio</option>
-                    <option>EJA</option>
+                    {v.niveis.map((n) => (
+                      <option key={n}>{n}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="col-span-1">
@@ -319,7 +411,7 @@ function OnboardingConteudo() {
                       type="button"
                       onClick={() => setTurmas((prev) => prev.filter((_, j) => j !== i))}
                       className="w-full py-2 text-muted-foreground hover:text-destructive"
-                      aria-label="Remover turma"
+                      aria-label={`Remover ${v.grupo.toLowerCase()}`}
                     >
                       <Trash2 className="w-4 h-4 mx-auto" />
                     </button>
@@ -333,12 +425,12 @@ function OnboardingConteudo() {
               onClick={() =>
                 setTurmas((prev) => [
                   ...prev,
-                  { nome: "", ano_letivo: ANO_ATUAL, nivel: "Fundamental II" },
+                  { nome: "", ano_letivo: ANO_ATUAL, nivel: v.nivelPadrao },
                 ])
               }
               className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
             >
-              <Plus className="w-3.5 h-3.5" /> Adicionar turma
+              <Plus className="w-3.5 h-3.5" /> Adicionar {v.grupo.toLowerCase()}
             </button>
 
             <div className="flex gap-2 pt-2">
@@ -370,19 +462,31 @@ function OnboardingConteudo() {
                 onChange={(e) => setTermosOk(e.target.checked)}
                 className="mt-0.5"
               />
-              <span className="text-xs leading-relaxed">
-                Confirmo que a escola colheu o <strong>termo de responsabilidade sobre os
-                alunos</strong> e o <strong>termo de uso de imagem</strong>, e que eles estão
-                arquivados na secretaria.
-              </span>
+              {/* Os mesmos dois termos para os dois tipos. A escola de
+                  surf também atende adultos, que assinam por si — daí a
+                  ressalva do responsável só para o menor de idade. */}
+              {tipo === "surf" ? (
+                <span className="text-xs leading-relaxed">
+                  Confirmo que a escola de surf colheu o <strong>termo de responsabilidade</strong>{" "}
+                  e o <strong>termo de uso de imagem</strong> de cada aluno — assinados pelo
+                  responsável, quando o aluno é menor de idade — e que eles estão arquivados na
+                  escola de surf.
+                </span>
+              ) : (
+                <span className="text-xs leading-relaxed">
+                  Confirmo que a escola colheu o <strong>termo de responsabilidade sobre os
+                  alunos</strong> e o <strong>termo de uso de imagem</strong>, e que eles estão
+                  arquivados na secretaria.
+                </span>
+              )}
             </label>
 
             <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border pt-3">
-              Sem essa confirmação, nenhuma foto da escola aparece em página pública — a
-              galeria exige o termo, além da curadoria do professor. O cadastro também vai para
-              análise do Instituto Ecosurf, e a escola entra no mapa da rede quando ele aprovar.
-              Você não precisa esperar por isso para trabalhar: a turma já pode sair a campo, e
-              as expedições ficam guardadas até a publicação.
+              Sem essa confirmação, nenhuma foto d{v.aOrganizacao} aparece em página pública — a
+              galeria exige o termo, além da curadoria do {v.responsavel.toLowerCase()}. O
+              cadastro também vai para análise do Instituto Ecosurf, e {v.aOrganizacao} entra no
+              mapa da rede quando ele aprovar. Você não precisa esperar por isso para trabalhar:
+              a turma já pode sair a campo, e as expedições ficam guardadas até a publicação.
             </p>
 
             {erro && (

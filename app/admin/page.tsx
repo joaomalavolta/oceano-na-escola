@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 
+import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
@@ -246,6 +247,7 @@ function AdminConteudo() {
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                   <div className="min-w-0">
                     <span className="text-sm font-bold">{e.nome}</span>
+                    <SeloTipo tipo={e.tipo} comPrograma className="ml-2" />
                     <span className="block text-[11px] text-muted-foreground">
                       {esperaDesde(e.criado_em)}
                       {" · "}
@@ -632,6 +634,7 @@ function AdminConteudo() {
                 <tr key={e.id} className="border-b border-border/50">
                   <td className="py-2 px-3">
                     <span className="font-medium">{e.nome}</span>
+                    <SeloTipo tipo={e.tipo} className="ml-2" />
                     <span className="block text-[10px] font-mono text-muted-foreground">
                       {e.slug}
                     </span>

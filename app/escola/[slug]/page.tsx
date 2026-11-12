@@ -22,6 +22,7 @@ import {
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
+import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import { calcularConquistas } from "@/lib/conquistas";
 import { listarHistoriasPublicas, type HistoriaPublica } from "@/lib/historias";
@@ -147,6 +148,7 @@ export default function EscolaPublicaPage({
               <MapPin className="w-3.5 h-3.5" /> {escola.municipio} – {escola.uf}
             </span>
             <h1 className="text-2xl font-bold tracking-tight">{escola.nome}</h1>
+            <SeloTipo tipo={escola.tipo} comPrograma className="!text-[11px]" />
             {escola.apresentacao && (
               <p className="text-xs text-muted-foreground max-w-2xl">{escola.apresentacao}</p>
             )}

@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { Layers, X } from "lucide-react";
-import { IconeBadge, COR_ESCOLA } from "./icones";
+import { IconeBadge } from "./icones";
 import { ListaOcorrencias } from "./lista-ocorrencias";
-import type { CamadasState, FiltrosState, ProtocoloCamada } from "./painel-camadas";
+import {
+  linhasDeRede,
+  type CamadaDeRede,
+  type CamadasState,
+  type FiltrosState,
+  type ProtocoloCamada,
+} from "./painel-camadas";
 import type { PubObservacaoPontual } from "@/lib/database.types";
 
 // ─────────────────────────────────────────────
@@ -15,11 +21,12 @@ import type { PubObservacaoPontual } from "@/lib/database.types";
 interface MobileSheetProps {
   camadas: CamadasState;
   onToggleProtocolo: (codigo: string) => void;
-  onToggleCamada: (camada: "escolas" | "ocorrencias") => void;
+  onToggleCamada: (camada: CamadaDeRede) => void;
   filtros: FiltrosState;
   onChangeFiltro: (campo: keyof FiltrosState, valor: string) => void;
   municipios: string[];
   escolas: { slug: string; nome: string }[];
+  temSurf: boolean;
   protocolos: ProtocoloCamada[];
   contagens: Record<string, number>;
   ocorrenciasNaVista: PubObservacaoPontual[];
@@ -35,6 +42,7 @@ export function MobileSheet({
   onChangeFiltro,
   municipios,
   escolas,
+  temSurf,
   protocolos,
   contagens,
   ocorrenciasNaVista,
@@ -178,12 +186,7 @@ export function MobileSheet({
                     </button>
                   );
                 })}
-                {(
-                  [
-                    ["escolas", "Escolas", "escola", COR_ESCOLA],
-                    ["ocorrencias", "Ocorrências", null, null],
-                  ] as ["escolas" | "ocorrencias", string, string | null, string | null][]
-                ).map(([key, label, slug, cor]) => (
+                {linhasDeRede(temSurf).map(([key, label, slug, cor]) => (
                   <button
                     key={key}
                     onClick={() => onToggleCamada(key)}
@@ -237,6 +240,20 @@ export function MobileSheet({
                     ))}
                   </select>
                 </div>
+                {(temSurf || filtros.rede !== "") && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">Rede</label>
+                    <select
+                      value={filtros.rede}
+                      onChange={(e) => onChangeFiltro("rede", e.target.value)}
+                      className="mt-0.5 w-full bg-card border border-border rounded-sm text-sm px-2 py-1.5"
+                    >
+                      <option value="">Todas</option>
+                      <option value="regular">Escolas</option>
+                      <option value="surf">Escolas de surf</option>
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="text-xs text-muted-foreground">Escola</label>
                   <select

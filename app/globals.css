@@ -91,6 +91,12 @@
      e a 0.22 de distância da avifauna, que se lê de longe. */
   --escola: oklch(0.30 0.105 256);
 
+  /* O pino da escola de surf (Guardiões Ecosurf). Magenta: a única
+     faixa de matiz que nem a escola regular nem os protocolos usam. O
+     roxo de "Histórias" fica a uns 45° daqui, e o glifo — prancha, e
+     não capelo — desfaz o que sobrar de dúvida. */
+  --guardiao: oklch(0.50 0.20 350);
+
   /* Mapa — painéis flutuantes */
   --glass-bg: oklch(0.995 0.004 106 / 0.82);
   --glass-border: oklch(0.86 0.02 252 / 0.5);
@@ -145,6 +151,7 @@
 
   /* No escuro o pino da escola sobe, senão some no fundo. */
   --escola: oklch(0.62 0.13 250);
+  --guardiao: oklch(0.66 0.19 350);
 
   --glass-bg: oklch(0.18 0.035 252 / 0.82);
   --glass-border: oklch(0.32 0.025 252 / 0.5);
@@ -182,6 +189,7 @@
   --color-marca-viva: var(--marca-viva);
   --color-marca-foreground: var(--marca-foreground);
   --color-escola: var(--escola);
+  --color-guardiao: var(--guardiao);
 
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);

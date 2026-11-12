@@ -8,11 +8,14 @@
  */
 
 import { supabase } from "./supabase";
+import { tipoDe, type TipoOrganizacao } from "./organizacao";
 
 export interface EscolaDoUsuario {
   id: number;
   nome: string;
   slug: string;
+  /** Escola regular ou escola de surf: decide o vocabulário do painel. */
+  tipo: TipoOrganizacao;
   municipio: string;
   uf: string;
   /** Parecer do Ecosurf sobre o cadastro: pendente, aprovada, recusada. */
@@ -100,7 +103,7 @@ export async function carregarPainel(): Promise<PainelEscola> {
     const [escolasRes, expedicoesRes, unidadesRes, contagensRes] = await Promise.all([
       supabase
         .from("escola")
-        .select("id, nome, slug, situacao, motivo_recusa, municipio:municipio_id (nome, uf)"),
+        .select("id, nome, slug, tipo, situacao, motivo_recusa, municipio:municipio_id (nome, uf)"),
       supabase
         .from("expedicao")
         // A string do select precisa ser literal: o supabase-js a analisa
@@ -131,6 +134,7 @@ export async function carregarPainel(): Promise<PainelEscola> {
         id: num(e.id),
         nome: String(e.nome),
         slug: String(e.slug),
+        tipo: tipoDe(e.tipo),
         municipio: m?.nome ?? "",
         uf: m?.uf ?? "",
         situacao: String(e.situacao ?? "aprovada"),

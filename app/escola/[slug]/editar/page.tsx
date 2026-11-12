@@ -22,6 +22,8 @@ import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { listarMunicipios, type Municipio } from "@/lib/cadastro-escola";
+import { SeloTipo } from "@/components/escolas/selo-tipo";
+import { vocabulario } from "@/lib/organizacao";
 import { criarTurma } from "@/lib/cadastro-expedicao";
 import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
@@ -192,6 +194,8 @@ function EditarConteudo({ slug }: { slug: string }) {
 
   const semCoordenada = escola.lat === null || escola.lng === null;
 
+  const v = vocabulario(escola.tipo);
+
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8 space-y-5">
       {/* Ao painel, e não à página pública da escola: o cabeçalho logo
@@ -203,11 +207,14 @@ function EditarConteudo({ slug }: { slug: string }) {
         <div>
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <Pencil className="w-5 h-5 text-primary" />
-            Editar escola
+            Editar {v.organizacao.toLowerCase()}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {escola.nome} · endereço público <span className="font-mono">{escola.slug}</span>
           </p>
+          {/* O tipo aparece e não se edita: é gravado no cadastro, e
+              trocá-lo mudaria o sentido do que a escola já publicou. */}
+          <SeloTipo tipo={escola.tipo} comPrograma className="mt-1.5" />
         </div>
         <Link
           href={`/escola/${escola.slug}`}
@@ -233,7 +240,7 @@ function EditarConteudo({ slug }: { slug: string }) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className={v.temRedeDeEnsino ? "grid grid-cols-2 gap-3" : ""}>
           <div>
             <label className={rotulo}>Município</label>
             <select
@@ -248,21 +255,23 @@ function EditarConteudo({ slug }: { slug: string }) {
               ))}
             </select>
           </div>
-          <div>
-            <label className={rotulo}>Rede de ensino</label>
-            <select
-              value={escola.rede_ensino ?? ""}
-              onChange={(e) => alterar("rede_ensino", e.target.value || null)}
-              className={campo}
-            >
-              <option value="">Não informada</option>
-              {["Municipal", "Estadual", "Federal", "Particular"].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
+          {v.temRedeDeEnsino && (
+            <div>
+              <label className={rotulo}>Rede de ensino</label>
+              <select
+                value={escola.rede_ensino ?? ""}
+                onChange={(e) => alterar("rede_ensino", e.target.value || null)}
+                className={campo}
+              >
+                <option value="">Não informada</option>
+                {["Municipal", "Estadual", "Federal", "Particular"].map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div>
@@ -448,7 +457,7 @@ function EditarConteudo({ slug }: { slug: string }) {
       {/* Turmas */}
       <section className="bg-card border border-border rounded-md p-5 space-y-3 shadow-2xs">
         <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
-          Turmas
+          {v.grupos}
         </h2>
 
         <div className="space-y-2">

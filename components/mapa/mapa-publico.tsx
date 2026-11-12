@@ -38,11 +38,17 @@ import type {
 } from "@/lib/database.types";
 import { ESTILO_SEM_FUNDO, fundoPorId, fundoSalvo, salvaFundo } from "@/lib/mapa-base";
 import { agruparPorProximidade, pontoDe } from "@/lib/agrupamento";
-import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
+import { PinMapa, slugDe, pinoDaOrganizacao } from "./icones";
+import { redeDaUrl, rotuloDoPino } from "@/lib/organizacao";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
-import { PainelCamadas, type CamadasState, type FiltrosState } from "./painel-camadas";
+import {
+  PainelCamadas,
+  type CamadaDeRede,
+  type CamadasState,
+  type FiltrosState,
+} from "./painel-camadas";
 import { FaixaIndicadores } from "./faixa-indicadores";
 import { PopupCelula } from "./popup-celula";
 import { PopupOcorrencia } from "./popup-ocorrencia";
@@ -152,7 +158,11 @@ export function MapaPublico() {
   // resto: protocolo novo no banco nasce ligado, sem effect semeando
   // estado a cada carga de dados.
   const [protocolosDesligados, setProtocolosDesligados] = useState<string[]>([]);
-  const [outrasCamadas, setOutrasCamadas] = useState({ escolas: true, ocorrencias: true });
+  const [outrasCamadas, setOutrasCamadas] = useState({
+    escolas: true,
+    guardioes: true,
+    ocorrencias: true,
+  });
 
   const camadas = useMemo<CamadasState>(
     () => ({
@@ -165,14 +175,18 @@ export function MapaPublico() {
   );
 
   // Filtros
-  const [filtros, setFiltros] = useState<FiltrosState>({
+  // `/?rede=surf` abre o mapa já recortado nos Guardiões — é o link da
+  // página do programa. Lido no inicializador: este componente só existe
+  // no navegador (a home o carrega sem SSR), então `window` está aqui.
+  const [filtros, setFiltros] = useState<FiltrosState>(() => ({
     municipio: "",
+    rede: redeDaUrl(new URLSearchParams(window.location.search).get("rede")),
     escola: "",
     mesInicio: "",
     mesFim: "",
-  });
+  }));
 
-  const toggleCamada = useCallback((key: "escolas" | "ocorrencias") => {
+  const toggleCamada = useCallback((key: CamadaDeRede) => {
     setOutrasCamadas((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
@@ -184,7 +198,14 @@ export function MapaPublico() {
 
   const changeFiltro = useCallback(
     (campo: keyof FiltrosState, valor: string) => {
-      setFiltros((prev) => ({ ...prev, [campo]: valor }));
+      // Trocar a rede desmarca a escola escolhida: ela pode ser do outro
+      // tipo, e os dois filtros juntos dariam um mapa vazio sem motivo
+      // aparente.
+      setFiltros((prev) => ({
+        ...prev,
+        [campo]: valor,
+        ...(campo === "rede" ? { escola: "" } : {}),
+      }));
       setPopupInfo(null);
       setOcorrenciaAberta(null);
     },
@@ -200,6 +221,19 @@ export function MapaPublico() {
   );
 
   /**
+   * O dado é da rede escolhida? Sem filtro de rede, todo dado é.
+   *
+   * O tipo vem da escola, pelo slug, e não de uma coluna em cada
+   * ocorrência: assim a grade — que não carrega o tipo — é recortada
+   * pela mesma regra que os pinos.
+   */
+  const daRede = useCallback(
+    (slug: string) =>
+      !filtros.rede || dados.escolas.find((e) => e.slug === slug)?.tipo === filtros.rede,
+    [dados.escolas, filtros.rede]
+  );
+
+  /**
    * Os filtros do painel, sem o liga-desliga das camadas.
    *
    * Separado porque as contagens do painel precisam justamente do que
@@ -209,22 +243,24 @@ export function MapaPublico() {
   const gradeSemCamada = useMemo(() => {
     return dados.grade.filter((g) => {
       if (filtros.municipio && municipioDaEscola(g.escola_slug) !== filtros.municipio) return false;
+      if (!daRede(g.escola_slug)) return false;
       if (filtros.escola && g.escola_slug !== filtros.escola) return false;
       if (filtros.mesInicio && g.mes < filtros.mesInicio) return false;
       if (filtros.mesFim && g.mes > filtros.mesFim + "-31") return false;
       return true;
     });
-  }, [dados.grade, filtros, municipioDaEscola]);
+  }, [dados.grade, filtros, municipioDaEscola, daRede]);
 
   const pontuaisSemCamada = useMemo(() => {
     return dados.pontuais.filter((o) => {
       if (filtros.municipio && municipioDaEscola(o.escola_slug) !== filtros.municipio) return false;
+      if (!daRede(o.escola_slug)) return false;
       if (filtros.escola && o.escola_slug !== filtros.escola) return false;
       if (filtros.mesInicio && o.data_campo < filtros.mesInicio + "-01") return false;
       if (filtros.mesFim && o.data_campo > filtros.mesFim + "-31") return false;
       return true;
     });
-  }, [dados.pontuais, filtros, municipioDaEscola]);
+  }, [dados.pontuais, filtros, municipioDaEscola, daRede]);
 
   // A camada manda no que o mapa desenha. Protocolo desconhecido fica
   // oculto em vez de escapar dos testes e aparecer sempre, como
@@ -242,10 +278,12 @@ export function MapaPublico() {
   const escolasFiltradas = useMemo(() => {
     return dados.escolas.filter((e) => {
       if (filtros.municipio && e.municipio !== filtros.municipio) return false;
+      if (filtros.rede && e.tipo !== filtros.rede) return false;
       if (filtros.escola && e.slug !== filtros.escola) return false;
-      return true;
+      // Cada tipo tem o seu liga-desliga, porque cada um tem o seu pino.
+      return e.tipo === "surf" ? camadas.guardioes : camadas.escolas;
     });
-  }, [dados.escolas, filtros.municipio, filtros.escola]);
+  }, [dados.escolas, filtros.municipio, filtros.rede, filtros.escola, camadas.escolas, camadas.guardioes]);
 
   // Escala por protocolo: a curada quando existe, senão derivada dos
   // valores observados. A cor vem de `protocolo.cor`, no banco.
@@ -438,15 +476,25 @@ export function MapaPublico() {
       })),
     [dados.protocolos]
   );
+  // Com a rede escolhida, a lista de escolas só oferece as dela.
   const listaEscolas = useMemo(
-    () => dados.escolas.map((e) => ({ slug: e.slug, nome: e.nome })),
-    [dados.escolas]
+    () =>
+      dados.escolas
+        .filter((e) => !filtros.rede || e.tipo === filtros.rede)
+        .map((e) => ({ slug: e.slug, nome: e.nome })),
+    [dados.escolas, filtros.rede]
   );
+  const temSurf = useMemo(() => dados.escolas.some((e) => e.tipo === "surf"), [dados.escolas]);
 
   // Verifica se filtro ativo não tem resultados
   const filtroAtivo =
-    filtros.municipio || filtros.escola || filtros.mesInicio || filtros.mesFim;
-  const semResultado = filtroAtivo && gradeFiltrada.length === 0;
+    filtros.municipio || filtros.rede || filtros.escola || filtros.mesInicio || filtros.mesFim;
+  // Vazio de verdade: nem grade nem ocorrência. Só a grade não basta —
+  // a escola de surf produz quase tudo como ocorrência pontual, e o
+  // recorte dos Guardiões acusaria "nenhuma observação" em cima de um
+  // mapa cheio de pinos.
+  const semResultado =
+    filtroAtivo && gradeFiltrada.length === 0 && pontuaisSemCamada.length === 0;
 
   return (
     <div className="relative w-screen h-screen overflow-hidden">
@@ -584,8 +632,7 @@ export function MapaPublico() {
         })}
 
         {/* Camada: Escolas */}
-        {camadas.escolas &&
-          escolasFiltradas.map((escola) => (
+        {escolasFiltradas.map((escola) => (
             <Marker
               key={escola.id}
               latitude={escola.lat}
@@ -606,11 +653,10 @@ export function MapaPublico() {
                 className="group flex flex-col items-center"
               >
                 <div className="mb-0.5 px-1.5 py-0.5 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground max-w-[120px] truncate shadow-sm">
-                  {escola.nome.split(" ").slice(0, 3).join(" ")}
+                  {rotuloDoPino(escola.nome, escola.tipo)}
                 </div>
                 <PinMapa
-                  slug="escola"
-                  cor={COR_ESCOLA}
+                  {...pinoDaOrganizacao(escola.tipo)}
                   tamanho={34}
                   className="drop-shadow-md transition-transform group-hover:scale-110 origin-bottom"
                 />
@@ -684,6 +730,7 @@ export function MapaPublico() {
           onChangeFiltro={changeFiltro}
           municipios={listaMunicipios}
           escolas={listaEscolas}
+          temSurf={temSurf}
           protocolos={listaProtocolos}
           contagens={contagens}
           ocorrenciasNaVista={ocorrenciasNaVista}
@@ -704,6 +751,7 @@ export function MapaPublico() {
         onChangeFiltro={changeFiltro}
         municipios={listaMunicipios}
         escolas={listaEscolas}
+        temSurf={temSurf}
         protocolos={listaProtocolos}
         contagens={contagens}
         ocorrenciasNaVista={ocorrenciasNaVista}
@@ -752,24 +800,32 @@ export function MapaPublico() {
         </div>
       )}
 
-      {/* Filtro sem resultado */}
+      {/* Filtro sem resultado.
+
+          No alto, em faixa, e não numa caixa no centro do mapa. O centro
+          é onde o mapa enquadra o que sobrou do filtro — com o recorte
+          dos Guardiões, a caixa caía em cima do pino da única escola de
+          surf, dizendo "nada aqui" sobre a coisa que estava ali. */}
       {semResultado && !carregando && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="flex flex-col items-center gap-2 bg-glass-bg backdrop-blur-xl border border-glass-border rounded-sm px-6 py-4 text-center">
-            <SearchX size={28} className="text-muted-foreground" />
-            <span className="text-sm font-medium">
-              Nenhuma observação neste filtro
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 max-w-[calc(100vw-2rem)]">
+          <div className="flex items-center gap-2.5 bg-glass-bg backdrop-blur-xl border border-glass-border rounded-sm shadow-sm px-3.5 py-2">
+            <SearchX size={16} className="text-muted-foreground shrink-0" />
+            <span className="text-xs font-medium">
+              {escolasFiltradas.length > 0
+                ? "Nenhuma observação publicada neste filtro ainda"
+                : "Nenhuma observação neste filtro"}
             </span>
             <button
               onClick={() =>
                 setFiltros({
                   municipio: "",
+                  rede: "",
                   escola: "",
                   mesInicio: "",
                   mesFim: "",
                 })
               }
-              className="text-xs text-primary hover:underline"
+              className="text-xs text-primary hover:underline shrink-0"
             >
               Limpar filtros
             </button>

@@ -17,6 +17,7 @@
  */
 
 import { supabase } from "./supabase";
+import { tipoDe, type TipoOrganizacao } from "./organizacao";
 
 export type Papel =
   | "professor"
@@ -46,6 +47,8 @@ export interface EscolaEditavel {
   id: number;
   slug: string;
   nome: string;
+  /** Só leitura: o tipo é gravado no cadastro e não muda depois. */
+  tipo: TipoOrganizacao;
   municipio_id: number;
   rede_ensino: string | null;
   endereco: string | null;
@@ -94,7 +97,7 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
   const { data, error } = await supabase
     .from("escola")
     .select(
-      "id, slug, nome, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa"
+      "id, slug, nome, tipo, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -108,6 +111,7 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
     id: num(data.id),
     slug: String(data.slug),
     nome: String(data.nome),
+    tipo: tipoDe(data.tipo),
     municipio_id: num(data.municipio_id),
     rede_ensino: data.rede_ensino ?? null,
     endereco: data.endereco ?? null,
@@ -131,7 +135,7 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
  */
 export async function salvarEscola(
   id: number,
-  d: Omit<EscolaEditavel, "id" | "slug" | "publicada" | "situacao" | "motivo_recusa">
+  d: Omit<EscolaEditavel, "id" | "slug" | "tipo" | "publicada" | "situacao" | "motivo_recusa">
 ): Promise<{ erro: string | null }> {
   const { error } = await supabase
     .from("escola")
@@ -277,6 +281,8 @@ export interface EscolaDaRede {
   id: number;
   nome: string;
   slug: string;
+  /** Quem analisa o cadastro precisa saber o que está aprovando. */
+  tipo: TipoOrganizacao;
   publicada: boolean;
   termos_ok: boolean;
   situacao: SituacaoEscola;
@@ -296,7 +302,7 @@ export async function listarEscolasAdministraveis(): Promise<EscolaDaRede[]> {
   const { data, error } = await supabase
     .from("escola")
     .select(
-      "id, nome, slug, publicada, termos_ok, situacao, motivo_recusa, criado_em, tem_coordenada"
+      "id, nome, slug, tipo, publicada, termos_ok, situacao, motivo_recusa, criado_em, tem_coordenada"
     )
     .order("criado_em");
 
@@ -306,6 +312,7 @@ export async function listarEscolasAdministraveis(): Promise<EscolaDaRede[]> {
     id: num(e.id),
     nome: String(e.nome),
     slug: String(e.slug),
+    tipo: tipoDe(e.tipo),
     publicada: Boolean(e.publicada),
     termos_ok: Boolean(e.termos_ok),
     situacao: String(e.situacao) as SituacaoEscola,

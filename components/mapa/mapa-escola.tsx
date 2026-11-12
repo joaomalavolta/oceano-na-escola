@@ -12,7 +12,7 @@ import MapGL, {
   AttributionControl,
   type MapRef,
 } from "react-map-gl/maplibre";
-import { PinMapa, slugDe, COR_ESCOLA } from "./icones";
+import { PinMapa, slugDe, pinoDaOrganizacao } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
 import { PopupOcorrencia } from "./popup-ocorrencia";
@@ -126,7 +126,7 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
 
         <Marker latitude={escola.lat} longitude={escola.lng} anchor="bottom">
           <div title={escola.nome}>
-            <PinMapa slug="escola" cor={COR_ESCOLA} tamanho={34} className="drop-shadow-md" />
+            <PinMapa {...pinoDaOrganizacao(escola.tipo)} tamanho={34} className="drop-shadow-md" />
           </div>
         </Marker>
 
