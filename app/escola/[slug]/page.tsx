@@ -25,6 +25,7 @@ import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { LinhaDoTempo } from "@/components/linha-do-tempo/linha-do-tempo";
 import { EscreverNoMural } from "@/components/mural/escrever-no-mural";
 import { ContatoPublico } from "@/components/escolas/contato-publico";
+import { FaixaDeContato } from "@/components/escolas/faixa-de-contato";
 import { CoordenacaoPublica, FuncionamentoPublico } from "@/components/escolas/sobre-a-escola";
 import { possoEscreverNoMural } from "@/lib/mural";
 import { vocabulario, maiuscula } from "@/lib/organizacao";
@@ -259,10 +260,20 @@ export default function EscolaPublicaPage({
             </div>
           </div>
         </div>
+
+        {/* Quem coordena e como falar com a escola, antes das abas. */}
+        <FaixaDeContato
+          coordenadores={coordenadores}
+          contato={contato}
+          onVerSobre={() => {
+            setAbaAtiva("sobre");
+            document.getElementById("abas-da-escola")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </div>
 
       {/* Abas */}
-      <div className="bg-card border-b border-border sticky top-14 z-20">
+      <div id="abas-da-escola" className="bg-card border-b border-border sticky top-14 z-20 scroll-mt-14">
         {/* A rolagem continua, para o celular, mas sem a barra à mostra:
             no desktop as abas cabem e o traço só sujava a faixa. */}
         <div className="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto rolagem-invisivel">
