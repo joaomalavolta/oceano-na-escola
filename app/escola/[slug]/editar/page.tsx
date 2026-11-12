@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, use } from "react";
+import React, { Suspense, useEffect, useState, use } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   AlertTriangle,
+  Camera,
   CheckCircle2,
   Globe,
   Hourglass,
@@ -24,7 +25,10 @@ import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { listarMunicipios, type Municipio } from "@/lib/cadastro-escola";
 import { SeloTipo } from "@/components/escolas/selo-tipo";
-import { vocabulario } from "@/lib/organizacao";
+import { vocabulario, maiuscula } from "@/lib/organizacao";
+import { CapaDaEscola } from "@/components/fotos/capa-da-escola";
+import { FotosEnviadas } from "@/components/fotos/fotos-enviadas";
+import { useSearchParams } from "next/navigation";
 import { ehPosicaoPadraoAntiga, lerCoordenada } from "@/lib/posicao";
 import { criarTurma } from "@/lib/cadastro-expedicao";
 import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
@@ -58,6 +62,8 @@ const campo =
   "w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
 function EditarConteudo({ slug }: { slug: string }) {
+  // O cadastro manda para cá quando a capa escolhida nele não subiu.
+  const capaFalhou = useSearchParams().get("capa") === "falhou";
   const [escola, setEscola] = useState<EscolaEditavel | null>(null);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [turmas, setTurmas] = useState<TurmaEditavel[]>([]);
@@ -611,6 +617,46 @@ function EditarConteudo({ slug }: { slug: string }) {
         </div>
       </section>
 
+      {/* Fotos. Cada envio grava na hora, fora do "Guardar alterações"
+          lá embaixo: foto é arquivo, e segurar o arquivo até um segundo
+          clique só abriria a chance de perdê-lo ao sair da página. */}
+      <section
+        id="fotos"
+        className="bg-card border border-border rounded-md p-5 space-y-5 shadow-2xs scroll-mt-20"
+      >
+        <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2 flex items-center gap-2">
+          <Camera className="w-3.5 h-3.5" />
+          Fotos
+        </h2>
+
+        {capaFalhou && (
+          <p className="p-3 rounded-sm text-xs flex items-start gap-2 border bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            {maiuscula(v.aOrganizacao)} foi cadastrada, mas a foto de capa escolhida no cadastro
+            não pôde ser enviada. Escolha de novo aqui.
+          </p>
+        )}
+
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold">Foto de capa</h3>
+          <CapaDaEscola escolaId={escola.id} termosOk={escola.termos_ok} aOrganizacao={v.aOrganizacao} />
+        </div>
+
+        <div className="space-y-2 pt-4 border-t border-border">
+          <h3 className="text-xs font-semibold">{v.grupos} e {v.participantes.toLowerCase()} mapeadores</h3>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Fotos da turma em sala, na preparação, apresentando o mapa. Fotos de uma saída de campo
+            específica vão no diário daquela expedição, para aparecerem na linha do tempo junto
+            dela.
+          </p>
+          <FotosEnviadas
+            escolaId={escola.id}
+            termosOk={escola.termos_ok}
+            modo={{ tipo: "foto_turma", turmas: turmas.map((t) => ({ id: t.id, nome: t.nome })) }}
+          />
+        </div>
+      </section>
+
       {aviso && (
         <div
           className={`p-3 rounded-sm text-xs flex items-start gap-2 border ${
@@ -648,7 +694,10 @@ export default function EditarEscolaPage({ params }: { params: Promise<{ slug: s
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <BarraNavegacao />
       <RotaProtegida>
-        <EditarConteudo slug={slug} />
+        {/* `useSearchParams` pede um limite de Suspense. */}
+        <Suspense fallback={null}>
+          <EditarConteudo slug={slug} />
+        </Suspense>
       </RotaProtegida>
     </div>
   );

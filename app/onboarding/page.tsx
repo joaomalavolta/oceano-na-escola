@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { School, Users, FileCheck2, Check, AlertTriangle, Plus, Trash2, Waves } from "lucide-react";
+import { School, Users, FileCheck2, Check, AlertTriangle, Plus, Trash2, Waves, ImagePlus, X } from "lucide-react";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
@@ -23,6 +23,7 @@ import {
   type TipoOrganizacao,
 } from "@/lib/organizacao";
 import { lerCoordenada, posicaoValida } from "@/lib/posicao";
+import { definirCapa } from "@/lib/fotos-da-escola";
 
 const ANO_ATUAL = new Date().getFullYear();
 
@@ -105,6 +106,17 @@ function OnboardingConteudo() {
   const [lng, setLng] = useState<number | null>(null);
   const [apresentacao, setApresentacao] = useState("");
 
+  // A capa fica no aparelho até o fim do cadastro: só existe pasta para
+  // ela no Storage depois que a escola existe no banco.
+  const [capa, setCapa] = useState<File | null>(null);
+  const previaDaCapa = useMemo(() => (capa ? URL.createObjectURL(capa) : null), [capa]);
+  useEffect(
+    () => () => {
+      if (previaDaCapa) URL.revokeObjectURL(previaDaCapa);
+    },
+    [previaDaCapa]
+  );
+
   // Várias turmas desde o cadastro: uma expedição pode reunir mais de uma,
   // e obrigar a criar uma por vez tornaria isso trabalho manual repetido.
   const [turmas, setTurmas] = useState<TurmaForm[]>(() => [
@@ -157,7 +169,7 @@ function OnboardingConteudo() {
     }
 
     setSalvando(true);
-    const { slug, erro: falha } = await cadastrarEscola({
+    const { slug, id: escolaId, erro: falha } = await cadastrarEscola({
       nome: nomeEscola.trim(),
       municipio_id: Number(municipioId),
       tipo,
@@ -180,6 +192,20 @@ function OnboardingConteudo() {
 
     esquecerTipo();
     await recarregarPerfil();
+
+    // A escola já existe. Se a capa falhar agora, o cadastro NÃO volta
+    // atrás nem fica nesta tela — um segundo clique em "Concluir"
+    // cadastraria a escola de novo. Leva à ficha, que explica e deixa
+    // escolher a foto outra vez.
+    if (capa && escolaId) {
+      setSalvando(true);
+      const { erro: falhaCapa } = await definirCapa(escolaId, capa);
+      setSalvando(false);
+      if (falhaCapa) {
+        router.push(`/escola/${slug}/editar?capa=falhou#fotos`);
+        return;
+      }
+    }
     router.push("/painel");
   };
 
@@ -397,6 +423,46 @@ function OnboardingConteudo() {
                 placeholder={`O que ${v.aOrganizacao} monitora e desde quando.`}
                 className="w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
+            </div>
+
+            <div>
+              <span className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                Foto de capa <span className="normal-case tracking-normal font-normal">(opcional)</span>
+              </span>
+              {previaDaCapa ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previaDaCapa}
+                    alt="Prévia da foto de capa"
+                    className="w-full h-40 object-cover rounded-sm border border-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCapa(null)}
+                    className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold bg-background/90 border border-border rounded-sm hover:bg-background"
+                  >
+                    <X className="w-3 h-3" />
+                    Tirar
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center gap-1.5 h-28 rounded-sm border border-dashed border-input bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors">
+                  <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs font-semibold text-primary">Escolher uma foto</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => setCapa(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              )}
+              <p className="text-[10px] text-muted-foreground mt-1">
+                A fachada, o portão, a turma reunida. Aparece na página pública quando o cadastro
+                for aprovado e o termo de imagem estiver registrado. Dá para escolher ou trocar
+                depois, na ficha d{v.aOrganizacao}.
+              </p>
             </div>
 
             <button

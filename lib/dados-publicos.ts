@@ -190,6 +190,7 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       lat: num(e.lat),
       lng: num(e.lng),
       tipo: tipoDe(e.tipo),
+      capa_path: e.capa_path ?? null,
     }));
 
     const grade: PubObservacaoGrade[] = (gradeRes.data ?? []).map((g) => ({

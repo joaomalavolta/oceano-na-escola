@@ -86,6 +86,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
           lat: num(e.lat),
           lng: num(e.lng),
           tipo: tipoDe(e.tipo),
+          capa_path: e.capa_path ?? null,
         }
       : null;
 
@@ -164,6 +165,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
       publicada_em: g.publicada_em ?? null,
       escola_slug: String(g.escola_slug),
       expedicao_numero: numOuNulo(g.expedicao_numero),
+      tipo: String(g.tipo ?? "foto_campo"),
     }));
 
     return { escola, indicador, expedicoes, ocorrencias, fotos, galeria, disponivel: true, erro: null };

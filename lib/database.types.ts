@@ -19,6 +19,8 @@ export interface PubEscola {
   lng: number;
   /** Escola regular ou escola de surf (Guardiões Ecosurf). */
   tipo: TipoOrganizacao;
+  /** A foto de capa, quando publicada e com termo de imagem. */
+  capa_path: string | null;
 }
 
 export interface PubObservacaoGrade {
@@ -130,6 +132,8 @@ export interface PubGaleria {
   publicada_em: string | null;
   escola_slug: string;
   expedicao_numero: number | null;
+  /** foto_campo, foto_quadrat, foto_turma ou capa_escola. */
+  tipo: string;
 }
 
 /** Indicadores agregados para a faixa do rodapé do mapa */

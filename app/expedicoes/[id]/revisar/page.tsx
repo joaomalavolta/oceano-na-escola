@@ -244,7 +244,7 @@ function RevisarConteudo({ id }: { id: number }) {
               className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary transition-colors"
             >
               <BookOpen className="w-3.5 h-3.5" />
-              Diário
+              Diário e fotos
             </Link>
             <Link
               href={`/expedicoes/${cabecalho.id}/relatorio`}

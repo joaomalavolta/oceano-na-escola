@@ -51,6 +51,7 @@ export const mockEscolas: PubEscola[] = [
     lat: -24.1875,
     lng: -46.8015,
     tipo: "regular",
+    capa_path: null,
   },
   {
     id: 2,
@@ -62,6 +63,7 @@ export const mockEscolas: PubEscola[] = [
     lat: -24.1735,
     lng: -46.7645,
     tipo: "regular",
+    capa_path: null,
   },
   {
     id: 3,
@@ -73,6 +75,7 @@ export const mockEscolas: PubEscola[] = [
     lat: -24.1830,
     lng: -46.7885,
     tipo: "regular",
+    capa_path: null,
   },
   {
     id: 4,
@@ -84,6 +87,7 @@ export const mockEscolas: PubEscola[] = [
     lat: -24.2005,
     lng: -46.8220,
     tipo: "regular",
+    capa_path: null,
   },
   // Escola de surf fictícia, para a demonstração mostrar o pino e a aba
   // dos Guardiões. Nome e coordenada são inventados: não é levantamento.
@@ -98,6 +102,7 @@ export const mockEscolas: PubEscola[] = [
     lat: -24.1792,
     lng: -46.7772,
     tipo: "surf",
+    capa_path: null,
   },
 ];
 

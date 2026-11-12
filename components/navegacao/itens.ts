@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Info,
   ShieldCheck,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,6 +40,9 @@ export interface ItemNav {
 export const ITENS_NAV: ItemNav[] = [
   { href: "/", label: "Mapa", icon: Map },
   { href: "/escolas", label: "Escolas", icon: School },
+  // Ao lado de "Escolas" porque é a mesma rede vista pelo tempo, e não
+  // por quem: lá se escolhe uma escola, aqui se vê o que todas fizeram.
+  { href: "/linha-do-tempo", label: "Linha do tempo", icon: CalendarClock },
   { href: "/dados", label: "Dados", icon: Database },
   { href: "/sobre", label: "Sobre", icon: Info },
   { href: "/painel", label: "Painel", icon: BarChart3, privado: true },

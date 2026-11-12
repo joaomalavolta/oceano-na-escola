@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { AlertTriangle, BookOpen, Loader2, Lock, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Camera, Loader2, Lock, Plus, Trash2 } from "lucide-react";
+import { FotosEnviadas } from "@/components/fotos/fotos-enviadas";
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
@@ -231,6 +232,28 @@ function DiarioConteudo({ id }: { id: number }) {
           </section>
         );
       })}
+
+      {/* Fotos da saída. Diferente do texto do diário, a foto pode ir a
+          público — mas só por escolha, uma a uma, e só com o termo de
+          imagem da escola. É ela que ilustra a saída na linha do tempo. */}
+      <section className="space-y-2 pt-2">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+          <Camera className="w-4 h-4" />
+          Fotos da saída
+        </h2>
+        <p className="text-[11px] text-muted-foreground">
+          A turma trabalhando, o trecho percorrido, a chegada e a volta. Publicada aqui, a foto
+          aparece na página da escola e, quando a expedição for publicada, na{" "}
+          <Link href="/linha-do-tempo" className="text-primary hover:underline">
+            linha do tempo da rede
+          </Link>
+          . As fotos das ocorrências registradas em campo também aparecem nesta lista.
+        </p>
+        <FotosEnviadas
+          escolaId={expedicao.escola_id}
+          modo={{ tipo: "foto_campo", expedicaoId: expedicao.id }}
+        />
+      </section>
 
       <div className="flex flex-col md:flex-row gap-2 pt-2">
         <Link

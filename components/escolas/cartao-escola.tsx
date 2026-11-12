@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPin, Compass, Route, Package } from "lucide-react";
 
 import { IconeBadge, pinoDaOrganizacao } from "@/components/mapa/icones";
+import { FotoEvidencia } from "@/components/ui/foto-evidencia";
 import type { PubEscola, PubIndicadorEscola } from "@/lib/database.types";
 
 /**
@@ -23,8 +24,19 @@ export function CartaoEscola({
   return (
     <Link
       href={`/escola/${escola.slug}`}
-      className="block bg-card border border-border rounded-md p-4 hover:border-primary transition-colors"
+      className="block bg-card border border-border rounded-md overflow-hidden hover:border-primary transition-colors"
     >
+      {/* A capa, quando há. Sem ela o cartão segue como era, sem um
+          espaço cinza no lugar da foto: escola sem capa não é escola
+          com defeito. */}
+      {escola.capa_path && (
+        <FotoEvidencia
+          storagePath={escola.capa_path}
+          alt={`Foto de ${escola.nome}`}
+          className="w-full h-36 object-cover border-b border-border"
+        />
+      )}
+      <div className="p-4">
       <div className="flex items-start gap-2.5">
         <IconeBadge slug={pino.slug} cor={pino.cor} tamanho={28} className="mt-0.5" />
         <div className="min-w-0">
@@ -61,6 +73,7 @@ export function CartaoEscola({
           <dt>itens</dt>
         </div>
       </dl>
+      </div>
     </Link>
   );
 }

@@ -10,7 +10,6 @@ import {
   Info,
   Lock,
   Calendar,
-  Users,
   Route,
   Package,
   Map as MapIcon,
@@ -23,6 +22,8 @@ import {
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { SeloTipo } from "@/components/escolas/selo-tipo";
+import { LinhaDoTempo } from "@/components/linha-do-tempo/linha-do-tempo";
+import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import { calcularConquistas } from "@/lib/conquistas";
 import { listarHistoriasPublicas, type HistoriaPublica } from "@/lib/historias";
@@ -45,6 +46,13 @@ type Aba =
   | "historias"
   | "galeria"
   | "conquistas";
+
+/** O que a foto é, quando ela não tem legenda. */
+function rotuloDaFoto(tipo: string): string {
+  if (tipo === "capa_escola") return "Foto de capa";
+  if (tipo === "foto_turma") return "A turma";
+  return "Foto de campo";
+}
 
 function formatarData(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-BR");
@@ -134,6 +142,15 @@ export default function EscolaPublicaPage({
     { id: "sobre", label: "Sobre", icon: Info },
   ];
 
+  const linhaDaEscola = montarLinhaDoTempo({
+    expedicoes,
+    fotos: galeria,
+    escolas: [{ slug: escola.slug, nome: escola.nome, tipo: escola.tipo, municipio: escola.municipio }],
+    // Na página da própria escola cabem mais fotos por saída: aqui ela
+    // é o assunto, e não uma entre várias.
+    fotosPorMarco: 8,
+  });
+
   const conquistas = calcularConquistas(indicador, expedicoes, ocorrencias, fotos.length);
 
   return (
@@ -143,7 +160,15 @@ export default function EscolaPublicaPage({
       {/* Cabeçalho */}
       <div className="bg-card border-b border-border py-8 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 min-w-0">
+          {escola.capa_path && (
+            <FotoEvidencia
+              storagePath={escola.capa_path}
+              alt={`Foto de ${escola.nome}`}
+              className="w-full sm:w-56 h-40 sm:h-36 object-cover rounded-md border border-border shrink-0"
+            />
+          )}
+          <div className="space-y-2 min-w-0">
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5" /> {escola.municipio} – {escola.uf}
             </span>
@@ -152,6 +177,7 @@ export default function EscolaPublicaPage({
             {escola.apresentacao && (
               <p className="text-xs text-muted-foreground max-w-2xl">{escola.apresentacao}</p>
             )}
+          </div>
           </div>
 
           {/* Só quem tem sessão vê o atalho. Quem tem sessão mas não tem
@@ -267,43 +293,17 @@ export default function EscolaPublicaPage({
             estado={expedicoes.length === 0 ? "vazio" : "pronto"}
             mensagemVazia="Esta escola ainda não publicou expedições."
           >
-            <div className="space-y-3">
-              {expedicoes.map((exp) => (
-                <div
-                  key={exp.id}
-                  className="bg-card border border-border rounded-md p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs"
-                >
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold">
-                      <span className="font-mono text-muted-foreground mr-1.5">
-                        #{exp.numero}
-                      </span>
-                      {exp.titulo ?? "Sem título"}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" /> {formatarData(exp.data_campo)}
-                      </span>
-                      {exp.territorio && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5" /> {exp.territorio}
-                        </span>
-                      )}
-                      {exp.n_mapeadores !== null && (
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" /> {exp.n_mapeadores} mapeadores
-                        </span>
-                      )}
-                      {exp.extensao_m !== null && (
-                        <span className="flex items-center gap-1">
-                          <Route className="w-3.5 h-3.5" /> {exp.extensao_m} m
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* A linha do tempo da escola: a mesma da rede, recortada. As
+                fotos de cada saída vêm junto, para quem visita ver a saída
+                e não só a data dela. */}
+            <LinhaDoTempo meses={linhaDaEscola} mostrarEscola={false} />
+            <p className="text-xs text-muted-foreground mt-6">
+              Veja também o que as outras escolas estão fazendo na{" "}
+              <Link href="/linha-do-tempo" className="text-primary hover:underline">
+                linha do tempo da rede
+              </Link>
+              .
+            </p>
           </EstadoContainer>
         )}
 
@@ -522,11 +522,11 @@ export default function EscolaPublicaPage({
                   >
                     <FotoEvidencia
                       storagePath={g.storage_path}
-                      alt={g.legenda ?? "Foto de campo"}
+                      alt={g.legenda ?? rotuloDaFoto(g.tipo)}
                       className="w-full h-48 object-cover"
                     />
                     <figcaption className="p-3 space-y-0.5">
-                      <p className="text-xs font-bold">{g.legenda ?? "Foto de campo"}</p>
+                      <p className="text-xs font-bold">{g.legenda ?? rotuloDaFoto(g.tipo)}</p>
                       {g.expedicao_numero !== null && (
                         <p className="text-[11px] text-muted-foreground">
                           Expedição #{g.expedicao_numero}
