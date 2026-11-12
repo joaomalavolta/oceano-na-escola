@@ -117,8 +117,8 @@ function HistoriasConteudo() {
         {escolas.length === 0 && (
           <p className="text-xs text-muted-foreground">
             Sua conta ainda não tem vínculo com escola nenhuma.{" "}
-            <Link href="/onboarding" className="text-primary hover:underline">
-              Cadastre a sua escola
+            <Link href="/painel" className="text-primary hover:underline">
+              Veja no painel o que falta
             </Link>
             .
           </p>

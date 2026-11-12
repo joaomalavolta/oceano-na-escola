@@ -7,6 +7,7 @@ import { School, Users, FileCheck2, Check, AlertTriangle, Plus, Trash2, Waves, I
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
+import { ExigeAcessoParaCadastrar } from "@/components/auth/sem-acesso";
 import { useSessao } from "@/lib/sessao";
 import {
   listarMunicipios,
@@ -643,7 +644,9 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <BarraNavegacao />
       <RotaProtegida>
-        <OnboardingConteudo />
+        <ExigeAcessoParaCadastrar>
+          <OnboardingConteudo />
+        </ExigeAcessoParaCadastrar>
       </RotaProtegida>
     </div>
   );

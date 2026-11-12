@@ -270,9 +270,13 @@ export default function SobrePage() {
           <footer className="border-t border-border pt-6 text-xs text-muted-foreground">
             <p>
               Oceano na Escola é um projeto do{" "}
-              <strong className="text-foreground">Instituto Ecosurf</strong>. Escola interessada em
-              participar fala com o instituto — a entrada na rede passa por termo de parceria, e não
-              por cadastro avulso.
+              <strong className="text-foreground">Instituto Ecosurf</strong>. A entrada na rede é por
+              convite: escola, escola de surf ou pesquisador interessado{" "}
+              <Link href="/pedir-entrada" className="text-primary hover:underline">
+                pede entrada por aqui
+              </Link>
+              , o instituto responde pelo e-mail e, combinada a parceria, envia o convite para criar
+              a conta.
             </p>
           </footer>
         </div>

@@ -1,13 +1,13 @@
 /**
  * Convites da plataforma.
  *
- * A segunda porta de entrada. Na primeira a pessoa chega sozinha e o
- * Ecosurf decide depois — é a fila de análise da escola. Aqui o Ecosurf
- * decide antes e vai buscar quem quer, e por isso o convite já carrega
- * o papel e, quando faz sentido, o vínculo com uma escola existente.
+ * A porta de entrada da rede: desde o fim do cadastro avulso, a conta
+ * só nasce por convite — o que o Ecosurf foi buscar e o que respondeu a
+ * um pedido de entrada (ver `pedidos.ts`). O convite já carrega o papel
+ * e, quando faz sentido, o vínculo com uma escola existente.
  *
- * Quem entra por convite não passa pela fila: o convite é a aprovação,
- * dada de antemão.
+ * Convite com escola não passa pela fila: é a aprovação, dada de
+ * antemão. Sem escola, a pessoa cadastra a sua, e ela vai à fila.
  *
  * Nada nesta camada é permissão. Criar, revogar e resgatar são funções
  * com definer no banco, e é lá que se confere quem está chamando e se o

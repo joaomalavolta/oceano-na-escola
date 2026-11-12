@@ -18,6 +18,7 @@ import {
 
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
+import { ExigeAcessoParaCadastrar } from "@/components/auth/sem-acesso";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import {
   listarEscolasDoProfessor,
@@ -123,9 +124,11 @@ function NovaExpedicaoConteudo() {
             primeira saída.
           </p>
         </div>
-        <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
-          <NovaEscolaEmbutida onCriada={recarregarEscolas} />
-        </div>
+        <ExigeAcessoParaCadastrar>
+          <div className="bg-card border border-border rounded-md p-5 shadow-2xs">
+            <NovaEscolaEmbutida onCriada={recarregarEscolas} />
+          </div>
+        </ExigeAcessoParaCadastrar>
       </main>
     );
   }

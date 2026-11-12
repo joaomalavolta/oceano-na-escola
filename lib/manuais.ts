@@ -81,7 +81,7 @@ const PROFESSOR: Manual = {
             {
               titulo: "Cadastre a escola e as turmas",
               texto:
-                "No primeiro acesso a plataforma pede o nome da escola, o município, o endereço e a posição no mapa. Cadastre todas as turmas que vão a campo — uma expedição pode reunir mais de uma.",
+                "A conta se cria pelo link do convite que o Instituto Ecosurf manda por e-mail (quem ainda não tem convite pede entrada na plataforma). No primeiro acesso a plataforma pede o nome da escola, o município, o endereço e a posição no mapa. Cadastre todas as turmas que vão a campo — uma expedição pode reunir mais de uma.",
             },
             {
               titulo: "Confirme os termos",

@@ -14,8 +14,10 @@ import {
   MapPinOff,
   Pencil,
   Plus,
+  Send,
   ShieldCheck,
   Trash2,
+  UserX,
   Users,
   X,
 } from "lucide-react";
@@ -24,6 +26,9 @@ import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
 import { EstadoContainer } from "@/components/ui/estado-container";
+import { PedidosDeEntrada } from "@/components/admin/pedidos-de-entrada";
+import { useSessao } from "@/lib/sessao";
+import { listarPedidos, type PedidoDeEntrada } from "@/lib/pedidos";
 import {
   listarPerfisDaRede,
   listarEscolasAdministraveis,
@@ -33,6 +38,8 @@ import {
   aprovarEscola,
   recusarEscola,
   esperaDesde,
+  removerConta,
+  cadastroNaoConcluido,
   PAPEIS,
   type PerfilDaRede,
   type Papel,
@@ -57,7 +64,12 @@ function formatarDia(iso: string): string {
 }
 
 function AdminConteudo() {
+  const { session } = useSessao();
   const [perfis, setPerfis] = useState<PerfilDaRede[] | null>(null);
+  const [pedidos, setPedidos] = useState<PedidoDeEntrada[]>([]);
+  // A remoção de conta pede confirmação na própria linha: apagar conta é
+  // definitivo, e um clique só não pode bastar.
+  const [removendo, setRemovendo] = useState<string | null>(null);
   const [escolas, setEscolas] = useState<EscolaDaRede[]>([]);
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
@@ -86,26 +98,32 @@ function AdminConteudo() {
   const [copiado, setCopiado] = useState<string | null>(null);
 
   const recarregar = async () => {
-    const [ps, es, cs] = await Promise.all([
+    const [ps, es, cs, pe] = await Promise.all([
       listarPerfisDaRede(),
       listarEscolasAdministraveis(),
       listarConvites(),
+      listarPedidos(),
     ]);
     setPerfis(ps);
     setEscolas(es);
     setConvites(cs);
+    setPedidos(pe.pedidos);
   };
 
   useEffect(() => {
     let ativo = true;
-    Promise.all([listarPerfisDaRede(), listarEscolasAdministraveis(), listarConvites()]).then(
-      ([ps, es, cs]) => {
-        if (!ativo) return;
-        setPerfis(ps);
-        setEscolas(es);
-        setConvites(cs);
-      }
-    );
+    Promise.all([
+      listarPerfisDaRede(),
+      listarEscolasAdministraveis(),
+      listarConvites(),
+      listarPedidos(),
+    ]).then(([ps, es, cs, pe]) => {
+      if (!ativo) return;
+      setPerfis(ps);
+      setEscolas(es);
+      setConvites(cs);
+      setPedidos(pe.pedidos);
+    });
     return () => {
       ativo = false;
     };
@@ -356,12 +374,32 @@ function AdminConteudo() {
         )}
       </section>
 
-      {/* Convites — a outra porta de entrada.
+      {/* Pedidos de entrada. A conta não se cria mais sozinha: quem quer
+          entrar deixa o pedido no formulário público, e responder aqui
+          é convidar ou recusar. */}
+      <section id="pedidos" className="space-y-3 scroll-mt-20">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+          <Send className="w-4 h-4" />
+          Pedidos de entrada · {pedidos.filter((p) => p.situacao === "pendente").length}
+        </h2>
+        <PedidosDeEntrada
+          pedidos={pedidos}
+          aoMudar={recarregar}
+          avisar={setAviso}
+          aoConvidar={(link, enviado, motivo) => {
+            setLinkNovo(link);
+            setEnvioDoNovo({ enviado, motivo });
+          }}
+        />
+      </section>
 
-          A fila acima é quem chegou sozinho; esta seção é quem o
-          Ecosurf foi buscar. Quem entra por convite não passa pela
-          fila: o convite é a aprovação, dada antes, e por isso ele já
-          carrega o papel e a escola. */}
+      {/* Convites — a porta de entrada.
+
+          A conta só nasce por convite: o que o Ecosurf foi buscar e o
+          que respondeu a um pedido de entrada. Convite com escola é a
+          aprovação dada antes, e por isso já carrega papel e vínculo;
+          convite sem escola leva a pessoa a cadastrar a sua, que passa
+          pela fila de análise acima. */}
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-primary flex items-center gap-2">
           <Mail className="w-4 h-4" />
@@ -706,8 +744,44 @@ function AdminConteudo() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="min-w-0">
                   <span className="text-sm font-bold">{p.nome}</span>
+                  {p.conta?.email && (
+                    <a
+                      href={`mailto:${p.conta.email}`}
+                      className="block text-xs text-primary hover:underline break-all"
+                    >
+                      {p.conta.email}
+                    </a>
+                  )}
                   <span className="block text-[10px] font-mono text-muted-foreground truncate">
                     {p.id}
+                  </span>
+                  {p.conta && (
+                    <span className="block text-[11px] text-muted-foreground mt-0.5">
+                      Conta criada em {formatarDia(p.conta.criada_em)}
+                      {" · "}
+                      {p.conta.ultimo_acesso
+                        ? `último acesso em ${formatarDia(p.conta.ultimo_acesso)}`
+                        : "nunca entrou"}
+                      {!p.conta.email_confirmado && " · e-mail não confirmado"}
+                    </span>
+                  )}
+                  <span className="flex flex-wrap gap-1.5 mt-1.5">
+                    {p.conta && p.papel !== "admin_ecosurf" && (
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-sm ${
+                          p.conta.veio_por_convite
+                            ? "bg-secondary text-muted-foreground"
+                            : "bg-amber-500/15 text-amber-800 dark:text-amber-300"
+                        }`}
+                      >
+                        {p.conta.veio_por_convite ? "Veio por convite" : "Sem convite"}
+                      </span>
+                    )}
+                    {cadastroNaoConcluido(p) && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded-sm bg-amber-500/15 text-amber-800 dark:text-amber-300">
+                        Sem escola · cadastro não concluído
+                      </span>
+                    )}
                   </span>
                 </div>
 
@@ -813,14 +887,65 @@ function AdminConteudo() {
                   </button>
                 </div>
               </div>
+
+              {/* Remover conta. Não para a própria nem para a de
+                  administração; o banco recusa as duas de qualquer forma,
+                  e recusa também quem tem trabalho registrado. */}
+              {p.id !== session?.user.id && p.papel !== "admin_ecosurf" && (
+                <div className="pt-2 border-t border-border">
+                  {removendo === p.id ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-destructive">
+                        Remover a conta de <strong>{p.nome}</strong> de vez? A pessoa perde o
+                        acesso e precisará de um novo convite para voltar. Se ela tiver trabalho
+                        registrado, o banco recusa — aí o caminho é remover o vínculo.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            agir(() => removerConta(p.id), `A conta de ${p.nome} foi removida.`).then(() =>
+                              setRemovendo(null)
+                            )
+                          }
+                          disabled={ocupado}
+                          className="px-3 py-1.5 text-xs font-semibold bg-destructive text-white rounded-sm disabled:opacity-50 inline-flex items-center gap-1"
+                        >
+                          {ocupado ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserX className="w-3 h-3" />}
+                          Remover de vez
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRemovendo(null)}
+                          disabled={ocupado}
+                          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-sm hover:bg-secondary"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setRemovendo(p.id)}
+                      disabled={ocupado}
+                      className="text-xs font-semibold text-muted-foreground hover:text-destructive inline-flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <UserX className="w-3.5 h-3.5" />
+                      Remover conta
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          A pessoa precisa ter criado conta na plataforma para aparecer aqui — o perfil nasce no
-          primeiro acesso. O e-mail não é exibido: ele vive na camada de autenticação, fora do
-          alcance da aplicação.
+          A pessoa aparece aqui depois de criar a conta — o perfil nasce no primeiro acesso. A
+          entrada é por convite: conta marcada como &ldquo;sem convite&rdquo; foi criada por fora
+          dele e não consegue cadastrar escola. E-mail e datas vêm da camada de autenticação e
+          só a administração os vê.
         </p>
       </section>
     </main>

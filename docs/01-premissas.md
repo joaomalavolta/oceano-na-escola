@@ -115,12 +115,41 @@ Demais regras de campo:
 | Pesquisador | Consulta e exporta dados |
 | Administrador Ecosurf | Gestão da rede, análise dos cadastros de escola e validação técnica junto ao professor |
 
-### 5.0 As duas portas de entrada *(14/08/2026)*
+### 5.0 A entrada é por convite *(revisto em 12/11/2026)*
 
-**Porta 1 — a pessoa chega.** Cadastro espontâneo, e o Ecosurf decide depois: a escola entra na
-fila de análise (5.1) e vai ao mapa quando for aprovada.
+Até 12/11/2026 havia duas portas: o cadastro espontâneo, em que qualquer pessoa criava conta e
+cadastrava escola, e o convite. O cadastro espontâneo **fechou**: uma conta criada sem convite, sem
+escola e sem atividade apareceu na lista de pessoas, e não havia como saber quem era. Agora:
 
-**Porta 2 — o Ecosurf vai buscar.** Convite por link, criado no painel de administração, e aqui a
+**O pedido de entrada.** Quem não foi convidado preenche o formulário público em `/pedir-entrada`
+(nome, e-mail, organização e tipo — escola, escola de surf ou outra —, função, município, papel
+pretendido e uma mensagem, com autorização expressa de uso dos dados para a resposta). O pedido vai
+para a tabela `pedido_entrada`, que **só a administração lê**, e o Ecosurf recebe um aviso por
+e-mail. Na Administração, responder é **convidar** (cria o convite com o papel pedido e manda o
+e-mail) ou **recusar** (com motivo que fica só para a equipe). Regras, todas no banco:
+
+- Ninguém grava direto na tabela: só pela função `pedir_entrada`, que confere os campos.
+- **Um pedido em aberto por e-mail.** Pedido repetido não duplica, e a resposta ao formulário é a
+  mesma nos dois casos: o formulário não serve para descobrir quem já pediu.
+- **Administração não se pede.** O papel pretendido nunca pode ser `admin_ecosurf`.
+- **Freio de enxurrada:** passados 30 pedidos na última hora, novos pedidos são recusados até a
+  hora virar. O formulário tem ainda um campo-armadilha escondido; preenchido, o pedido é
+  descartado em silêncio.
+
+**Só cadastra escola quem pode.** A política de inserção de `escola` usa
+`app_pode_cadastrar_escola()`: administração, quem já tem vínculo com escola, ou quem resgatou um
+convite. Conta criada por fora disso — o Supabase Auth continua aceitando cadastro, porque é por ele
+que o convite cria a conta — entra, mas vê o aviso "sua conta ainda não tem acesso" e o caminho
+para pedir entrada.
+
+**Na lista de pessoas** a Administração vê agora e-mail, data de criação, último acesso, se o
+e-mail foi confirmado e se a conta veio por convite (função `admin_contas()`), e as contas de
+professor ou coordenação escolar sem escola aparecem marcadas como **cadastro não concluído**.
+A conta pode ser **removida** (`admin_remove_conta`), menos a própria e a de administração; se ela
+tiver trabalho registrado — expedição, foto, texto, curadoria —, o banco recusa, porque apagar a
+pessoa apagaria a autoria. Para tirar o acesso de quem trabalhou, remove-se o vínculo com a escola.
+
+**O convite — o Ecosurf vai buscar.** Convite por link, criado no painel de administração, e aqui a
 decisão vem antes. Por isso o convite já carrega **papel** e, quando faz sentido, **vínculo com
 uma escola** — é assim que se convida uma pesquisadora, que não tem escola nenhuma, ou uma
 coordenadora municipal, que responde por várias. **Quem entra por convite não passa pela fila**:
@@ -148,9 +177,8 @@ está na tela com o motivo da falha ao lado. E-mail que não sai nunca pode cust
 
 ### 5.1 Análise do cadastro de escola *(14/08/2026)*
 
-Qualquer pessoa cria conta e cadastra escola sem passar por ninguém — e isso continua assim de
-propósito, porque exigir aprovação da **conta** faria a professora que se inscreve numa quinta à
-noite esperar até alguém do instituto abrir o painel. O que passa pelo Ecosurf é a **escola**:
+*(Desde 12/11/2026 a conta só nasce por convite — ver 5.0. A análise da escola continua valendo
+para quem foi convidado sem escola e cadastra a sua.)* O que passa pelo Ecosurf é a **escola**:
 
 **pendente → aprovada**, ou **pendente → recusada → pendente** depois de a escola corrigir.
 

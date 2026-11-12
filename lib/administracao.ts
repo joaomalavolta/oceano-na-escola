@@ -82,6 +82,31 @@ export interface PerfilDaRede {
   nome: string;
   papel: Papel;
   escolas: { id: number; nome: string }[];
+  /**
+   * O que mora em auth.users, lido por `admin_contas()`. Nulo quando a
+   * consulta falhou: a lista de pessoas não depende dela para existir.
+   */
+  conta: ContaDaRede | null;
+}
+
+export interface ContaDaRede {
+  email: string | null;
+  criada_em: string;
+  ultimo_acesso: string | null;
+  email_confirmado: boolean;
+  veio_por_convite: boolean;
+}
+
+/**
+ * Conta de quem cadastra escola, sem escola nenhuma.
+ *
+ * Professor e coordenação escolar só fazem sentido com escola. Sem ela,
+ * ou a pessoa parou no meio do cadastro, ou criou conta por fora do
+ * convite e não tem como seguir. Coordenação municipal, pesquisa e
+ * administração trabalham sem vínculo, e não entram aqui.
+ */
+export function cadastroNaoConcluido(p: Pick<PerfilDaRede, "papel" | "escolas">): boolean {
+  return (p.papel === "professor" || p.papel === "coordenacao_escolar") && p.escolas.length === 0;
 }
 
 function num(v: unknown): number {
@@ -277,9 +302,10 @@ export async function apagarTurma(id: number): Promise<{ erro: string | null }> 
 // ── Administração da rede ─────────────────────────────────────────────
 
 export async function listarPerfisDaRede(): Promise<PerfilDaRede[]> {
-  const [perfisRes, vinculosRes] = await Promise.all([
+  const [perfisRes, vinculosRes, contasRes] = await Promise.all([
     supabase.from("perfil").select("id, nome, papel").order("nome"),
     supabase.from("vinculo_escola").select("perfil_id, escola:escola_id (id, nome)"),
+    supabase.rpc("admin_contas"),
   ]);
 
   if (perfisRes.error) return [];
@@ -294,12 +320,34 @@ export async function listarPerfisDaRede(): Promise<PerfilDaRede[]> {
     porPerfil.set(String(v.perfil_id), lista);
   }
 
+  type C = { id: string; email: string | null; criada_em: string; ultimo_acesso: string | null; email_confirmado: boolean; veio_por_convite: boolean };
+  const contas = new Map<string, ContaDaRede>();
+  for (const c of (contasRes.error ? [] : (contasRes.data ?? [])) as C[]) {
+    contas.set(String(c.id), {
+      email: c.email ?? null,
+      criada_em: String(c.criada_em),
+      ultimo_acesso: c.ultimo_acesso ?? null,
+      email_confirmado: Boolean(c.email_confirmado),
+      veio_por_convite: Boolean(c.veio_por_convite),
+    });
+  }
+
   return (perfisRes.data ?? []).map((p) => ({
     id: String(p.id),
     nome: String(p.nome),
     papel: String(p.papel) as Papel,
     escolas: porPerfil.get(String(p.id)) ?? [],
+    conta: contas.get(String(p.id)) ?? null,
   }));
+}
+
+/**
+ * Remove a conta de vez. O banco recusa a própria conta, a de
+ * administração e a de quem já tem trabalho registrado — e diz por quê.
+ */
+export async function removerConta(perfilId: string): Promise<{ erro: string | null }> {
+  const { error } = await supabase.rpc("admin_remove_conta", { p_id: perfilId });
+  return { erro: error?.message ?? null };
 }
 
 export async function definirPapel(perfilId: string, papel: Papel): Promise<{ erro: string | null }> {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { RotaProtegida } from "@/components/auth/rota-protegida";
+import { ExigeAcessoParaCadastrar } from "@/components/auth/sem-acesso";
 import {
   BarChart3,
   Download,
@@ -49,6 +50,29 @@ function PainelConteudo() {
     : dados.escolas.length === 0
     ? "vazio"
     : "pronto";
+
+  // Sem escola: ou a conta foi convidada e falta cadastrar, ou entrou por
+  // fora do convite e não tem acesso. Quem diz qual é o banco.
+  if (estado === "vazio") {
+    return (
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
+        <ExigeAcessoParaCadastrar>
+          <div className="flex flex-col items-center justify-center gap-3 p-12 text-center min-h-[50vh]">
+            <p className="text-sm font-semibold text-foreground">Falta cadastrar a escola</p>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              A sua conta ainda não está vinculada a nenhuma escola. Cadastre a escola para começar.
+            </p>
+            <Link
+              href="/onboarding"
+              className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-sm hover:opacity-90 transition-opacity"
+            >
+              Cadastrar a escola
+            </Link>
+          </div>
+        </ExigeAcessoParaCadastrar>
+      </main>
+    );
+  }
 
   if (estado !== "pronto" || !dados) {
     return (
