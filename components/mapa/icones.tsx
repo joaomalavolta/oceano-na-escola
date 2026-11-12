@@ -90,6 +90,69 @@ const GLIFOS: Record<string, Tracos> = {
     </>
   ),
 
+  /** LIM — garrafa boiando na onda. */
+  "lixo-mar": (
+    <>
+      <path d="M10 4h4" />
+      <path d="M10.5 4v2L9 7.5V13h6V7.5L13.5 6V4" />
+      <path d="M2 17c2-1.3 4-1.3 6 0s4 1.3 6 0 4-1.3 6 0" />
+      <path d="M4 21c1.6-.9 3.2-.9 4.8 0s3.2.9 4.8 0 3.2-.9 4.8 0" />
+    </>
+  ),
+
+  // ── Itens de campo — lixo no mar ──────────────────────────────────
+  /** Flutuante: peça meio afundada, com a linha d'água cortando. */
+  flutuante: (
+    <>
+      <rect x="4" y="7.5" width="10" height="5" rx="1.5" />
+      <path d="M14 9h2.5v2H14" />
+      <path d="M16.5 8.5h2v3h-2" />
+      <path d="M2 14c2-1.3 4-1.3 6 0s4 1.3 6 0 4-1.3 6 0" />
+      <path d="M2 19c2-1.3 4-1.3 6 0s4 1.3 6 0 4-1.3 6 0" />
+    </>
+  ),
+  /** Linha de maré: a deixa na areia, marcada por resíduos em fila. */
+  "linha-mare": (
+    <>
+      <path d="M2 9c3-2 6-2 9 0s6 2 11 0" />
+      <path d="M3 15c3 2 6 2 9 0s6-2 9 0" strokeDasharray="1 3" />
+      <circle cx="7" cy="14.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12.5" cy="15" r="1" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="14" r="1" fill="currentColor" stroke="none" />
+      <path d="M3 20h18" />
+    </>
+  ),
+  /** Petrecho de pesca: rede em malha com o anzol. */
+  petrecho: (
+    <>
+      <rect x="2.5" y="3.5" width="11" height="9" rx="1" />
+      <path d="M6.2 3.5v9M9.8 3.5v9M2.5 8h11" />
+      <path d="M18.5 3v12a3 3 0 0 1-6 0v-1" />
+      <circle cx="18.5" cy="3" r="0.6" fill="currentColor" stroke="none" />
+    </>
+  ),
+  /** Foz: o rio chegando ao mar, com resíduo na boca. */
+  foz: (
+    <>
+      <path d="M6 3c1.5 3.5 1 7-2 10" />
+      <path d="M14 3c-1.5 3.5-1 7 2 10" />
+      <circle cx="10" cy="7" r="1.3" fill="currentColor" stroke="none" />
+      <path d="M2 16c2-1.3 4-1.3 6 0s4 1.3 6 0 4-1.3 6 0" />
+      <path d="M2 20.5c2-1.3 4-1.3 6 0s4 1.3 6 0 4-1.3 6 0" />
+    </>
+  ),
+  /** Pellets: grânulos soltos na areia. */
+  pellets: (
+    <>
+      <circle cx="7" cy="8" r="2" />
+      <circle cx="15" cy="6" r="1.6" />
+      <circle cx="12" cy="12" r="2.2" />
+      <circle cx="18" cy="12" r="1.5" />
+      <circle cx="6" cy="15" r="1.4" />
+      <path d="M3 20h18" />
+    </>
+  ),
+
   // ── Itens de campo — água ─────────────────────────────────────────
   /** Frasco de análise. */
   ph: (

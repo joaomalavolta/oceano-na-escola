@@ -327,6 +327,7 @@ isso nascem direto no celular, em `/campo`.
 | DES | Entulho, volumoso, queima, acúmulo em terreno | pontos, m² |
 | AVI | Espécie avistada, ninho, fauna com resíduo, encalhe | indivíduos, pontos |
 | AGU | pH, turbidez, temperatura, salinidade | valor medido |
+| LIM | Lixo no mar: flutuante, linha de maré, petrecho de pesca, foz, pellets *(12/11/2026)* | em definição |
 
 **O que o método destes cinco tem de diferente.** Em RES e MIC, o cuidado central é o esforço
 amostral — sem ele o dado não existe. Aqui o cuidado central é **observar sem interferir e sem se
@@ -342,6 +343,17 @@ Três regras que atravessam os cinco:
   trilha na descrição.
 - **Valor isolado diz pouco.** Em AGU, a medição repetida no mesmo ponto e no mesmo estágio de maré
   é o que constrói a série; um número solto não sustenta conclusão.
+
+**LIM — Lixo no mar** *(incluído em 12/11/2026)*. Não havia como marcar lixo como ponto: RES é
+contagem por área, na ficha, e quem queria apontar um lixo usava "Descarte irregular", que é sobre
+entulho e lixo urbano. LIM é o lixo no mar e na beira dele, registrado por ponto e com foto — o que
+a escola de surf vê de dentro d'água e a escola vê da areia e da foz. Não substitui RES: RES mede
+quanto há por metro quadrado; LIM diz onde está o que foi visto. Itens: lixo flutuante na água,
+acúmulo na linha de maré, petrecho de pesca abandonado, lixo na foz de rio ou canal, concentração de
+pellets ou microplástico visível. Fauna presa em lixo continua em AVI. **Em definição:** a magnitude
+(quantidade, volume ou presença com material predominante) — até lá o registro é de presença — e o
+método de campo com as regras de segurança. O registro em campo avisa que o método está em
+definição.
 
 As listas de itens abrem com quatro entradas cada. Item novo entra por cadastro, sem migration, e o
 dado antigo continua amarrado à versão que o gerou.

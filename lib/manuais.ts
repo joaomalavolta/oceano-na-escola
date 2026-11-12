@@ -121,6 +121,7 @@ const PROFESSOR: Manual = {
             ["MIC", "Microplásticos", "Partículas por m² em quadrats na linha de deixa"],
             ["AGU", "Qualidade da água", "Medidas repetidas no mesmo ponto ao longo do tempo"],
             ["ESG", "Esgoto e drenagem", "Ocorrências localizadas, com foto"],
+            ["LIM", "Lixo no mar", "Ocorrências localizadas, com foto: flutuante, linha de maré, pesca, foz, pellets"],
             ["DES", "Descarte irregular", "Ocorrências localizadas, com foto"],
             ["RST", "Restinga e vegetação costeira", "Ocorrências, com a área afetada"],
             ["AVI", "Avifauna e fauna costeira", "Avistamentos e encalhes, com foto"],
@@ -129,7 +130,7 @@ const PROFESSOR: Manual = {
         {
           tipo: "paragrafo",
           texto:
-            "RES e MIC produzem densidade e viram grade colorida no mapa. Os outros cinco produzem ocorrências, que viram pinos onde aconteceram. A ficha de cada protocolo está na plataforma, e a versão dela fica gravada junto com o dado — se o protocolo mudar no futuro, a série histórica continua interpretável.",
+            "RES e MIC produzem densidade e viram grade colorida no mapa. Os outros seis produzem ocorrências, que viram pinos onde aconteceram. A ficha de cada protocolo está na plataforma, e a versão dela fica gravada junto com o dado — se o protocolo mudar no futuro, a série histórica continua interpretável.",
         },
         {
           tipo: "aviso",

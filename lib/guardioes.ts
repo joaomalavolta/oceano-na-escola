@@ -35,6 +35,15 @@ export const FRENTES: Frente[] = [
     icone: "residuos",
   },
   {
+    id: "lixo-no-mar",
+    titulo: "Lixo no mar",
+    texto:
+      "O que a prancha encontra: lixo boiando, rede e linha de pesca abandonadas, o acúmulo na linha de maré, o lixo na foz, os pellets na areia. Cada achado vira pino no mapa, com foto, no ponto em que foi visto.",
+    situacao: "disponivel",
+    protocolos: ["LIM"],
+    icone: "lixo-mar",
+  },
+  {
     id: "esgoto",
     titulo: "Esgoto e lançamentos na praia",
     texto:

@@ -663,6 +663,21 @@ function CampoConteudo() {
             <p className="text-[11px] leading-relaxed">{protocolo.metodo}</p>
           </div>
         )}
+        {/* Protocolo novo, com o método ainda em aprovação. Não se
+            inventa método no lugar: diz-se que falta, e repete-se a regra
+            que vale para toda ocorrência — observar sem se expor. */}
+        {protocolo && !protocolo.metodo && (
+          <div className="p-3 rounded-sm bg-amber-500/10 border border-amber-500/30">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-1">
+              Como registrar · {protocolo.codigo}
+            </p>
+            <p className="text-[11px] leading-relaxed">
+              O método de campo deste protocolo ainda está em definição pelo Instituto Ecosurf.
+              Enquanto isso, vale a regra de toda ocorrência: registre o que dá para ver de onde
+              você está, sem tocar, sem recolher e sem se expor.
+            </p>
+          </div>
+        )}
 
         {protocolo && protocolo.itens.length > 0 && (
           <div className="grid grid-cols-2 gap-1.5">

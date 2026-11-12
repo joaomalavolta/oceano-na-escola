@@ -89,6 +89,10 @@ export const PROTOCOLOS_INICIAIS: PubProtocolo[] = [
     id: 7, codigo: "AGU", nome: "Qualidade da água", descricao: null,
     icone: "agua", cor: "#009daf", unidade_medida: "valor medido", forma_agregacao: "medida",
   },
+  {
+    id: 8, codigo: "LIM", nome: "Lixo no mar", descricao: null,
+    icone: "lixo-mar", cor: "#827200", unidade_medida: null, forma_agregacao: "ocorrencia",
+  },
 ];
 
 /**
