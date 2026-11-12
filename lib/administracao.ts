@@ -19,6 +19,7 @@
 import { supabase } from "./supabase";
 import { tipoDe, type TipoOrganizacao } from "./organizacao";
 import { posicaoValida } from "./posicao";
+import { CONTATO_VAZIO, normalizarContato, problemasDoContato, type ContatoDaEscola } from "./contato";
 
 export type Papel =
   | "professor"
@@ -60,6 +61,8 @@ export interface EscolaEditavel {
   termos_ok: boolean;
   situacao: SituacaoEscola;
   motivo_recusa: string | null;
+  /** Contato e números da página pública. Tudo opcional. */
+  contato: ContatoDaEscola;
 }
 
 export interface TurmaEditavel {
@@ -98,7 +101,7 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
   const { data, error } = await supabase
     .from("escola")
     .select(
-      "id, slug, nome, tipo, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa"
+      "id, slug, nome, tipo, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa, responsavel_nome, responsavel_funcao, contato_email, contato_telefone, contato_telefone_whatsapp, contato_site, contato_instagram, contato_facebook, contato_youtube, participantes_atendidos"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -123,6 +126,19 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
     termos_ok: Boolean(data.termos_ok),
     situacao: String(data.situacao) as SituacaoEscola,
     motivo_recusa: data.motivo_recusa ?? null,
+    contato: {
+      ...CONTATO_VAZIO,
+      responsavel_nome: data.responsavel_nome ?? null,
+      responsavel_funcao: data.responsavel_funcao ?? null,
+      contato_email: data.contato_email ?? null,
+      contato_telefone: data.contato_telefone ?? null,
+      contato_telefone_whatsapp: Boolean(data.contato_telefone_whatsapp),
+      contato_site: data.contato_site ?? null,
+      contato_instagram: data.contato_instagram ?? null,
+      contato_facebook: data.contato_facebook ?? null,
+      contato_youtube: data.contato_youtube ?? null,
+      participantes_atendidos: numOuNulo(data.participantes_atendidos),
+    },
   };
 }
 
@@ -141,6 +157,10 @@ export async function salvarEscola(
   // Meia coordenada, ou uma fora do globo, não vai ao banco. A primeira
   // apagaria a posição em silêncio — e com ela a escola do mapa —, e a
   // segunda voltaria como erro cru do PostGIS.
+  const contato = normalizarContato(d.contato);
+  const problemas = Object.values(problemasDoContato(contato));
+  if (problemas.length > 0) return { erro: `Contato: ${problemas.join(" ")}` };
+
   const temAlguma = d.lat !== null || d.lng !== null;
   if (temAlguma && !posicaoValida(d.lat, d.lng)) {
     return {
@@ -158,6 +178,7 @@ export async function salvarEscola(
       apresentacao: d.apresentacao?.trim() || null,
       geom: d.lat !== null && d.lng !== null ? `SRID=4326;POINT(${d.lng} ${d.lat})` : null,
       termos_ok: d.termos_ok,
+      ...contato,
     })
     .eq("id", id);
   return { erro: error?.message ?? null };

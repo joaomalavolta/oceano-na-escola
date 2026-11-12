@@ -4,10 +4,20 @@ import {
   rotuloDoMes,
   dataCurta,
   expedicoesDosPontuais,
+  diaEmBrasilia,
   type ExpedicaoNaLinha,
   type FotoNaLinha,
   type EscolaNaLinha,
+  type Marco,
+  type MarcoSaida,
+  type MesNaLinha,
 } from "./linha-do-tempo";
+
+/** Os marcos de saída, para os testes que só falam delas. */
+function saidasDe(m: MesNaLinha | Marco[]): MarcoSaida[] {
+  const lista = Array.isArray(m) ? m : m.marcos;
+  return lista.filter((x): x is MarcoSaida => x.tipo === "saida");
+}
 
 const ESCOLAS: EscolaNaLinha[] = [
   { slug: "a", nome: "E.M. Alfa", tipo: "regular", municipio: "Cidade" },
@@ -61,8 +71,8 @@ describe("montarLinhaDoTempo", () => {
       fotos: [foto(1, "a", 1), foto(2, "b", 1), foto(3, "a", 1)],
       escolas: ESCOLAS,
     });
-    const alfa = mes.marcos.find((m) => m.escola?.slug === "a")!;
-    const beta = mes.marcos.find((m) => m.escola?.slug === "b")!;
+    const alfa = saidasDe(mes).find((m) => m.escola?.slug === "a")!;
+    const beta = saidasDe(mes).find((m) => m.escola?.slug === "b")!;
     expect(alfa.fotos.map((f) => f.id)).toEqual([1, 3]);
     expect(beta.fotos.map((f) => f.id)).toEqual([2]);
   });
@@ -73,7 +83,7 @@ describe("montarLinhaDoTempo", () => {
       fotos: [foto(1, "a", 1, "capa_escola"), foto(2, "a", null, "foto_turma"), foto(3, "a", 1)],
       escolas: ESCOLAS,
     });
-    expect(mes.marcos[0].fotos.map((f) => f.id)).toEqual([3]);
+    expect(saidasDe(mes)[0].fotos.map((f) => f.id)).toEqual([3]);
   });
 
   it("mostra poucas fotos e conta as que ficaram de fora", () => {
@@ -84,8 +94,8 @@ describe("montarLinhaDoTempo", () => {
       escolas: ESCOLAS,
       fotosPorMarco: 4,
     });
-    expect(mes.marcos[0].fotos).toHaveLength(4);
-    expect(mes.marcos[0].fotosAMais).toBe(2);
+    expect(saidasDe(mes)[0].fotos).toHaveLength(4);
+    expect(saidasDe(mes)[0].fotosAMais).toBe(2);
   });
 
   it("recorta pela rede", () => {
@@ -138,5 +148,79 @@ describe("demonstração sem banco", () => {
     ]);
     expect(saidas).toHaveLength(2);
     expect(saidas.map((s) => `${s.escola_slug}#${s.numero}`).sort()).toEqual(["a#1", "b#1"]);
+  });
+});
+
+describe("publicações do mural na linha do tempo", () => {
+  const post = (id: number, escola: string, iso: string) => ({
+    id,
+    texto: `Publicação ${id}`,
+    publicada_em: iso,
+    escola_slug: escola,
+    escola_nome: escola,
+  });
+
+  it("entram na mesma linha das saídas, pela data", () => {
+    const meses = montarLinhaDoTempo({
+      expedicoes: [exp("a", 1, "2026-08-02"), exp("a", 2, "2026-08-20")],
+      fotos: [],
+      escolas: ESCOLAS,
+      publicacoes: [post(1, "b", "2026-08-10T15:00:00Z")],
+    });
+    expect(meses[0].marcos.map((m) => m.tipo)).toEqual(["saida", "publicacao", "saida"]);
+  });
+
+  it("no mesmo dia, a publicação vem antes da saída", () => {
+    const [mes] = montarLinhaDoTempo({
+      expedicoes: [exp("a", 1, "2026-08-02")],
+      fotos: [],
+      escolas: ESCOLAS,
+      publicacoes: [post(1, "a", "2026-08-02T20:00:00Z")],
+    });
+    expect(mes.marcos.map((m) => m.tipo)).toEqual(["publicacao", "saida"]);
+  });
+
+  it("a data da publicação é o dia em Brasília, não em UTC", () => {
+    // 01h30 de 2 de agosto em UTC ainda é 22h30 de 1º de agosto aqui.
+    expect(diaEmBrasilia("2026-08-02T01:30:00Z")).toBe("2026-08-01");
+    const meses = montarLinhaDoTempo({
+      expedicoes: [],
+      fotos: [],
+      escolas: ESCOLAS,
+      publicacoes: [post(1, "a", "2026-09-01T02:00:00Z")],
+    });
+    expect(meses[0].mes).toBe("2026-08");
+  });
+
+  it("cada publicação leva a própria mídia", () => {
+    const [mes] = montarLinhaDoTempo({
+      expedicoes: [],
+      fotos: [],
+      escolas: ESCOLAS,
+      publicacoes: [post(1, "a", "2026-08-02T15:00:00Z"), post(2, "b", "2026-08-02T16:00:00Z")],
+      midias: [
+        { id: 10, publicacao_id: 1, storage_path: "x", tipo: "foto_mural", legenda: null },
+        { id: 11, publicacao_id: 2, storage_path: "y", tipo: "video_mural", legenda: null },
+        { id: 12, publicacao_id: 1, storage_path: "z", tipo: "video_mural", legenda: null },
+      ],
+    });
+    const porId = Object.fromEntries(
+      mes.marcos.map((m) => (m.tipo === "publicacao" ? [m.publicacao.id, m.midias.map((x) => x.id)] : [0, []]))
+    );
+    expect(porId[1]).toEqual([10, 12]);
+    expect(porId[2]).toEqual([11]);
+  });
+
+  it("obedecem ao recorte de rede e de escola", () => {
+    const base = {
+      expedicoes: [],
+      fotos: [],
+      escolas: ESCOLAS,
+      publicacoes: [post(1, "a", "2026-08-02T15:00:00Z"), post(2, "s", "2026-08-03T15:00:00Z")],
+    };
+    const surf = montarLinhaDoTempo({ ...base, rede: "surf" }).flatMap((m) => m.marcos);
+    const daA = montarLinhaDoTempo({ ...base, escolaSlug: "a" }).flatMap((m) => m.marcos);
+    expect(surf.map((m) => m.escola?.slug)).toEqual(["s"]);
+    expect(daA.map((m) => m.escola?.slug)).toEqual(["a"]);
   });
 });

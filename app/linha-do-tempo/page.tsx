@@ -43,10 +43,12 @@ function Conteudo() {
     () => (dados ? montarLinhaDoTempo({ ...dados, rede }) : []),
     [dados, rede]
   );
-  const saidas = meses.reduce((s, m) => s + m.marcos.length, 0);
-  const escolasAtivas = new Set(meses.flatMap((m) => m.marcos.map((x) => x.expedicao.escola_slug))).size;
+  const marcos = meses.flatMap((m) => m.marcos);
+  const saidas = marcos.filter((m) => m.tipo === "saida").length;
+  const posts = marcos.length - saidas;
+  const escolasAtivas = new Set(marcos.map((m) => m.escola?.slug)).size;
 
-  const estado = !dados ? "carregando" : dados.erro ? "erro" : saidas === 0 ? "vazio" : "pronto";
+  const estado = !dados ? "carregando" : dados.erro ? "erro" : marcos.length === 0 ? "vazio" : "pronto";
 
   return (
     <main className="max-w-3xl mx-auto w-full px-4 py-8">
@@ -56,13 +58,19 @@ function Conteudo() {
           Linha do tempo da rede
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          As saídas de campo publicadas por todas as escolas, da mais recente para a mais antiga.
-          Cada escola vê o que as outras estão fazendo — onde foram, quando, e o que registraram.
+          As saídas de campo e as publicações do mural de todas as escolas, da mais recente para a
+          mais antiga. Cada escola vê o que as outras estão fazendo — onde foram, quando, e o que
+          registraram.
         </p>
-        {dados && saidas > 0 && (
+        {dados && marcos.length > 0 && (
           <p className="text-xs text-muted-foreground mt-2 tabular-nums">
-            {saidas} {saidas === 1 ? "saída" : "saídas"} de {escolasAtivas}{" "}
-            {escolasAtivas === 1 ? "escola" : "escolas"}
+            {[
+              saidas > 0 ? `${saidas} ${saidas === 1 ? "saída de campo" : "saídas de campo"}` : null,
+              posts > 0 ? `${posts} ${posts === 1 ? "publicação" : "publicações"} no mural` : null,
+            ]
+              .filter(Boolean)
+              .join(" e ")}{" "}
+            de {escolasAtivas} {escolasAtivas === 1 ? "escola" : "escolas"}
           </p>
         )}
         {dados?.origem === "mock" && (

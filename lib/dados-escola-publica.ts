@@ -16,6 +16,8 @@ import type {
   PubGaleria,
 } from "./database.types";
 import { tipoDe } from "./organizacao";
+import type { ContatoDaEscola } from "./contato";
+import type { MidiaNaLinha, PublicacaoNaLinha } from "./linha-do-tempo";
 
 export interface EscolaPublica {
   escola: PubEscola | null;
@@ -24,6 +26,10 @@ export interface EscolaPublica {
   ocorrencias: PubObservacaoPontual[];
   fotos: PubFotoGeorreferenciada[];
   galeria: PubGaleria[];
+  /** Contato público; nulo quando a escola não preencheu nada. */
+  contato: ContatoDaEscola | null;
+  publicacoes: PublicacaoNaLinha[];
+  midias: MidiaNaLinha[];
   /** false quando faltam as variáveis do Supabase. */
   disponivel: boolean;
   erro: string | null;
@@ -36,6 +42,9 @@ const VAZIO: EscolaPublica = {
   ocorrencias: [],
   fotos: [],
   galeria: [],
+  contato: null,
+  publicacoes: [],
+  midias: [],
   disponivel: true,
   erro: null,
 };
@@ -55,7 +64,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
   if (!supabaseConfigurado) return { ...VAZIO, disponivel: false };
 
   try {
-    const [escolaRes, indicadorRes, expedicoesRes, ocorrenciasRes, fotosRes, galeriaRes] =
+    const [escolaRes, indicadorRes, expedicoesRes, ocorrenciasRes, fotosRes, galeriaRes, contatoRes, muralRes] =
       await Promise.all([
         supabase.from("pub_escola").select("*").eq("slug", slug).maybeSingle(),
         supabase.from("pub_indicador_escola").select("*").eq("escola_slug", slug).maybeSingle(),
@@ -67,7 +76,56 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
         supabase.from("pub_observacao_pontual").select("*").eq("escola_slug", slug),
         supabase.from("pub_foto_georreferenciada").select("*").eq("escola_slug", slug),
         supabase.from("pub_galeria").select("*").eq("escola_slug", slug),
+        supabase.from("pub_escola_contato").select("*").eq("slug", slug).maybeSingle(),
+        supabase
+          .from("pub_mural")
+          .select("id, texto, publicada_em, escola_slug, escola_nome")
+          .eq("escola_slug", slug),
       ]);
+
+    // A mídia do mural é pedida pelas publicações, porque a view dela não
+    // carrega a escola. Contato e mural, se falharem, não derrubam a
+    // página: ela segue com o que tem.
+    const publicacoes: PublicacaoNaLinha[] = muralRes.error
+      ? []
+      : (muralRes.data ?? []).map((p) => ({
+          id: num(p.id),
+          texto: String(p.texto),
+          publicada_em: String(p.publicada_em),
+          escola_slug: String(p.escola_slug),
+          escola_nome: String(p.escola_nome),
+        }));
+    let midias: MidiaNaLinha[] = [];
+    if (publicacoes.length > 0) {
+      const { data: md, error: erroMd } = await supabase
+        .from("pub_mural_midia")
+        .select("id, publicacao_id, storage_path, tipo, legenda")
+        .in("publicacao_id", publicacoes.map((p) => p.id));
+      if (!erroMd) {
+        midias = (md ?? []).map((m) => ({
+          id: num(m.id),
+          publicacao_id: num(m.publicacao_id),
+          storage_path: String(m.storage_path),
+          tipo: String(m.tipo),
+          legenda: m.legenda ?? null,
+        }));
+      }
+    }
+    const c = contatoRes.error ? null : contatoRes.data;
+    const contato: ContatoDaEscola | null = c
+      ? {
+          responsavel_nome: c.responsavel_nome ?? null,
+          responsavel_funcao: c.responsavel_funcao ?? null,
+          contato_email: c.contato_email ?? null,
+          contato_telefone: c.contato_telefone ?? null,
+          contato_telefone_whatsapp: Boolean(c.contato_telefone_whatsapp),
+          contato_site: c.contato_site ?? null,
+          contato_instagram: c.contato_instagram ?? null,
+          contato_facebook: c.contato_facebook ?? null,
+          contato_youtube: c.contato_youtube ?? null,
+          participantes_atendidos: numOuNulo(c.participantes_atendidos),
+        }
+      : null;
 
     const falha =
       escolaRes.error ?? indicadorRes.error ?? expedicoesRes.error ??
@@ -168,7 +226,19 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
       tipo: String(g.tipo ?? "foto_campo"),
     }));
 
-    return { escola, indicador, expedicoes, ocorrencias, fotos, galeria, disponivel: true, erro: null };
+    return {
+      escola,
+      indicador,
+      expedicoes,
+      ocorrencias,
+      fotos,
+      galeria,
+      contato,
+      publicacoes,
+      midias,
+      disponivel: true,
+      erro: null,
+    };
   } catch (err) {
     return { ...VAZIO, erro: err instanceof Error ? err.message : String(err) };
   }

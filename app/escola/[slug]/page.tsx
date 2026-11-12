@@ -23,6 +23,10 @@ import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import { EstadoContainer } from "@/components/ui/estado-container";
 import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { LinhaDoTempo } from "@/components/linha-do-tempo/linha-do-tempo";
+import { EscreverNoMural } from "@/components/mural/escrever-no-mural";
+import { ContatoPublico } from "@/components/escolas/contato-publico";
+import { possoEscreverNoMural } from "@/lib/mural";
+import { vocabulario, maiuscula } from "@/lib/organizacao";
 import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import { calcularConquistas } from "@/lib/conquistas";
@@ -71,6 +75,10 @@ export default function EscolaPublicaPage({
   // O mapa abre primeiro: é o centro da experiência — "o que está
   // acontecendo neste território?" — e o Sobre continua a um clique.
   const [abaAtiva, setAbaAtiva] = useState<Aba>("mapa");
+  // Sobe a cada publicação no mural, para a página recarregar e mostrar
+  // a publicação nova sem a pessoa precisar atualizar o navegador.
+  const [versao, setVersao] = useState(0);
+  const [podeEscrever, setPodeEscrever] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -79,7 +87,23 @@ export default function EscolaPublicaPage({
     return () => {
       ativo = false;
     };
-  }, [slug]);
+  }, [slug, versao]);
+
+  // O campo de escrever só aparece para quem responde pela escola. É o
+  // banco quem decide, pela mesma função das políticas de acesso: mostrar
+  // o campo a quem não pode publicar seria convidar a um erro.
+  const escolaId = dados?.escola?.id ?? null;
+  useEffect(() => {
+    let ativo = true;
+    if (!session || escolaId === null) {
+      Promise.resolve(false).then((v) => ativo && setPodeEscrever(v));
+    } else {
+      possoEscreverNoMural(escolaId).then((v) => ativo && setPodeEscrever(v));
+    }
+    return () => {
+      ativo = false;
+    };
+  }, [session, escolaId]);
 
   if (!dados) {
     return (
@@ -110,7 +134,8 @@ export default function EscolaPublicaPage({
     );
   }
 
-  const { escola, indicador, expedicoes, ocorrencias, fotos, galeria } = dados;
+  const { escola, indicador, expedicoes, ocorrencias, fotos, galeria, contato, publicacoes, midias } = dados;
+  const v = vocabulario(escola.tipo);
   const km = ((indicador?.extensao_total_m ?? 0) / 1000).toFixed(1).replace(".", ",");
 
   /**
@@ -129,7 +154,11 @@ export default function EscolaPublicaPage({
    */
   const abas: { id: Aba; label: string; contagem?: number; icon: typeof Info }[] = [
     { id: "mapa", label: "Território", icon: MapIcon },
-    { id: "expedicoes", label: "Expedições", contagem: expedicoes.length, icon: Compass },
+    // "Atividades" e não "Expedições": além das saídas de campo, a aba
+    // traz o mural da escola, na ordem do tempo. E não "Linha do tempo",
+    // que é mais longo: as abas já ocupam quase toda a faixa, e quatro
+    // letras a mais empurravam a última para trás da rolagem.
+    { id: "expedicoes", label: "Atividades", contagem: expedicoes.length + publicacoes.length, icon: Compass },
     { id: "registros", label: "Ocorrências", contagem: ocorrencias.length, icon: AlertTriangle },
     { id: "historias", label: "Histórias", contagem: historias.length, icon: BookText },
     {
@@ -145,6 +174,8 @@ export default function EscolaPublicaPage({
   const linhaDaEscola = montarLinhaDoTempo({
     expedicoes,
     fotos: galeria,
+    publicacoes,
+    midias,
     escolas: [{ slug: escola.slug, nome: escola.nome, tipo: escola.tipo, municipio: escola.municipio }],
     // Na página da própria escola cabem mais fotos por saída: aqui ela
     // é o assunto, e não uma entre várias.
@@ -260,13 +291,16 @@ export default function EscolaPublicaPage({
 
       <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-8">
         {abaAtiva === "sobre" && (
-          <div className="bg-card border border-border rounded-md p-6 space-y-4 shadow-2xs">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
-              Apresentação
-            </h2>
-            <p className="text-xs leading-relaxed">
-              {escola.apresentacao ?? "Sem apresentação cadastrada."}
-            </p>
+          <div className="space-y-4">
+            <div className="bg-card border border-border rounded-md p-6 space-y-4 shadow-2xs">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-border pb-2">
+                Apresentação
+              </h2>
+              <p className="text-sm leading-relaxed whitespace-pre-line">
+                {escola.apresentacao ?? "Sem apresentação cadastrada."}
+              </p>
+            </div>
+            <ContatoPublico contato={contato} rotuloAtendidos={v.rotuloAtendidos} />
           </div>
         )}
 
@@ -289,22 +323,38 @@ export default function EscolaPublicaPage({
         )}
 
         {abaAtiva === "expedicoes" && (
-          <EstadoContainer
-            estado={expedicoes.length === 0 ? "vazio" : "pronto"}
-            mensagemVazia="Esta escola ainda não publicou expedições."
-          >
-            {/* A linha do tempo da escola: a mesma da rede, recortada. As
-                fotos de cada saída vêm junto, para quem visita ver a saída
-                e não só a data dela. */}
-            <LinhaDoTempo meses={linhaDaEscola} mostrarEscola={false} />
-            <p className="text-xs text-muted-foreground mt-6">
-              Veja também o que as outras escolas estão fazendo na{" "}
-              <Link href="/linha-do-tempo" className="text-primary hover:underline">
-                linha do tempo da rede
-              </Link>
-              .
-            </p>
-          </EstadoContainer>
+          <div className="space-y-6">
+            {podeEscrever && (
+              <div className="space-y-1.5">
+                <EscreverNoMural
+                  escolaId={escola.id}
+                  aOrganizacao={v.aOrganizacao}
+                  onPublicado={() => setVersao((n) => n + 1)}
+                />
+                <Link
+                  href={`/escola/${escola.slug}/editar#mural`}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  Tirar do ar ou apagar publicações, na ficha d{v.aOrganizacao}
+                </Link>
+              </div>
+            )}
+            <EstadoContainer
+              estado={expedicoes.length + publicacoes.length === 0 ? "vazio" : "pronto"}
+              mensagemVazia={`${maiuscula(v.aOrganizacao)} ainda não publicou saídas de campo nem publicações no mural.`}
+            >
+              {/* A linha do tempo da escola: a mesma da rede, recortada.
+                  Saídas de campo e mural juntos, pela data. */}
+              <LinhaDoTempo meses={linhaDaEscola} mostrarEscola={false} />
+              <p className="text-xs text-muted-foreground mt-6">
+                Veja também o que as outras escolas estão fazendo na{" "}
+                <Link href="/linha-do-tempo" className="text-primary hover:underline">
+                  linha do tempo da rede
+                </Link>
+                .
+              </p>
+            </EstadoContainer>
+          </div>
         )}
 
         {abaAtiva === "registros" && (

@@ -14,12 +14,16 @@ import {
   type EscolaNaLinha,
   type ExpedicaoNaLinha,
   type FotoNaLinha,
+  type MidiaNaLinha,
+  type PublicacaoNaLinha,
 } from "./linha-do-tempo";
 
 export interface DadosDaLinha {
   expedicoes: ExpedicaoNaLinha[];
   fotos: FotoNaLinha[];
   escolas: EscolaNaLinha[];
+  publicacoes: PublicacaoNaLinha[];
+  midias: MidiaNaLinha[];
   origem: "supabase" | "mock";
   erro: string | null;
 }
@@ -35,6 +39,16 @@ function numOuNulo(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const VAZIO: DadosDaLinha = {
+  expedicoes: [],
+  fotos: [],
+  escolas: [],
+  publicacoes: [],
+  midias: [],
+  origem: "supabase",
+  erro: null,
+};
+
 function demonstracao(erro: string | null): DadosDaLinha {
   return {
     expedicoes: expedicoesDosPontuais(mockPontuais),
@@ -45,6 +59,8 @@ function demonstracao(erro: string | null): DadosDaLinha {
       tipo: e.tipo,
       municipio: e.municipio,
     })),
+    publicacoes: [],
+    midias: [],
     origem: "mock",
     erro,
   };
@@ -54,17 +70,19 @@ export async function carregarLinhaDoTempo(): Promise<DadosDaLinha> {
   if (!supabaseConfigurado) return demonstracao(null);
 
   try {
-    const [expRes, fotosRes, escolasRes] = await Promise.all([
+    const [expRes, fotosRes, escolasRes, muralRes, midiaRes] = await Promise.all([
       supabase
         .from("pub_expedicao")
         .select("id, numero, titulo, data_campo, n_mapeadores, extensao_m, territorio, escola_slug, escola_nome")
         .order("data_campo", { ascending: false }),
       supabase.from("pub_galeria").select("id, storage_path, legenda, escola_slug, expedicao_numero, tipo"),
       supabase.from("pub_escola").select("slug, nome, tipo, municipio"),
+      supabase.from("pub_mural").select("id, texto, publicada_em, escola_slug, escola_nome"),
+      supabase.from("pub_mural_midia").select("id, publicacao_id, storage_path, tipo, legenda"),
     ]);
 
     const falha = expRes.error ?? escolasRes.error;
-    if (falha) return { expedicoes: [], fotos: [], escolas: [], origem: "supabase", erro: falha.message };
+    if (falha) return { ...VAZIO, erro: falha.message };
 
     return {
       expedicoes: (expRes.data ?? []).map((x) => ({
@@ -96,10 +114,30 @@ export async function carregarLinhaDoTempo(): Promise<DadosDaLinha> {
         tipo: tipoDe(e.tipo),
         municipio: String(e.municipio),
       })),
+      // O mural é como a foto: se falhar, a linha do tempo segue com as
+      // saídas em vez de cair inteira.
+      publicacoes: muralRes.error
+        ? []
+        : (muralRes.data ?? []).map((p) => ({
+            id: num(p.id),
+            texto: String(p.texto),
+            publicada_em: String(p.publicada_em),
+            escola_slug: String(p.escola_slug),
+            escola_nome: String(p.escola_nome),
+          })),
+      midias: midiaRes.error
+        ? []
+        : (midiaRes.data ?? []).map((m) => ({
+            id: num(m.id),
+            publicacao_id: num(m.publicacao_id),
+            storage_path: String(m.storage_path),
+            tipo: String(m.tipo),
+            legenda: m.legenda ?? null,
+          })),
       origem: "supabase",
       erro: null,
     };
   } catch (e) {
-    return { expedicoes: [], fotos: [], escolas: [], origem: "supabase", erro: String(e) };
+    return { ...VAZIO, erro: String(e) };
   }
 }

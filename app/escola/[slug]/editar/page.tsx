@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import {
   AlertTriangle,
   Camera,
+  Megaphone,
+  Phone,
   CheckCircle2,
   Globe,
   Hourglass,
@@ -28,8 +30,10 @@ import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { vocabulario, maiuscula } from "@/lib/organizacao";
 import { CapaDaEscola } from "@/components/fotos/capa-da-escola";
 import { FotosEnviadas } from "@/components/fotos/fotos-enviadas";
+import { MuralDaEscola } from "@/components/mural/mural-da-escola";
 import { useSearchParams } from "next/navigation";
 import { ehPosicaoPadraoAntiga, lerCoordenada } from "@/lib/posicao";
+import { normalizarContato, problemasDoContato, type ContatoDaEscola } from "@/lib/contato";
 import { criarTurma } from "@/lib/cadastro-expedicao";
 import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
@@ -58,6 +62,25 @@ const SeletorDePosicao = dynamic(
 );
 
 const rotulo = "block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1";
+
+/** Fora do componente, para não virar um tipo novo a cada tecla. */
+function CampoContato({
+  rotulo: texto,
+  erro,
+  children,
+}: {
+  rotulo: string;
+  erro?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className={rotulo}>{texto}</label>
+      {children}
+      {erro && <p className="text-[11px] text-destructive mt-1">{erro}</p>}
+    </div>
+  );
+}
 const campo =
   "w-full px-3 py-2 text-sm bg-background border border-input rounded-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
@@ -102,6 +125,9 @@ function EditarConteudo({ slug }: { slug: string }) {
   const alterar = <K extends keyof EscolaEditavel>(campo: K, valor: EscolaEditavel[K]) =>
     setEscola((prev) => (prev ? { ...prev, [campo]: valor } : prev));
 
+  const alterarContato = <K extends keyof ContatoDaEscola>(campo: K, valor: ContatoDaEscola[K]) =>
+    setEscola((prev) => (prev ? { ...prev, contato: { ...prev.contato, [campo]: valor } } : prev));
+
   const guardar = async () => {
     if (!escola) return;
     setSalvando(true);
@@ -115,6 +141,7 @@ function EditarConteudo({ slug }: { slug: string }) {
       lat: escola.lat,
       lng: escola.lng,
       termos_ok: escola.termos_ok,
+      contato: escola.contato,
     });
     setSalvando(false);
     setAviso(
@@ -216,6 +243,9 @@ function EditarConteudo({ slug }: { slug: string }) {
   const semCoordenada = escola.lat === null || escola.lng === null;
 
   const v = vocabulario(escola.tipo);
+  // Os erros aparecem ao lado do campo enquanto se digita, sobre o valor
+  // já normalizado — "@escola" e "escola.org" são aceitos como estão.
+  const problemasContato = problemasDoContato(normalizarContato(escola.contato));
 
   return (
     <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8 space-y-5">
@@ -320,6 +350,120 @@ function EditarConteudo({ slug }: { slug: string }) {
           O endereço público <span className="font-mono">{escola.slug}</span> não muda por aqui:
           trocá-lo quebraria todo link já compartilhado da escola.
         </p>
+      </section>
+
+      {/* Contato e números. Fica junto da identificação porque é a mesma
+          coisa vista de fora: quem a escola é e como falar com ela. Salva
+          com o "Guardar alterações" lá embaixo, como o resto da ficha. */}
+      <section className="bg-card border border-border rounded-md p-5 space-y-3 shadow-2xs">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2 flex items-center gap-2">
+          <Phone className="w-3.5 h-3.5" />
+          Contato e números
+        </h2>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Tudo aqui aparece na aba Sobre da página pública, para qualquer visitante. Prefira o
+          contato institucional d{v.aOrganizacao} ao pessoal, e deixe em branco o que não quiser
+          mostrar — campo vazio simplesmente não aparece.
+        </p>
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          <CampoContato rotulo="Responsável" erro={problemasContato.responsavel_nome}>
+            <input
+              type="text"
+              value={escola.contato.responsavel_nome ?? ""}
+              onChange={(e) => alterarContato("responsavel_nome", e.target.value)}
+              placeholder="Nome de quem coordena"
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo="Função" erro={problemasContato.responsavel_funcao}>
+            <input
+              type="text"
+              value={escola.contato.responsavel_funcao ?? ""}
+              onChange={(e) => alterarContato("responsavel_funcao", e.target.value)}
+              placeholder={escola.tipo === "surf" ? "Coordenador, instrutor-chefe…" : "Coordenação, professor responsável…"}
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo="E-mail" erro={problemasContato.contato_email}>
+            <input
+              type="email"
+              value={escola.contato.contato_email ?? ""}
+              onChange={(e) => alterarContato("contato_email", e.target.value)}
+              placeholder="contato@escola.org"
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo="Telefone" erro={problemasContato.contato_telefone}>
+            <input
+              type="tel"
+              value={escola.contato.contato_telefone ?? ""}
+              onChange={(e) => alterarContato("contato_telefone", e.target.value)}
+              placeholder="(13) 99999-0000"
+              className={campo}
+            />
+            <label className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={escola.contato.contato_telefone_whatsapp}
+                onChange={(e) => alterarContato("contato_telefone_whatsapp", e.target.checked)}
+              />
+              Este número tem WhatsApp
+            </label>
+          </CampoContato>
+          <CampoContato rotulo="Instagram" erro={problemasContato.contato_instagram}>
+            <input
+              type="text"
+              value={escola.contato.contato_instagram ?? ""}
+              onChange={(e) => alterarContato("contato_instagram", e.target.value)}
+              placeholder="@nomedaescola"
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo="Site" erro={problemasContato.contato_site}>
+            <input
+              type="url"
+              value={escola.contato.contato_site ?? ""}
+              onChange={(e) => alterarContato("contato_site", e.target.value)}
+              placeholder="escola.org.br"
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo="Facebook" erro={problemasContato.contato_facebook}>
+            <input
+              type="url"
+              value={escola.contato.contato_facebook ?? ""}
+              onChange={(e) => alterarContato("contato_facebook", e.target.value)}
+              placeholder="facebook.com/nomedaescola"
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo="YouTube" erro={problemasContato.contato_youtube}>
+            <input
+              type="url"
+              value={escola.contato.contato_youtube ?? ""}
+              onChange={(e) => alterarContato("contato_youtube", e.target.value)}
+              placeholder="youtube.com/@nomedaescola"
+              className={campo}
+            />
+          </CampoContato>
+          <CampoContato rotulo={v.rotuloAtendidos} erro={problemasContato.participantes_atendidos}>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={escola.contato.participantes_atendidos ?? ""}
+              onChange={(e) =>
+                alterarContato(
+                  "participantes_atendidos",
+                  e.target.value === "" ? null : Math.trunc(Number(e.target.value))
+                )
+              }
+              placeholder="Quantos, hoje"
+              className={`${campo} tabular-nums`}
+            />
+          </CampoContato>
+        </div>
       </section>
 
       {/* Posição */}
@@ -655,6 +799,22 @@ function EditarConteudo({ slug }: { slug: string }) {
             modo={{ tipo: "foto_turma", turmas: turmas.map((t) => ({ id: t.id, nome: t.nome })) }}
           />
         </div>
+      </section>
+
+      {/* Mural. Como as fotos, grava na hora, fora do "Guardar alterações". */}
+      <section
+        id="mural"
+        className="bg-card border border-border rounded-md p-5 space-y-3 shadow-2xs scroll-mt-20"
+      >
+        <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2 flex items-center gap-2">
+          <Megaphone className="w-3.5 h-3.5" />
+          Mural
+        </h2>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Texto com fotos ou vídeos curtos, que aparece na página d{v.aOrganizacao} e na linha do
+          tempo da rede. Daqui se tira do ar e se apaga o que já foi publicado.
+        </p>
+        <MuralDaEscola escolaId={escola.id} aOrganizacao={v.aOrganizacao} />
       </section>
 
       {aviso && (

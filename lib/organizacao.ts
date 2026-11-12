@@ -44,6 +44,8 @@ export interface Vocabulario {
   /** Rótulos dos dois campos do grupo: "Ano letivo"/"Nível", "Ano"/"Faixa". */
   rotuloAno: string;
   rotuloNivel: string;
+  /** Rótulo do número de atendidos, na ficha e na página pública. */
+  rotuloAtendidos: string;
   /** A escola regular tem rede de ensino; a de surf não. */
   temRedeDeEnsino: boolean;
   /** Uma linha dizendo o que é participar, para o cartão de escolha. */
@@ -65,6 +67,7 @@ const REGULAR: Vocabulario = {
   nivelPadrao: "Fundamental II",
   rotuloAno: "Ano letivo",
   rotuloNivel: "Nível",
+  rotuloAtendidos: "Estudantes participantes",
   temRedeDeEnsino: true,
   descricao:
     "Escola de ensino regular. As turmas saem a campo em expedições planejadas, com o professor.",
@@ -87,6 +90,7 @@ const SURF: Vocabulario = {
   nivelPadrao: "Misto",
   rotuloAno: "Ano",
   rotuloNivel: "Faixa",
+  rotuloAtendidos: "Alunos atendidos",
   temRedeDeEnsino: false,
   descricao:
     "Programa Guardiões Ecosurf. O instrutor e os alunos monitoram a praia onde já estão quase todo dia.",

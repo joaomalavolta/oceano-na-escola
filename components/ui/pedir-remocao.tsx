@@ -15,7 +15,14 @@ import { pedirRemocao } from "@/lib/galeria";
  * Fica aberto a quem não tem login: quem precisa pedir a remoção de uma
  * foto é a família, e família não tem conta na plataforma.
  */
-export function PedirRemocao({ evidenciaId }: { evidenciaId: number }) {
+export function PedirRemocao({
+  evidenciaId,
+  oQue = "desta imagem",
+}: {
+  evidenciaId: number;
+  /** "desta imagem" ou "deste vídeo". */
+  oQue?: string;
+}) {
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState("");
   const [contato, setContato] = useState("");
@@ -56,7 +63,7 @@ export function PedirRemocao({ evidenciaId }: { evidenciaId: number }) {
         className="text-[11px] text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
       >
         <ShieldAlert className="w-3 h-3" />
-        Pedir remoção desta imagem
+        Pedir remoção {oQue}
       </button>
     );
   }

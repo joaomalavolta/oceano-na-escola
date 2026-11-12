@@ -41,16 +41,48 @@ export interface EscolaNaLinha {
   municipio: string;
 }
 
-export interface Marco {
+/** Publicação do mural, como vem de `pub_mural`. */
+export interface PublicacaoNaLinha {
+  id: number;
+  texto: string;
+  /** ISO com hora. */
+  publicada_em: string;
+  escola_slug: string;
+  escola_nome: string;
+}
+
+/** Foto ou vídeo de uma publicação, como vem de `pub_mural_midia`. */
+export interface MidiaNaLinha {
+  id: number;
+  publicacao_id: number;
+  storage_path: string;
+  tipo: string;
+  legenda: string | null;
+}
+
+interface MarcoBase {
   chave: string;
+  /** "AAAA-MM-DD", no fuso de Brasília. */
   data: string;
-  expedicao: ExpedicaoNaLinha;
   /** Nula se a escola não estiver na lista — não deveria acontecer. */
   escola: EscolaNaLinha | null;
+}
+
+export interface MarcoSaida extends MarcoBase {
+  tipo: "saida";
+  expedicao: ExpedicaoNaLinha;
   fotos: FotoNaLinha[];
   /** Quantas fotos da saída ficaram fora do recorte exibido. */
   fotosAMais: number;
 }
+
+export interface MarcoPublicacao extends MarcoBase {
+  tipo: "publicacao";
+  publicacao: PublicacaoNaLinha;
+  midias: MidiaNaLinha[];
+}
+
+export type Marco = MarcoSaida | MarcoPublicacao;
 
 export interface MesNaLinha {
   /** "AAAA-MM" */
@@ -86,6 +118,25 @@ export function dataCurta(data: string): string {
   return `${Number(d)} ${MESES_CURTOS[Number(m) - 1] ?? m}`;
 }
 
+const DIA_EM_BRASILIA = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Sao_Paulo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * O dia de um instante, no fuso de Brasília.
+ *
+ * A saída de campo tem data; a publicação do mural tem instante. Uma
+ * publicação feita às 22h do dia 1º é, em UTC, do dia 2 — e apareceria
+ * no dia seguinte ao que a escola viveu. O formato "en-CA" é só o jeito
+ * de o Intl devolver AAAA-MM-DD.
+ */
+export function diaEmBrasilia(iso: string): string {
+  return DIA_EM_BRASILIA.format(new Date(iso));
+}
+
 /**
  * Fotos que pertencem a uma saída. A capa é da escola, não de uma saída,
  * e foto de turma sem saída também não entra aqui.
@@ -98,11 +149,22 @@ export function montarLinhaDoTempo(opts: {
   expedicoes: ExpedicaoNaLinha[];
   fotos: FotoNaLinha[];
   escolas: EscolaNaLinha[];
+  publicacoes?: PublicacaoNaLinha[];
+  midias?: MidiaNaLinha[];
   rede?: TipoOrganizacao | "";
   escolaSlug?: string;
   fotosPorMarco?: number;
 }): MesNaLinha[] {
-  const { expedicoes, fotos, escolas, rede = "", escolaSlug, fotosPorMarco = 4 } = opts;
+  const {
+    expedicoes,
+    fotos,
+    escolas,
+    publicacoes = [],
+    midias = [],
+    rede = "",
+    escolaSlug,
+    fotosPorMarco = 4,
+  } = opts;
   const porSlug = new Map(escolas.map((e) => [e.slug, e]));
 
   // O número da expedição se repete entre escolas — a #1 de uma não é a
@@ -116,13 +178,17 @@ export function montarLinhaDoTempo(opts: {
     fotosPorSaida.set(chave, lista);
   }
 
-  const marcos: Marco[] = expedicoes
-    .filter((x) => !escolaSlug || x.escola_slug === escolaSlug)
-    .filter((x) => !rede || (porSlug.get(x.escola_slug)?.tipo ?? "regular") === rede)
+  const entra = (slug: string) =>
+    (!escolaSlug || slug === escolaSlug) &&
+    (!rede || (porSlug.get(slug)?.tipo ?? "regular") === rede);
+
+  const saidas: MarcoSaida[] = expedicoes
+    .filter((x) => entra(x.escola_slug))
     .map((x) => {
       const chave = `${x.escola_slug}#${x.numero}`;
       const todas = fotosPorSaida.get(chave) ?? [];
       return {
+        tipo: "saida",
         chave,
         data: x.data_campo,
         expedicao: x,
@@ -130,14 +196,43 @@ export function montarLinhaDoTempo(opts: {
         fotos: todas.slice(0, fotosPorMarco),
         fotosAMais: Math.max(0, todas.length - fotosPorMarco),
       };
-    })
-    .sort((a, b) => {
-      if (a.data !== b.data) return a.data < b.data ? 1 : -1;
-      const na = a.escola?.nome ?? a.expedicao.escola_nome;
-      const nb = b.escola?.nome ?? b.expedicao.escola_nome;
-      if (na !== nb) return na.localeCompare(nb, "pt-BR");
-      return b.expedicao.numero - a.expedicao.numero;
     });
+
+  const midiasPorPublicacao = new Map<number, MidiaNaLinha[]>();
+  for (const m of midias) {
+    const lista = midiasPorPublicacao.get(m.publicacao_id) ?? [];
+    lista.push(m);
+    midiasPorPublicacao.set(m.publicacao_id, lista);
+  }
+
+  const posts: MarcoPublicacao[] = publicacoes
+    .filter((p) => entra(p.escola_slug))
+    .map((p) => ({
+      tipo: "publicacao",
+      chave: `mural-${p.id}`,
+      data: diaEmBrasilia(p.publicada_em),
+      publicacao: p,
+      escola: porSlug.get(p.escola_slug) ?? null,
+      midias: (midiasPorPublicacao.get(p.id) ?? []).sort((a, b) => a.id - b.id),
+    }));
+
+  const nomeDe = (m: Marco) =>
+    m.escola?.nome ?? (m.tipo === "saida" ? m.expedicao.escola_nome : m.publicacao.escola_nome);
+
+  // No mesmo dia, a publicação vem antes da saída: ela costuma ser o
+  // relato do que aconteceu, escrito depois. Entre publicações, a mais
+  // recente primeiro; entre saídas, pela escola.
+  const marcos: Marco[] = [...saidas, ...posts].sort((a, b) => {
+    if (a.data !== b.data) return a.data < b.data ? 1 : -1;
+    if (a.tipo !== b.tipo) return a.tipo === "publicacao" ? -1 : 1;
+    if (a.tipo === "publicacao" && b.tipo === "publicacao") {
+      return a.publicacao.publicada_em < b.publicacao.publicada_em ? 1 : -1;
+    }
+    const na = nomeDe(a);
+    const nb = nomeDe(b);
+    if (na !== nb) return na.localeCompare(nb, "pt-BR");
+    return a.tipo === "saida" && b.tipo === "saida" ? b.expedicao.numero - a.expedicao.numero : 0;
+  });
 
   const meses: MesNaLinha[] = [];
   for (const m of marcos) {
