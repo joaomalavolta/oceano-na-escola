@@ -25,6 +25,16 @@ interface Props {
   onMudar: (lat: number, lng: number) => void;
   /** Decide o pino: o capelo da escola ou a onda da escola de surf. */
   tipo: TipoOrganizacao;
+  /** Outro pino — o do protocolo, no registro de campo. Vence `tipo`. */
+  pino?: { slug: string | null; cor: string | null };
+  /**
+   * Esconde o "Usar onde estou agora". No registro de campo a página já
+   * tem o botão de GPS, com a precisão ao lado; dois botões para a mesma
+   * coisa dividiriam a atenção na hora errada.
+   */
+  semBotaoDeLocalizacao?: boolean;
+  /** Texto da dica, no lugar do da escola. */
+  dica?: { comPosicao: string; semPosicao: string };
 }
 
 const ZOOM_SEM_POSICAO = 12;
@@ -44,7 +54,7 @@ const ZOOM_COM_POSICAO = 16;
  * onde estou" para quem está fazendo o cadastro de dentro da escola.
  * Os campos numéricos continuam ao lado, para quem tem a coordenada.
  */
-export function SeletorDePosicao({ lat, lng, onMudar, tipo }: Props) {
+export function SeletorDePosicao({ lat, lng, onMudar, tipo, pino, semBotaoDeLocalizacao = false, dica }: Props) {
   const mapRef = useRef<MapRef>(null);
   const temPosicao = posicaoValida(lat, lng);
 
@@ -189,7 +199,7 @@ export function SeletorDePosicao({ lat, lng, onMudar, tipo }: Props) {
               onDragEnd={aoSoltar}
             >
               <div className="cursor-grab active:cursor-grabbing" title="Arraste para ajustar">
-                <PinMapa {...pinoDaOrganizacao(tipo)} tamanho={40} className="drop-shadow-md" />
+                <PinMapa {...(pino ?? pinoDaOrganizacao(tipo))} tamanho={40} className="drop-shadow-md" />
               </div>
             </Marker>
           )}
@@ -219,8 +229,8 @@ export function SeletorDePosicao({ lat, lng, onMudar, tipo }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
         <p className="text-[11px] text-muted-foreground">
           {temPosicao
-            ? "Arraste o pino ou toque no mapa para ajustar. No satélite dá para achar o telhado."
-            : "Aproxime o mapa até achar o lugar e toque nele. No satélite dá para achar o telhado."}
+            ? dica?.comPosicao ?? "Arraste o pino ou toque no mapa para ajustar. No satélite dá para achar o telhado."
+            : dica?.semPosicao ?? "Aproxime o mapa até achar o lugar e toque nele. No satélite dá para achar o telhado."}
         </p>
         {/* Os dois juntos: soltos, a quebra de linha separava um do outro. */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -234,6 +244,7 @@ export function SeletorDePosicao({ lat, lng, onMudar, tipo }: Props) {
               Voltar à posição anterior
             </button>
           )}
+          {!semBotaoDeLocalizacao && (
           <button
             type="button"
             onClick={usarOndeEstou}
@@ -247,6 +258,7 @@ export function SeletorDePosicao({ lat, lng, onMudar, tipo }: Props) {
             )}
             Usar onde estou agora
           </button>
+          )}
         </div>
       </div>
 

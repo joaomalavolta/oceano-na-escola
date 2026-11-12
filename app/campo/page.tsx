@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   AlertTriangle,
   Camera,
@@ -40,7 +41,33 @@ import {
 interface Gps {
   lat: number;
   lng: number;
-  precisao: number;
+  /** Em metros, do GPS. Nula quando o ponto foi marcado à mão no mapa. */
+  precisao: number | null;
+}
+
+/*
+  O mapa só carrega quando é preciso, e sem SSR (o MapLibre exige o DOM).
+  Se nem o código dele estiver no aparelho — na praia, sem sinal, num
+  celular que nunca abriu o mapa —, a página segue com o botão de GPS em
+  vez de quebrar inteira.
+*/
+const SeletorDePosicao = dynamic(
+  () =>
+    import("@/components/mapa/seletor-de-posicao")
+      .then((m) => m.SeletorDePosicao)
+      .catch(() => SemMapa),
+  {
+    ssr: false,
+    loading: () => <div className="h-72 sm:h-80 rounded-sm border border-input bg-muted/40 animate-pulse" />,
+  }
+);
+
+function SemMapa() {
+  return (
+    <p className="text-[11px] text-muted-foreground border border-dashed border-border rounded-sm p-3">
+      O mapa não carregou neste aparelho (sem conexão?). Use o botão de GPS acima.
+    </p>
+  );
 }
 
 /** Erro de rede se guarda na fila; erro de regra se mostra. */
@@ -70,9 +97,11 @@ function CampoConteudo() {
 
   const [enviando, setEnviando] = useState(false);
   const [reenviando, setReenviando] = useState(false);
-  const [mensagem, setMensagem] = useState<{ tipo: "ok" | "erro" | "fila"; texto: string } | null>(
-    null
-  );
+  const [mensagem, setMensagem] = useState<{
+    tipo: "ok" | "erro" | "fila";
+    texto: string;
+    link?: { href: string; rotulo: string };
+  } | null>(null);
 
   /**
    * De quando é a lista na tela, quando ela veio do aparelho e não do
@@ -288,7 +317,16 @@ function CampoConteudo() {
 
     if (!erro) {
       limparParaProximo();
-      setMensagem({ tipo: "ok", texto: "Registro enviado. Capture o GPS do próximo ponto." });
+      // Diz onde o registro ficou e o que falta para ele aparecer. Sem
+      // isto, quem procurava o ponto no mapa ou na linha do tempo logo
+      // depois não o encontrava — e não tinha como saber que ele está
+      // guardado num rascunho, à espera da revisão.
+      const x = expedicoes?.find((e) => e.id === registro.expedicaoId);
+      setMensagem({
+        tipo: "ok",
+        texto: `Registro guardado na expedição #${x?.numero ?? ""}${x ? ` da ${x.escola_nome}` : ""}. Ele vai ao mapa e à linha do tempo quando a expedição for revisada e publicada; a foto, quando for publicada na galeria. Marque o próximo ponto.`,
+        link: { href: `/expedicoes/${registro.expedicaoId}/revisar`, rotulo: "Revisar esta expedição" },
+      });
       return;
     }
 
@@ -406,7 +444,8 @@ function CampoConteudo() {
             <option value="">Escolha a expedição…</option>
             {expedicoes.map((x) => (
               <option key={x.id} value={x.id}>
-                #{x.numero} · {x.titulo ?? "Sem título"} · {x.escola_nome}
+                #{x.numero} · {x.data_campo.split("-").reverse().join("/")} · {x.titulo ?? "Sem título"} ·{" "}
+                {x.escola_nome}
               </option>
             ))}
           </select>
@@ -431,12 +470,40 @@ function CampoConteudo() {
         {gps && (
           <p className="text-xs tabular-nums text-muted-foreground">
             {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}{" "}
-            <span className={gps.precisao > 30 ? "text-amber-600 dark:text-amber-400" : ""}>
-              (±{gps.precisao} m{gps.precisao > 30 ? " — precisão baixa, tente de novo" : ""})
-            </span>
+            {gps.precisao === null ? (
+              <span>(marcado no mapa)</span>
+            ) : (
+              <span className={gps.precisao > 30 ? "text-amber-600 dark:text-amber-400" : ""}>
+                (±{gps.precisao} m
+                {gps.precisao > 30 ? " — precisão baixa: tente de novo, ou ajuste o pino no mapa" : ""})
+              </span>
+            )}
           </p>
         )}
         {erroGps && <p className="text-xs text-destructive">{erroGps}</p>}
+
+        {/* Ou à mão, no mapa. Serve quando o GPS erra — embaixo de árvore,
+            perto de prédio, a precisão passa de 50 m — e quando o registro
+            é feito depois, de volta à sala, sobre o ponto que a turma viu.
+            O pino do mapa é o do protocolo escolhido, o mesmo que vai
+            aparecer no mapa da rede. */}
+        <div className="pt-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+            Ou marque no mapa
+          </p>
+          <SeletorDePosicao
+            lat={gps?.lat ?? null}
+            lng={gps?.lng ?? null}
+            tipo="regular"
+            pino={protocolo ? { slug: protocolo.icone, cor: protocolo.cor } : { slug: null, cor: null }}
+            semBotaoDeLocalizacao
+            dica={{
+              comPosicao: "Arraste o pino até o ponto exato da ocorrência. No satélite dá para ver a areia, a restinga e a drenagem.",
+              semPosicao: "Use o GPS acima ou toque no mapa onde está a ocorrência.",
+            }}
+            onMudar={(lat, lng) => setGps({ lat, lng, precisao: null })}
+          />
+        </div>
       </section>
 
       {/* 3. O que você encontrou */}
@@ -608,7 +675,17 @@ function CampoConteudo() {
           ) : (
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
           )}
-          <span>{mensagem.texto}</span>
+          <span>
+            {mensagem.texto}
+            {mensagem.link && (
+              <>
+                {" "}
+                <Link href={mensagem.link.href} className="font-semibold underline underline-offset-2">
+                  {mensagem.link.rotulo}
+                </Link>
+              </>
+            )}
+          </span>
         </div>
       )}
 
@@ -623,7 +700,7 @@ function CampoConteudo() {
 
       {!pronto && (
         <p className="text-[11px] text-center text-muted-foreground">
-          Para salvar: expedição, GPS e um item escolhido — ou uma descrição.
+          Para salvar: expedição, posição (GPS ou mapa) e um item escolhido — ou uma descrição.
         </p>
       )}
       <VoltarRodape para="painel" />
