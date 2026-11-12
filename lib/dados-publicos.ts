@@ -191,6 +191,10 @@ export async function carregarDadosPublicos(): Promise<DadosPublicos> {
       lng: num(e.lng),
       tipo: tipoDe(e.tipo),
       capa_path: e.capa_path ?? null,
+      fundada_em: e.fundada_em ?? null,
+      dias_aula: Array.isArray(e.dias_aula) ? e.dias_aula.map(String) : [],
+      horario_aulas: e.horario_aulas ?? null,
+      participantes_atendidos: e.participantes_atendidos === null || e.participantes_atendidos === undefined ? null : num(e.participantes_atendidos),
     }));
 
     const grade: PubObservacaoGrade[] = (gradeRes.data ?? []).map((g) => ({

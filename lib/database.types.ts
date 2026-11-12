@@ -21,6 +21,26 @@ export interface PubEscola {
   tipo: TipoOrganizacao;
   /** A foto de capa, quando publicada e com termo de imagem. */
   capa_path: string | null;
+  /** "AAAA-MM-DD" */
+  fundada_em: string | null;
+  /** seg, ter, qua, qui, sex, sab, dom */
+  dias_aula: string[];
+  horario_aulas: string | null;
+  participantes_atendidos: number | null;
+}
+
+/** Coordenador que autorizou aparecer na página pública. */
+export interface PubCoordenador {
+  id: number;
+  escola_slug: string;
+  nome: string;
+  funcao: string | null;
+  email: string | null;
+  telefone: string | null;
+  telefone_whatsapp: boolean;
+  instagram: string | null;
+  foto_path: string | null;
+  ordem: number;
 }
 
 export interface PubObservacaoGrade {

@@ -20,6 +20,7 @@ import { supabase } from "./supabase";
 import { tipoDe, type TipoOrganizacao } from "./organizacao";
 import { posicaoValida } from "./posicao";
 import { CONTATO_VAZIO, normalizarContato, problemasDoContato, type ContatoDaEscola } from "./contato";
+import { fundacaoValida, normalizarDias } from "./ficha-escola";
 
 export type Papel =
   | "professor"
@@ -63,6 +64,10 @@ export interface EscolaEditavel {
   motivo_recusa: string | null;
   /** Contato e números da página pública. Tudo opcional. */
   contato: ContatoDaEscola;
+  /** "AAAA-MM-DD" */
+  fundada_em: string | null;
+  dias_aula: string[];
+  horario_aulas: string | null;
 }
 
 export interface TurmaEditavel {
@@ -101,7 +106,7 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
   const { data, error } = await supabase
     .from("escola")
     .select(
-      "id, slug, nome, tipo, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa, responsavel_nome, responsavel_funcao, contato_email, contato_telefone, contato_telefone_whatsapp, contato_site, contato_instagram, contato_facebook, contato_youtube, participantes_atendidos"
+      "id, slug, nome, tipo, municipio_id, rede_ensino, endereco, apresentacao, publicada, termos_ok, situacao, motivo_recusa, responsavel_nome, responsavel_funcao, contato_email, contato_telefone, contato_telefone_whatsapp, contato_site, contato_instagram, contato_facebook, contato_youtube, participantes_atendidos, fundada_em, dias_aula, horario_aulas"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -139,6 +144,9 @@ export async function carregarEscolaEditavel(slug: string): Promise<EscolaEditav
       contato_youtube: data.contato_youtube ?? null,
       participantes_atendidos: numOuNulo(data.participantes_atendidos),
     },
+    fundada_em: data.fundada_em ?? null,
+    dias_aula: Array.isArray(data.dias_aula) ? data.dias_aula.map(String) : [],
+    horario_aulas: data.horario_aulas ?? null,
   };
 }
 
@@ -161,6 +169,13 @@ export async function salvarEscola(
   const problemas = Object.values(problemasDoContato(contato));
   if (problemas.length > 0) return { erro: `Contato: ${problemas.join(" ")}` };
 
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  if (!fundacaoValida(d.fundada_em, hoje)) {
+    return { erro: "A data de fundação precisa ser entre 1900 e hoje." };
+  }
+  const horario = d.horario_aulas?.trim() || null;
+  if (horario && horario.length > 120) return { erro: "O horário das aulas passa de 120 caracteres." };
+
   const temAlguma = d.lat !== null || d.lng !== null;
   if (temAlguma && !posicaoValida(d.lat, d.lng)) {
     return {
@@ -179,6 +194,9 @@ export async function salvarEscola(
       geom: d.lat !== null && d.lng !== null ? `SRID=4326;POINT(${d.lng} ${d.lat})` : null,
       termos_ok: d.termos_ok,
       ...contato,
+      fundada_em: d.fundada_em,
+      dias_aula: normalizarDias(d.dias_aula),
+      horario_aulas: horario,
     })
     .eq("id", id);
   return { erro: error?.message ?? null };

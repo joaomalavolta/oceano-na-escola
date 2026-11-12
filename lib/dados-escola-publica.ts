@@ -14,6 +14,7 @@ import type {
   PubObservacaoPontual,
   PubFotoGeorreferenciada,
   PubGaleria,
+  PubCoordenador,
 } from "./database.types";
 import { tipoDe } from "./organizacao";
 import type { ContatoDaEscola } from "./contato";
@@ -30,6 +31,7 @@ export interface EscolaPublica {
   contato: ContatoDaEscola | null;
   publicacoes: PublicacaoNaLinha[];
   midias: MidiaNaLinha[];
+  coordenadores: PubCoordenador[];
   /** false quando faltam as variáveis do Supabase. */
   disponivel: boolean;
   erro: string | null;
@@ -45,6 +47,7 @@ const VAZIO: EscolaPublica = {
   contato: null,
   publicacoes: [],
   midias: [],
+  coordenadores: [],
   disponivel: true,
   erro: null,
 };
@@ -64,7 +67,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
   if (!supabaseConfigurado) return { ...VAZIO, disponivel: false };
 
   try {
-    const [escolaRes, indicadorRes, expedicoesRes, ocorrenciasRes, fotosRes, galeriaRes, contatoRes, muralRes] =
+    const [escolaRes, indicadorRes, expedicoesRes, ocorrenciasRes, fotosRes, galeriaRes, contatoRes, muralRes, coordRes] =
       await Promise.all([
         supabase.from("pub_escola").select("*").eq("slug", slug).maybeSingle(),
         supabase.from("pub_indicador_escola").select("*").eq("escola_slug", slug).maybeSingle(),
@@ -81,7 +84,28 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
           .from("pub_mural")
           .select("id, texto, publicada_em, escola_slug, escola_nome")
           .eq("escola_slug", slug),
+        supabase
+          .from("pub_escola_coordenador")
+          .select("*")
+          .eq("escola_slug", slug)
+          .order("ordem")
+          .order("id"),
       ]);
+
+    const coordenadores: PubCoordenador[] = coordRes.error
+      ? []
+      : (coordRes.data ?? []).map((c) => ({
+          id: num(c.id),
+          escola_slug: String(c.escola_slug),
+          nome: String(c.nome),
+          funcao: c.funcao ?? null,
+          email: c.email ?? null,
+          telefone: c.telefone ?? null,
+          telefone_whatsapp: Boolean(c.telefone_whatsapp),
+          instagram: c.instagram ?? null,
+          foto_path: c.foto_path ?? null,
+          ordem: num(c.ordem),
+        }));
 
     // A mídia do mural é pedida pelas publicações, porque a view dela não
     // carrega a escola. Contato e mural, se falharem, não derrubam a
@@ -145,6 +169,10 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
           lng: num(e.lng),
           tipo: tipoDe(e.tipo),
           capa_path: e.capa_path ?? null,
+          fundada_em: e.fundada_em ?? null,
+          dias_aula: Array.isArray(e.dias_aula) ? e.dias_aula.map(String) : [],
+          horario_aulas: e.horario_aulas ?? null,
+          participantes_atendidos: e.participantes_atendidos === null || e.participantes_atendidos === undefined ? null : num(e.participantes_atendidos),
         }
       : null;
 
@@ -236,6 +264,7 @@ export async function carregarEscolaPublica(slug: string): Promise<EscolaPublica
       contato,
       publicacoes,
       midias,
+      coordenadores,
       disponivel: true,
       erro: null,
     };

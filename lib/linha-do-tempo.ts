@@ -274,3 +274,16 @@ export function expedicoesDosPontuais(
   }
   return [...vistas.values()];
 }
+
+/** Os primeiros `n` marcos, mantendo o agrupamento por mês. */
+export function recortarLinha(meses: MesNaLinha[], n: number): MesNaLinha[] {
+  const saida: MesNaLinha[] = [];
+  let resta = n;
+  for (const m of meses) {
+    if (resta <= 0) break;
+    const marcos = m.marcos.slice(0, resta);
+    saida.push({ ...m, marcos });
+    resta -= marcos.length;
+  }
+  return saida;
+}

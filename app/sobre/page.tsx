@@ -67,6 +67,7 @@ const CICLO = [
 
 const PAPEIS = [
   ["Professor", "Cadastra a escola e a turma, cria expedições, registra em campo, transcreve, cura a galeria e publica."],
+  ["Instrutor de escola de surf", "O mesmo papel do professor, na escola de surf: cadastra a escola e as turmas de aula, registra em campo e publica no mural."],
   ["Coordenação escolar", "Acompanha as turmas da escola e faz curadoria das imagens."],
   ["Coordenação municipal", "Acompanha várias escolas do município."],
   ["Pesquisador", "Consulta e exporta os dados da rede."],
@@ -93,6 +94,14 @@ export default function SobrePage() {
               monitoramento ambiental organizada a partir de escolas. A escola atua como
               núcleo local, os estudantes como mapeadores, e o mapa coletivo como
               instrumento de leitura e transformação do território.
+            </p>
+            <p className="mt-3 text-base md:text-lg text-white/85 leading-relaxed max-w-2xl">
+              A plataforma também é o ambiente dos projetos de educação para a Cultura Oceânica
+              nas escolas de surf, pelo programa{" "}
+              <Link href="/guardioes" className="underline underline-offset-2 hover:text-white">
+                Guardiões Ecosurf
+              </Link>
+              .
             </p>
           </div>
         </section>
@@ -136,6 +145,43 @@ export default function SobrePage() {
                 </li>
               ))}
             </ol>
+          </section>
+
+          {/* Escolas de surf */}
+          <section>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-border pb-2 mb-5">
+              Também nas escolas de surf
+            </h2>
+            <div className="bg-card border border-border rounded-md p-5 shadow-2xs flex flex-col md:flex-row gap-5">
+              <div className="space-y-3 text-sm leading-relaxed flex-1">
+                <p>
+                  Pelo programa <strong>Guardiões Ecosurf</strong>, a plataforma é também o
+                  ambiente de promoção de projetos de educação para a Cultura Oceânica entre
+                  escolas de surf. O instrutor e os alunos aplicam os mesmos protocolos das
+                  escolas, publicam no mesmo mapa e aparecem na mesma linha do tempo da rede.
+                </p>
+                <p className="text-muted-foreground">
+                  A escola de surf está na praia quase todo dia, e volta ao mesmo trecho de areia
+                  semana após semana. É essa frequência o que ela traz à rede: a observação
+                  repetida do mesmo lugar, que é a matéria-prima de uma série histórica.
+                </p>
+              </div>
+              <div className="md:w-56 shrink-0 flex flex-col gap-2 justify-center">
+                <Link
+                  href="/guardioes"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-sm hover:opacity-90"
+                >
+                  Conhecer o programa
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/escolas?rede=surf"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold border border-border rounded-sm hover:bg-secondary"
+                >
+                  Escolas de surf da rede
+                </Link>
+              </div>
+            </div>
           </section>
 
           {/* Proteção — a seção que decide se uma escola confia */}

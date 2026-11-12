@@ -52,6 +52,10 @@ export const mockEscolas: PubEscola[] = [
     lng: -46.8015,
     tipo: "regular",
     capa_path: null,
+    fundada_em: null,
+    dias_aula: [],
+    horario_aulas: null,
+    participantes_atendidos: null,
   },
   {
     id: 2,
@@ -64,6 +68,10 @@ export const mockEscolas: PubEscola[] = [
     lng: -46.7645,
     tipo: "regular",
     capa_path: null,
+    fundada_em: null,
+    dias_aula: [],
+    horario_aulas: null,
+    participantes_atendidos: null,
   },
   {
     id: 3,
@@ -76,6 +84,10 @@ export const mockEscolas: PubEscola[] = [
     lng: -46.7885,
     tipo: "regular",
     capa_path: null,
+    fundada_em: null,
+    dias_aula: [],
+    horario_aulas: null,
+    participantes_atendidos: null,
   },
   {
     id: 4,
@@ -88,6 +100,10 @@ export const mockEscolas: PubEscola[] = [
     lng: -46.8220,
     tipo: "regular",
     capa_path: null,
+    fundada_em: null,
+    dias_aula: [],
+    horario_aulas: null,
+    participantes_atendidos: null,
   },
   // Escola de surf fictícia, para a demonstração mostrar o pino e a aba
   // dos Guardiões. Nome e coordenada são inventados: não é levantamento.
@@ -103,6 +119,12 @@ export const mockEscolas: PubEscola[] = [
     lng: -46.7772,
     tipo: "surf",
     capa_path: null,
+    // Valores ARBITRÁRIOS, só para o balão do pino ter o que mostrar na
+    // demonstração. Não descrevem escola nenhuma.
+    fundada_em: "2018-09-15",
+    dias_aula: ["ter", "qui", "sab"],
+    horario_aulas: "7h às 9h",
+    participantes_atendidos: 30,
   },
 ];
 

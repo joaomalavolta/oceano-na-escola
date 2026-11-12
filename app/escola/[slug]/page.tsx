@@ -25,9 +25,10 @@ import { SeloTipo } from "@/components/escolas/selo-tipo";
 import { LinhaDoTempo } from "@/components/linha-do-tempo/linha-do-tempo";
 import { EscreverNoMural } from "@/components/mural/escrever-no-mural";
 import { ContatoPublico } from "@/components/escolas/contato-publico";
+import { CoordenacaoPublica, FuncionamentoPublico } from "@/components/escolas/sobre-a-escola";
 import { possoEscreverNoMural } from "@/lib/mural";
 import { vocabulario, maiuscula } from "@/lib/organizacao";
-import { montarLinhaDoTempo } from "@/lib/linha-do-tempo";
+import { montarLinhaDoTempo, recortarLinha } from "@/lib/linha-do-tempo";
 import { IconeBadge, slugDe } from "@/components/mapa/icones";
 import { calcularConquistas } from "@/lib/conquistas";
 import { listarHistoriasPublicas, type HistoriaPublica } from "@/lib/historias";
@@ -50,6 +51,8 @@ type Aba =
   | "historias"
   | "galeria"
   | "conquistas";
+
+const ATIVIDADES_NO_TERRITORIO = 3;
 
 /** O que a foto é, quando ela não tem legenda. */
 function rotuloDaFoto(tipo: string): string {
@@ -134,7 +137,8 @@ export default function EscolaPublicaPage({
     );
   }
 
-  const { escola, indicador, expedicoes, ocorrencias, fotos, galeria, contato, publicacoes, midias } = dados;
+  const { escola, indicador, expedicoes, ocorrencias, fotos, galeria, contato, publicacoes, midias, coordenadores } =
+    dados;
   const v = vocabulario(escola.tipo);
   const km = ((indicador?.extensao_total_m ?? 0) / 1000).toFixed(1).replace(".", ",");
 
@@ -181,6 +185,11 @@ export default function EscolaPublicaPage({
     // é o assunto, e não uma entre várias.
     fotosPorMarco: 8,
   });
+
+  // Embaixo do mapa, só as mais recentes: a aba Território é o mapa, e
+  // uma linha do tempo inteira ali empurraria o rodapé para longe.
+  const totalDeAtividades = linhaDaEscola.reduce((n, m) => n + m.marcos.length, 0);
+  const linhaRecente = recortarLinha(linhaDaEscola, ATIVIDADES_NO_TERRITORIO);
 
   const conquistas = calcularConquistas(indicador, expedicoes, ocorrencias, fotos.length);
 
@@ -300,7 +309,9 @@ export default function EscolaPublicaPage({
                 {escola.apresentacao ?? "Sem apresentação cadastrada."}
               </p>
             </div>
-            <ContatoPublico contato={contato} rotuloAtendidos={v.rotuloAtendidos} />
+            <FuncionamentoPublico escola={escola} rotuloAtendidos={v.rotuloAtendidos} />
+            <CoordenacaoPublica pessoas={coordenadores} />
+            <ContatoPublico contato={contato} />
           </div>
         )}
 
@@ -312,13 +323,45 @@ export default function EscolaPublicaPage({
                 que o mapa não usava. Os limites impedem que encolha
                 demais no celular deitado. */}
             <div className="h-[62vh] min-h-[380px] max-h-[640px] border border-border rounded-md overflow-hidden relative shadow-sm">
-              <MapaEscola escola={escola} ocorrencias={ocorrencias} fotos={fotos} />
+              <MapaEscola
+                escola={escola}
+                ocorrencias={ocorrencias}
+                fotos={fotos}
+                indicador={indicador ?? undefined}
+                onVerSobre={() => {
+                  setAbaAtiva("sobre");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Cada pino é uma ocorrência registrada em campo, na cor do seu protocolo.
-              Clique para ver a foto, a magnitude e a expedição de origem. Troque para
-              satélite no canto do mapa para ver a restinga, a foz e a drenagem.
+              Passe o mouse no pino d{v.aOrganizacao} para ver o resumo dela. Os outros pinos
+              são ocorrências registradas em campo, na cor do seu protocolo: clique para ver a
+              foto, a magnitude e a expedição de origem. Troque para satélite no canto do mapa
+              para ver a restinga, a foz e a drenagem.
             </p>
+
+            {/* As atividades logo abaixo do mapa: quem chega à página
+                abre aqui, e vê o território e o que a escola tem feito
+                nele sem precisar trocar de aba. Mostra as mais recentes;
+                a lista inteira, e o campo do mural, estão em Atividades. */}
+            {linhaRecente.length > 0 && (
+              <section className="pt-6 space-y-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-primary">
+                    Atividades recentes
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setAbaAtiva("expedicoes")}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Ver todas{totalDeAtividades > ATIVIDADES_NO_TERRITORIO ? ` (${totalDeAtividades})` : ""}
+                  </button>
+                </div>
+                <LinhaDoTempo meses={linhaRecente} mostrarEscola={false} />
+              </section>
+            )}
           </div>
         )}
 

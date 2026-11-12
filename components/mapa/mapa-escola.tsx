@@ -15,12 +15,15 @@ import MapGL, {
 import { PinMapa, slugDe, pinoDaOrganizacao } from "./icones";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
+import { BalaoEscola } from "./balao-escola";
+import { useBalao } from "./use-balao";
 import { PopupOcorrencia } from "./popup-ocorrencia";
 import { agruparPorProximidade, pontoDe as coordenadas } from "@/lib/agrupamento";
 import { ESTILO_SEM_FUNDO, fundoPorId, fundoSalvo, salvaFundo } from "@/lib/mapa-base";
 
 import type {
   PubEscola,
+  PubIndicadorEscola,
   PubObservacaoPontual,
   PubFotoGeorreferenciada,
 } from "@/lib/database.types";
@@ -29,6 +32,9 @@ interface MapaEscolaProps {
   escola: PubEscola;
   ocorrencias: PubObservacaoPontual[];
   fotos: PubFotoGeorreferenciada[];
+  indicador?: PubIndicadorEscola;
+  /** O botão do balão: na página da escola, abre a aba Sobre. */
+  onVerSobre?: () => void;
 }
 
 const ZOOM_INICIAL = 14;
@@ -40,8 +46,9 @@ const ZOOM_INICIAL = 14;
  * painel de camadas e rodapé de indicadores da rede inteira. Aqui o
  * recorte é uma escola, e o que interessa é onde ela mapeou.
  */
-export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
+export function MapaEscola({ escola, ocorrencias, fotos, indicador, onVerSobre }: MapaEscolaProps) {
   const [aberta, setAberta] = useState<PubObservacaoPontual | null>(null);
+  const balao = useBalao<true>();
 
   /**
    * A foto da ocorrência, indexada pela ocorrência que ela documenta.
@@ -124,11 +131,58 @@ export function MapaEscola({ escola, ocorrencias, fotos }: MapaEscolaProps) {
           <Layer id="fundo-mapa-tiles" type="raster" />
         </Source>
 
-        <Marker latitude={escola.lat} longitude={escola.lng} anchor="bottom">
-          <div title={escola.nome}>
+        <Marker latitude={escola.lat} longitude={escola.lng} anchor="bottom" style={{ zIndex: 2 }}>
+          {/* Passar o mouse ou tocar abre o balão com os dados da escola. */}
+          <button
+            type="button"
+            aria-label={`${escola.nome} — abrir resumo da escola`}
+            className="block cursor-pointer transition-transform hover:scale-110 origin-bottom"
+            onPointerEnter={(e) => e.pointerType === "mouse" && balao.abrir(true)}
+            onPointerLeave={(e) => e.pointerType === "mouse" && balao.fecharDepois()}
+            onFocus={() => balao.abrir(true)}
+            onClick={() => balao.abrir(true)}
+          >
             <PinMapa {...pinoDaOrganizacao(escola.tipo)} tamanho={34} className="drop-shadow-md" />
-          </div>
+          </button>
         </Marker>
+
+        {balao.aberto && (
+          <Popup
+            latitude={escola.lat}
+            longitude={escola.lng}
+            anchor="bottom"
+            offset={[0, -44] as [number, number]}
+            closeButton
+            closeOnClick={false}
+            onClose={balao.fechar}
+            maxWidth="none"
+            /* Acima dos pinos das escolas, que têm zIndex 2: sem isto, o
+               pino de uma escola vizinha cortava o balão. */
+            style={{ zIndex: 10 }}
+            // Abrir o balão não rouba o foco: quem só passou o mouse não
+            // pediu para o cursor do teclado pular para dentro dele.
+            focusAfterOpen={false}
+          >
+            <div onMouseEnter={balao.cancelar} onMouseLeave={balao.fecharDepois}>
+              <BalaoEscola
+                escola={escola}
+                indicador={indicador}
+                acao={
+                  onVerSobre
+                    ? {
+                        tipo: "botao",
+                        rotulo: "Contato e coordenação",
+                        onClick: () => {
+                          balao.fechar();
+                          onVerSobre();
+                        },
+                      }
+                    : { tipo: "link", href: `/escola/${escola.slug}`, rotulo: "Ver a página da escola" }
+                }
+              />
+            </div>
+          </Popup>
+        )}
 
         {grupos.map((grupo) => {
           if (grupo.itens.length > 1) {

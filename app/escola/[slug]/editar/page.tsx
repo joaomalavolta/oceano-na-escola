@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   AlertTriangle,
+  CalendarDays,
   Camera,
   Megaphone,
   Phone,
@@ -19,6 +20,7 @@ import {
   Send,
   ShieldCheck,
   Trash2,
+  UsersRound,
   XCircle,
 } from "lucide-react";
 
@@ -34,6 +36,8 @@ import { MuralDaEscola } from "@/components/mural/mural-da-escola";
 import { useSearchParams } from "next/navigation";
 import { ehPosicaoPadraoAntiga, lerCoordenada } from "@/lib/posicao";
 import { normalizarContato, problemasDoContato, type ContatoDaEscola } from "@/lib/contato";
+import { DIAS } from "@/lib/ficha-escola";
+import { CoordenacaoDaEscola } from "@/components/escolas/coordenacao-da-escola";
 import { criarTurma } from "@/lib/cadastro-expedicao";
 import { Voltar, VoltarRodape } from "@/components/navegacao/voltar";
 import {
@@ -142,6 +146,9 @@ function EditarConteudo({ slug }: { slug: string }) {
       lng: escola.lng,
       termos_ok: escola.termos_ok,
       contato: escola.contato,
+      fundada_em: escola.fundada_em,
+      dias_aula: escola.dias_aula,
+      horario_aulas: escola.horario_aulas,
     });
     setSalvando(false);
     setAviso(
@@ -243,6 +250,7 @@ function EditarConteudo({ slug }: { slug: string }) {
   const semCoordenada = escola.lat === null || escola.lng === null;
 
   const v = vocabulario(escola.tipo);
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
   // Os erros aparecem ao lado do campo enquanto se digita, sobre o valor
   // já normalizado — "@escola" e "escola.org" são aceitos como estão.
   const problemasContato = problemasDoContato(normalizarContato(escola.contato));
@@ -352,6 +360,92 @@ function EditarConteudo({ slug }: { slug: string }) {
         </p>
       </section>
 
+      {/* Funcionamento: desde quando e em que dias. */}
+      <section className="bg-card border border-border rounded-md p-5 space-y-3 shadow-2xs">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2 flex items-center gap-2">
+          <CalendarDays className="w-3.5 h-3.5" />
+          Funcionamento
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className={rotulo}>Data de fundação</label>
+            <input
+              type="date"
+              value={escola.fundada_em ?? ""}
+              min="1900-01-01"
+              max={hoje}
+              onChange={(e) => alterar("fundada_em", e.target.value || null)}
+              className={campo}
+            />
+          </div>
+          {escola.tipo === "surf" && (
+            <div>
+              <label className={rotulo}>Horário das aulas</label>
+              <input
+                type="text"
+                value={escola.horario_aulas ?? ""}
+                maxLength={120}
+                onChange={(e) => alterar("horario_aulas", e.target.value || null)}
+                placeholder="7h às 9h e 16h às 18h"
+                className={campo}
+              />
+            </div>
+          )}
+        </div>
+        {/* Dia de aula é o que interessa a quem procura uma escola de
+            surf. Na escola regular é sempre "segunda a sexta", e o campo
+            só ocuparia espaço. */}
+        {escola.tipo === "surf" && (
+          <fieldset>
+            <legend className={rotulo}>Dias de aula</legend>
+            <div className="flex flex-wrap gap-1.5">
+              {DIAS.map((d) => {
+                const marcado = escola.dias_aula.includes(d.id);
+                return (
+                  <label
+                    key={d.id}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full border cursor-pointer transition-colors ${
+                      marcado
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={marcado}
+                      onChange={() =>
+                        alterar(
+                          "dias_aula",
+                          marcado ? escola.dias_aula.filter((x) => x !== d.id) : [...escola.dias_aula, d.id]
+                        )
+                      }
+                    />
+                    {d.curto}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+      </section>
+
+      {/* Coordenação: grava pessoa a pessoa, fora do "Guardar alterações". */}
+      <section
+        id="coordenacao"
+        className="bg-card border border-border rounded-md p-5 space-y-3 shadow-2xs scroll-mt-20"
+      >
+        <h2 className="text-xs font-bold uppercase tracking-wider text-primary border-b border-border pb-2 flex items-center gap-2">
+          <UsersRound className="w-3.5 h-3.5" />
+          Coordenação
+        </h2>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Quem coordena {v.aOrganizacao}, com foto e contato, na aba Sobre da página pública.
+          Cada pessoa só aparece depois de marcada a autorização dela.
+        </p>
+        <CoordenacaoDaEscola escolaId={escola.id} />
+      </section>
+
       {/* Contato e números. Fica junto da identificação porque é a mesma
           coisa vista de fora: quem a escola é e como falar com ela. Salva
           com o "Guardar alterações" lá embaixo, como o resto da ficha. */}
@@ -361,30 +455,12 @@ function EditarConteudo({ slug }: { slug: string }) {
           Contato e números
         </h2>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Tudo aqui aparece na aba Sobre da página pública, para qualquer visitante. Prefira o
-          contato institucional d{v.aOrganizacao} ao pessoal, e deixe em branco o que não quiser
-          mostrar — campo vazio simplesmente não aparece.
+          O contato institucional d{v.aOrganizacao}, na aba Sobre da página pública, para qualquer
+          visitante. O contato de cada pessoa fica na Coordenação, acima. Campo vazio simplesmente
+          não aparece.
         </p>
 
         <div className="grid sm:grid-cols-2 gap-3">
-          <CampoContato rotulo="Responsável" erro={problemasContato.responsavel_nome}>
-            <input
-              type="text"
-              value={escola.contato.responsavel_nome ?? ""}
-              onChange={(e) => alterarContato("responsavel_nome", e.target.value)}
-              placeholder="Nome de quem coordena"
-              className={campo}
-            />
-          </CampoContato>
-          <CampoContato rotulo="Função" erro={problemasContato.responsavel_funcao}>
-            <input
-              type="text"
-              value={escola.contato.responsavel_funcao ?? ""}
-              onChange={(e) => alterarContato("responsavel_funcao", e.target.value)}
-              placeholder={escola.tipo === "surf" ? "Coordenador, instrutor-chefe…" : "Coordenação, professor responsável…"}
-              className={campo}
-            />
-          </CampoContato>
           <CampoContato rotulo="E-mail" erro={problemasContato.contato_email}>
             <input
               type="email"

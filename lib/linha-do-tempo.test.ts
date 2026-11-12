@@ -5,6 +5,7 @@ import {
   dataCurta,
   expedicoesDosPontuais,
   diaEmBrasilia,
+  recortarLinha,
   type ExpedicaoNaLinha,
   type FotoNaLinha,
   type EscolaNaLinha,
@@ -222,5 +223,27 @@ describe("publicações do mural na linha do tempo", () => {
     const daA = montarLinhaDoTempo({ ...base, escolaSlug: "a" }).flatMap((m) => m.marcos);
     expect(surf.map((m) => m.escola?.slug)).toEqual(["s"]);
     expect(daA.map((m) => m.escola?.slug)).toEqual(["a"]);
+  });
+});
+
+describe("recortarLinha", () => {
+  const meses = montarLinhaDoTempo({
+    expedicoes: [exp("a", 1, "2026-06-10"), exp("a", 2, "2026-08-02"), exp("a", 3, "2026-08-20")],
+    fotos: [],
+    escolas: ESCOLAS,
+  });
+
+  it("fica com os mais recentes, sem desfazer os meses", () => {
+    const r = recortarLinha(meses, 2);
+    expect(r.map((m) => m.mes)).toEqual(["2026-08"]);
+    expect(r[0].marcos).toHaveLength(2);
+  });
+
+  it("atravessa meses quando precisa", () => {
+    expect(recortarLinha(meses, 3).map((m) => m.marcos.length)).toEqual([2, 1]);
+  });
+
+  it("não inventa marcos quando há menos que o pedido", () => {
+    expect(recortarLinha(meses, 10).flatMap((m) => m.marcos)).toHaveLength(3);
   });
 });

@@ -102,3 +102,38 @@ remoção, termo de imagem).
 **Não verificado aqui:** envio real de vídeo do celular ao Storage (sem login
 neste ambiente) e a reprodução de `.mov` gravado em iPhone no Chrome do
 Windows, que depende do codec. MP4 é o formato que toca em toda parte.
+
+## 6. Ficha da escola, coordenação e balão do pino *(terceira entrega)*
+
+**Funcionamento** (ficha → aba Sobre e balão do pino): data de fundação e,
+para escola de surf, dias de aula (seg a dom) e horário. Na escola regular,
+dias de aula não aparecem: seriam sempre "segunda a sexta".
+
+**Coordenação** (ficha → aba Sobre): uma ou mais pessoas, cada uma com foto
+redonda, nome, função, e-mail, telefone (com WhatsApp) e Instagram. Ordem
+ajustável. Cada pessoa só aparece com a marca **"esta pessoa autorizou"**,
+que vem desmarcada: é dado pessoal de adulto, e a escola declara que
+perguntou. Sem a marca, nem a foto sai do Storage. Foto de coordenador não
+depende do termo de uso de imagem dos alunos, que é outra coisa.
+
+O "Responsável" da entrega anterior foi copiado para a coordenação, já
+autorizado (foi a própria escola que o publicou). As colunas antigas ficam
+no banco sem uso na tela.
+
+**Balão do pino**: no mapa da rede, passar o mouse no pino de uma escola abre
+um resumo (capa, tipo, município, desde quando, dias e horário, atendidos,
+saídas de campo) com o botão para a página. No celular, o primeiro toque
+abre o balão e o segundo leva à página. No mapa da própria escola, o botão do
+balão abre a aba Sobre.
+
+**Atividades embaixo do mapa**: na aba Território, as três atividades mais
+recentes (saídas e mural), com link para a lista inteira em Atividades.
+
+**Página Sobre**: nova seção "Também nas escolas de surf", com o programa
+Guardiões Ecosurf como ambiente de projetos de educação para a Cultura
+Oceânica entre escolas de surf, e o papel "Instrutor de escola de surf".
+
+**Verificado no banco**: 12 de 12 casos (migração do responsável, dias
+inválidos recusados, foto de outra escola recusada, pessoa sem autorização
+invisível e com foto bloqueada, conta sem vínculo recusada, visitante sem
+acesso à tabela).

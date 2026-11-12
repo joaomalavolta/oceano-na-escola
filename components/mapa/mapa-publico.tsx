@@ -32,6 +32,7 @@ import {
   PROTOCOLO_PADRAO,
 } from "@/lib/mapa-publico";
 import type {
+  PubEscola,
   PubObservacaoGrade,
   PubObservacaoPontual,
   PubFotoGeorreferenciada,
@@ -42,6 +43,8 @@ import { PinMapa, slugDe, pinoDaOrganizacao } from "./icones";
 import { redeDaUrl, rotuloDoPino } from "@/lib/organizacao";
 import { PinoAgrupado, composicaoDoGrupo, resumoDoGrupo } from "./pino-agrupado";
 import { SeletorFundo } from "./seletor-fundo";
+import { BalaoEscola } from "./balao-escola";
+import { useBalao } from "./use-balao";
 import { BarraNavegacao } from "@/components/navegacao/barra-navegacao";
 import {
   PainelCamadas,
@@ -88,6 +91,7 @@ export function MapaPublico() {
    * descobrir o que era.
    */
   const [ocorrenciaAberta, setOcorrenciaAberta] = useState<PubObservacaoPontual | null>(null);
+  const balao = useBalao<PubEscola>();
 
   // Mapa de fundo, lido já na inicialização do estado. Dá para fazer
   // isso aqui porque a página carrega este componente com ssr: false —
@@ -647,10 +651,23 @@ export function MapaPublico() {
                   os grupos e engolia o clique deles, ou era coberto. Acima,
                   os dois convivem — e a ponta do pino passa a cair no
                   ponto da escola, que é onde ela está. */}
+              {/* Passar o mouse abre o balão; clicar leva à página. No
+                  toque não há "passar", então o primeiro toque abre o balão
+                  e o segundo — ou o botão dentro dele — leva à página. O
+                  teclado abre ao focar e segue com Enter. */}
               <Link
                 href={`/escola/${escola.slug}`}
-                title={escola.nome}
+                aria-label={`${escola.nome} — abrir resumo da escola`}
                 className="group flex flex-col items-center"
+                onPointerEnter={(e) => e.pointerType === "mouse" && balao.abrir(escola)}
+                onPointerLeave={(e) => e.pointerType === "mouse" && balao.fecharDepois()}
+                onFocus={() => balao.abrir(escola)}
+                onClick={(e) => {
+                  if (balao.aberto?.slug !== escola.slug) {
+                    e.preventDefault();
+                    balao.abrir(escola);
+                  }
+                }}
               >
                 <div className="mb-0.5 px-1.5 py-0.5 rounded-sm bg-glass-bg backdrop-blur-sm border border-glass-border text-[10px] font-medium text-foreground max-w-[120px] truncate shadow-sm">
                   {rotuloDoPino(escola.nome, escola.tipo)}
@@ -663,6 +680,35 @@ export function MapaPublico() {
               </Link>
             </Marker>
           ))}
+
+        {/* Balão da escola. Acima do pino e do rótulo: o deslocamento é a
+            altura dos dois, para a ponta do balão encostar no rótulo. */}
+        {balao.aberto && (
+          <Popup
+            latitude={balao.aberto.lat}
+            longitude={balao.aberto.lng}
+            anchor="bottom"
+            offset={[0, -64] as [number, number]}
+            closeButton
+            closeOnClick={false}
+            onClose={balao.fechar}
+            maxWidth="none"
+            /* Acima dos pinos das escolas, que têm zIndex 2: sem isto, o
+               pino de uma escola vizinha cortava o balão. */
+            style={{ zIndex: 10 }}
+            // Abrir o balão não rouba o foco: quem só passou o mouse não
+            // pediu para o cursor do teclado pular para dentro dele.
+            focusAfterOpen={false}
+          >
+            <div onMouseEnter={balao.cancelar} onMouseLeave={balao.fecharDepois}>
+              <BalaoEscola
+                escola={balao.aberto}
+                indicador={dados.indicadoresEscola.find((i) => i.escola_slug === balao.aberto?.slug)}
+                acao={{ tipo: "link", href: `/escola/${balao.aberto.slug}`, rotulo: "Ver a página da escola" }}
+              />
+            </div>
+          </Popup>
+        )}
 
         {/* Cartão da ocorrência: foto primeiro, quando há */}
         {ocorrenciaAberta &&
